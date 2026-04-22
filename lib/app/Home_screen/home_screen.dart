@@ -4030,7 +4030,7 @@ class _ProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = themeChange.getThem();
-    final products = orderModel.products!;
+    final products = orderModel.products ?? const <CartProductModel>[];
 
     return ListView.separated(
       shrinkWrap: true,
@@ -4398,8 +4398,9 @@ class _OrderTotals {
 
   factory _OrderTotals.from(OrderModel order) {
     double sub = 0, tax = 0, special = 0, admin = 0;
+    final disc = double.tryParse(order.discount?.toString() ?? '0') ?? 0;
 
-    for (final p in order.products!) {
+    for (final p in order.products ?? const []) {
       final price = double.tryParse(p.merchant_price?.toString() ?? '0') ?? 0;
       final qty = double.tryParse(p.quantity?.toString() ?? '1') ?? 1;
       final extras =
@@ -4417,14 +4418,13 @@ class _OrderTotals {
       for (final t in order.taxSetting!) {
         tax += Constant.calculateTax(
           amount:
-          (sub - double.tryParse(order.discount.toString())! - special)
+          (sub - disc - special)
               .toString(),
           taxModel: t,
         );
       }
     }
 
-    final disc = double.tryParse(order.discount?.toString() ?? '0') ?? 0;
     final total = sub - disc - special + tax;
 
     if (order.adminCommissionType == 'Percent' &&
