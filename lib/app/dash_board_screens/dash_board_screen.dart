@@ -599,16 +599,20 @@ class _StatusBanner extends StatelessWidget {
         'phone number: "$phone"\n'
         'Thanks,\nJippyMart';
 
+    // iOS is stricter with mailto parsing; use one "to" address and the other as cc.
     final uri = Uri(
       scheme: 'mailto',
-      // Send to both support contacts
-      path: 'Sivapm@jippymart.in,Sudheer@jippymart.in',
+      path: 'Sivapm@jippymart.in',
       query:
-          'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
+          'cc=${Uri.encodeComponent('Sudheer@jippymart.in')}&subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
     );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else if (context.mounted) {
+
+    // Try platform default first, then explicit external app handoff.
+    bool launched = await launchUrl(uri);
+    if (!launched) {
+      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    if (!launched && context.mounted) {
       await Constant.sendMail(
         subject: subject,
         body: body,
@@ -765,27 +769,29 @@ class _BottomNavBar extends StatelessWidget {
           ),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: List.generate(
-              items.length,
-                  (i) => Expanded(
-                child: _NavTile(
-                  data: items[i],
-                  index: i,
-                  isDark: isDark,
-                  controller: controller,
-                  onTap: () => _handleTap(i),
+      child: Container(
+        color: Colors.white,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 62,
+            child: Row(
+              children: List.generate(
+                items.length,
+                    (i) => Expanded(
+                  child: _NavTile(
+                    data: items[i],
+                    index: i,
+                    isDark: isDark,
+                    controller: controller,
+                    onTap: () => _handleTap(i),
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      ),    );
   }
 
   void _handleTap(int index) {

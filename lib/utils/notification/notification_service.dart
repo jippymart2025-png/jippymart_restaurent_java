@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -30,6 +31,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   initInfo() async {
+    await FirebaseMessaging.instance.setAutoInitEnabled(true);
     await FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
           alert: true,
@@ -50,6 +52,10 @@ class NotificationService {
 
     if (request.authorizationStatus == AuthorizationStatus.authorized ||
         request.authorizationStatus == AuthorizationStatus.provisional) {
+      if (Platform.isIOS) {
+        // APNs token is required before FCM token generation on iOS.
+        await _waitForApnsToken();
+      }
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings(
             '@mipmap/ic_launcher',
@@ -72,6 +78,21 @@ class NotificationService {
       // ✅ Initialize and schedule daily 8 AM notification
       await notificationHandler.initializeNotification();
       setupInteractedMessage();
+    }
+  }
+
+  Future<void> _waitForApnsToken() async {
+    try {
+      String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+      int attempts = 0;
+      while (apnsToken == null && attempts < 10) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        attempts++;
+      }
+      log("APNs token available: ${apnsToken != null}");
+    } catch (e) {
+      log("Failed waiting APNs token: $e");
     }
   }
 
@@ -127,6 +148,13 @@ class NotificationService {
       log("::::::::::::onMessage:::::::::::::::::");
       if (message.notification != null) {
         log(message.notification.toString());
+        // iOS already presents notification (setForegroundNotificationPresentationOptions),
+        // so showing a local notification again causes duplicates.
+        if (!Platform.isIOS) {
+          display(message);
+        }
+      } else if (message.data.isNotEmpty) {
+        // Data-only message: show a local notification on both platforms.
         display(message);
       }
     });
@@ -146,6 +174,16 @@ class NotificationService {
     }
 
     try {
+      if (Platform.isIOS) {
+        // On iOS, ensure APNs registration finished before requesting FCM.
+        int attempts = 0;
+        String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        while (apnsToken == null && attempts < 10) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+          attempts++;
+        }
+      }
       return await FirebaseMessaging.instance.getToken();
     } catch (e) {
       print("❌ FCM getToken error: $e");
@@ -243,7 +281,9 @@ class NotificationService {
 
   void display(RemoteMessage message) async {
     log('Got a message whilst in the foreground!');
-    log('Message data:  [32m${message.notification!.body.toString()} [0m');
+    log(
+      'Message data:  [32m${message.notification?.body ?? message.data['body'] ?? ''} [0m',
+    );
     try {
       await _ensureOrderChannelCreated();
       const AndroidNotificationDetails notificationDetails =
@@ -269,8 +309,8 @@ class NotificationService {
       // Use the initialized plugin instance so the notification actually shows
       await flutterLocalNotificationsPlugin.show(
         0,
-        message.notification!.title ?? 'New order',
-        message.notification!.body ?? '',
+        message.notification?.title ?? message.data['title'] ?? 'New order',
+        message.notification?.body ?? message.data['body'] ?? '',
         notificationDetailsBoth,
         payload: jsonEncode(message.data),
       );

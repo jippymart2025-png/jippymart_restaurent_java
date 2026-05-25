@@ -2,6 +2,7 @@ import UIKit
 import Flutter
 import Firebase
 import GoogleMaps
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -11,7 +12,9 @@ import GoogleMaps
   ) -> Bool {
 
     // ✅ Initialize Firebase
-    FirebaseApp.configure()
+    if FirebaseApp.app() == nil {
+      FirebaseApp.configure()
+    }
 
     // ✅ Initialize Google Maps SDK
     if let googleMapsApiKey = Bundle.main.object(forInfoDictionaryKey: "GoogleMapsApiKey") as? String {
@@ -36,6 +39,9 @@ import GoogleMaps
         }
       }
     }
+
+    UNUserNotificationCenter.current().delegate = self
+    application.registerForRemoteNotifications()
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)

@@ -30,8 +30,8 @@ import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
 class Constant {
-  // static String baseUrl  = "http://192.168.88.11:8000/api/";
-  static String baseUrl = "http://192.168.88.12:8000/api/";
+  // static String baseUrl  = "https://web.jippymart.in/api/";
+  static String baseUrl = "http://192.168.88.25:8000/api/";
   static String userRoleDriver = 'driver';
   static String userRoleCustomer = 'customer';
   static String userRoleVendor = 'vendor';
@@ -497,34 +497,60 @@ class Constant {
   }
 
   static MailSettings? mailSettings;
-
-  static final smtpServer = SmtpServer(mailSettings!.host.toString(),
-      username: mailSettings!.userName.toString(),
-      password: mailSettings!.password.toString(),
+  static SmtpServer? get smtpServer {
+    final settings = mailSettings;
+    if (settings == null ||
+        settings.host == null ||
+        settings.userName == null ||
+        settings.password == null ||
+        settings.host!.isEmpty ||
+        settings.userName!.isEmpty ||
+        settings.password!.isEmpty) {
+      return null;
+    }
+    return SmtpServer(
+      settings.host.toString(),
+      username: settings.userName.toString(),
+      password: settings.password.toString(),
       port: 465,
       ignoreBadCertificate: false,
       ssl: true,
-      allowInsecure: true);
+      allowInsecure: true,
+    );
+  }
 
   static sendMail(
       {String? subject,
       String? body,
       bool? isAdmin = false,
       List<dynamic>? recipients}) async {
-    // Create our message.
-    if (isAdmin == true) {
-      recipients!.add(mailSettings!.userName.toString());
+    final settings = mailSettings;
+    final server = smtpServer;
+    if (settings == null || server == null) {
+      print('❌ Mail settings not available, skipping sendMail.');
+      return;
     }
+
+    final recipientList = <dynamic>[...?recipients];
+    if (recipientList.isEmpty) {
+      print('❌ No recipients provided, skipping sendMail.');
+      return;
+    }
+
+    if (isAdmin == true) {
+      recipientList.add(settings.userName.toString());
+    }
+
     final message = Message()
       ..from = Address(
-          mailSettings!.userName.toString(), mailSettings!.fromName.toString())
-      ..recipients = recipients!
+          settings.userName.toString(), settings.fromName.toString())
+      ..recipients = recipientList
       ..subject = subject
       ..text = body
       ..html = body;
 
     try {
-      final sendReport = await send(message, smtpServer);
+      final sendReport = await send(message, server);
       print('Message sent: $sendReport');
     } on MailerException catch (e) {
       print(e);

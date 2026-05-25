@@ -4164,14 +4164,15 @@ class _VariantChips extends StatelessWidget {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: options.keys.map((key) {
+            children: options.keys
+                .where((key) => key != 'merchant_price')
+                .map((key) {
               return _Chip(
                 label: '$key : ${options[key]}',
                 themeChange: themeChange,
               );
             }).toList(),
-          ),
-        ],
+          ),        ],
       ),
     );
   }
