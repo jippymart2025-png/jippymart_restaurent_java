@@ -1934,6 +1934,9 @@ import 'package:jippymart_restaurant/utils/network_image_widget.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
 import '../../controller/dash_board_controller.dart';
+import '../../models/location_model.dart';
+import 'promotions/promotion_action_forms.dart';
+import 'promotions/promotion_quick_action.dart';
 
 // ─────────────────────────────────────────────
 // DESIGN TOKENS
@@ -1975,8 +1978,8 @@ class _Tok {
 // MAIN SCREEN
 // ─────────────────────────────────────────────
 class SubscriptionPlansScreen extends StatefulWidget {
-  const SubscriptionPlansScreen({super.key});
-
+  const SubscriptionPlansScreen({super.key,this.showBackButton = true,});
+  final bool showBackButton;
   @override
   State<SubscriptionPlansScreen> createState() => _SubscriptionPlansScreenState();
 }
@@ -1988,6 +1991,8 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 
   late final SubscriptionPaymentController _paymentController;
   late final SubscriptionPlansController _plansController;
+  PromotionQuickAction? _selectedAction;
+  Worker? _promotionsTabResetWorker;
 
   @override
   void initState() {
@@ -1995,17 +2000,34 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     _paymentController = Get.put(SubscriptionPaymentController());
     _plansController = Get.put(SubscriptionPlansController());
 
+    if (!widget.showBackButton && Get.isRegistered<DashBoardController>()) {
+      final dash = Get.find<DashBoardController>();
+      _promotionsTabResetWorker =
+          ever(dash.promotionsTabResetToken, (_) {
+        if (mounted) {
+          _plansController.resetSlotBookingSelections();
+          setState(() => _selectedAction = null);
+        }
+      });
+    }
+
     // Fetch everything fresh when the screen opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshAll();
     });
   }
 
+  @override
+  void dispose() {
+    _promotionsTabResetWorker?.dispose();
+    super.dispose();
+  }
+
   /// Refresh plans list AND current plan simultaneously.
   Future<void> _refreshAll() async {
     _currentPlanLoading.value = true;
     await Future.wait([
-      _plansController.fetchPlans(),
+      _plansController.loadStates(),
       _loadCurrentPlan(),
     ]);
   }
@@ -2061,156 +2083,80 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       builder: (controller) {
         return Scaffold(
           backgroundColor: _bg(context),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-          floatingActionButton: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  elevation: 8,
-                  shadowColor: const Color(0xFF25D366).withValues(alpha: 0.45),
-                ),
-                onPressed: () async {
-                  const String phoneNumber = '+918106625666';
-                  const String message =
-                      "I'm interested in more information about your subscription plans";
-                  final Uri whatsappUrl = Uri.parse(
-                    'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}',
-                  );
-                  try {
-                    if (await canLaunchUrl(whatsappUrl)) {
-                      await launchUrl(whatsappUrl,
-                          mode: LaunchMode.externalApplication);
-                    } else {
-                      final Uri phoneUrl = Uri.parse('tel:$phoneNumber');
-                      if (await canLaunchUrl(phoneUrl)) {
-                        await launchUrl(phoneUrl,
-                            mode: LaunchMode.externalApplication);
-                      }
+          body: SafeArea(
+            top: true,
+            bottom: false,
+            child: Column(
+              children: [
+                _PromotionsTopBar(showBackButton: widget.showBackButton),
+                PromotionQuickActionsGrid(
+                  selected: _selectedAction,
+                  onSelected: (action) {
+                    if (_selectedAction == PromotionQuickAction.slotBooking ||
+                        action == PromotionQuickAction.slotBooking) {
+                      _plansController.resetSlotBookingSelections();
                     }
-                  } catch (e) {
-                    debugPrint('Error launching WhatsApp: $e');
-                  }
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 26,
-                      height: 26,
-                      child: SvgPicture.string(
-                        '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.135.563 4.14 1.54 5.875L0 24l6.31-1.516A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.36-.214-3.727.896.933-3.625-.234-.373A9.818 9.818 0 1112 21.818z"/>
-              </svg>''',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Flexible(
-                      child: Text(
-                        'Need more info about plans? Chat on WhatsApp',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: AppThemeData.semiBold,
-                          fontSize: 14,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ],
+                    setState(() {
+                      _selectedAction =
+                          _selectedAction == action ? null : action;
+                    });
+                  },
                 ),
-              ),
+                Expanded(
+                  child: _selectedAction == null
+                      ? const PromotionPlansStatusPanel()
+                      : _buildActionContent(controller),
+                ),
+              ],
             ),
           ),
-          body: Obx(() {
-            final List<Widget> slivers = [
-              _PlansAppBar(planCount: controller.plans.length),
-              // Current plan section — always shows skeleton or card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      _Tok.s16, _Tok.s20, _Tok.s16, _Tok.s10),
-                  child: _currentPlanLoading.value
-                      ? _CurrentPlanSkeleton()
-                      : _currentPlan.value != null
-                      ? _CurrentPlanCard(
-                    plan: _currentPlan.value!,
-                    onRefresh: _loadCurrentPlan,
-                  )
-                      : const SizedBox.shrink(),
-                ),
-              ),
-            ];
-
-            if (controller.isLoading.value && controller.plans.isEmpty) {
-              slivers.add(
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _LoadingView(),
-                ),
-              );
-            } else if (controller.hasError && controller.plans.isEmpty) {
-              slivers.add(
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _ErrorView(
-                    message: controller.errorMessage.value,
-                    onRetry: _refreshAll,
-                  ),
-                ),
-              );
-            } else if (!controller.hasPlans) {
-              slivers.add(
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyView(onRetry: _refreshAll),
-                ),
-              );
-            } else {
-              slivers.add(
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                      _Tok.s16, _Tok.s10, _Tok.s16, 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                        final plan = controller.plans[index];
-                        return _PlanCard(
-                          plan: plan,
-                          index: index,
-                          onTap: () => _openDetail(context, plan),
-                          onBuyNow: () =>
-                              _paymentController.startRazorpayPayment(plan),
-                        );
-                      },
-                      childCount: controller.plans.length,
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return RefreshIndicator(
-              onRefresh: _refreshAll,
-              color: AppThemeData.secondary300,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                slivers: slivers,
-              ),
-            );
-          }),
         );
       },
     );
+  }
+
+  Widget _buildActionContent(SubscriptionPlansController controller) {
+    final action = _selectedAction;
+    if (action == null) return const SizedBox.shrink();
+
+    switch (action) {
+      case PromotionQuickAction.slotBooking:
+        return Obx(() {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_currentPlanLoading.value)
+                  _CurrentPlanSkeleton()
+                else if (_currentPlan.value != null)
+                  _CurrentPlanCard(
+                    plan: _currentPlan.value!,
+                    onRefresh: _loadCurrentPlan,
+                  ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _LocationFilterSection(
+                    controller: controller,
+                    onBuyNow: (plan) =>
+                        _paymentController.startRazorpayPayment(plan),
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+      case PromotionQuickAction.percentOffPlan:
+        return const PercentOffPlanForm();
+      case PromotionQuickAction.onePlusOneOffer:
+        return const OnePlusOneOfferForm();
+      case PromotionQuickAction.flatOffer:
+        return const FlatOfferForm();
+      case PromotionQuickAction.createPlan:
+        return const CreatePlanForm();
+      case PromotionQuickAction.twoPlusOneOffer:
+        return const TwoPlusOneOfferForm();
+    }
   }
 
   void _openDetail(BuildContext context, SubscriptionPlanModel plan) {
@@ -2233,52 +2179,573 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     return isDark ? const Color(0xFF0F1120) : const Color(0xFFF2F4FA);
   }
 }
+class _LocationFilterSection extends StatelessWidget {
+  const _LocationFilterSection({
+    required this.controller,
+    required this.onBuyNow,
+  });
 
-// ─────────────────────────────────────────────
-// APP BAR
-// ─────────────────────────────────────────────
-class _PlansAppBar extends StatelessWidget {
-  const _PlansAppBar({required this.planCount});
-  final int planCount;
+  final SubscriptionPlansController controller;
+  final void Function(SubscriptionPlanModel plan) onBuyNow;
+
+  SubscriptionPlanModel? _selectedPlanInList() {
+    final selected = controller.selectedPlan.value;
+    if (selected == null) return null;
+    for (final plan in controller.plans) {
+      if (plan.subscriptionPlanId == selected.subscriptionPlanId) {
+        return plan;
+      }
+    }
+    return null;
+  }
+
+  SubscriptionPlanModel? _visiblePlanDetails() {
+    final details = controller.selectedPlanDetails.value;
+    if (details != null) return details;
+
+    return _selectedPlanInList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: AppThemeData.secondary300,
-      elevation: 0,
-      leading: IconButton(
-        onPressed: () => Navigator.of(context).pop(),
-        icon: const Icon(Icons.arrow_back_rounded,
-            color: AppThemeData.grey50, size: _Tok.i22),
-      ),
-      title: Text(
-        "Subscription Plans".tr,
-        style: const TextStyle(
-          fontFamily: AppThemeData.semiBold,
-          fontSize: _Tok.f18,
-          color: AppThemeData.grey50,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1A1E38) : Colors.white;
+    final borderColor =
+    isDark ? const Color(0xFF2A3050) : const Color(0xFFE8ECF5);
+    final textPrimary =
+    isDark ? Colors.white : const Color(0xFF1A1F3C);
+    final textSecondary =
+    isDark ? const Color(0xFF8892B0) : const Color(0xFF64748B);
+
+    return Obx(() {
+      final planDetails = _visiblePlanDetails();
+      final plansLoading = controller.isPlansLoading.value;
+
+      return Container(
+          padding: const EdgeInsets.all(_Tok.s12),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(_Tok.r12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                "Subscription Plans",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: _Tok.f14,
+                  fontFamily: AppThemeData.bold,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(height: _Tok.s8),
+              Divider(color: borderColor, height: 1),
+              const SizedBox(height: _Tok.s10),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+              _SubscriptionDropdown<StateModel>(
+                label: 'State',
+                value: controller.states.contains(controller.selectedState.value)
+                    ? controller.selectedState.value
+                    : null,
+                hint: 'Select state',
+                items: controller.states
+                    .map(
+                      (state) => DropdownMenuItem<StateModel>(
+                    value: state,
+                    child: Text(state.stateName),
+                  ),
+                )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  controller.selectedState.value = value;
+                  controller.selectedPlan.value = null;
+                  controller.selectedPlanDetails.value = null;
+                  controller.loadCities(value.stateId);
+                },
+              ),
+              const SizedBox(height: _Tok.s8),
+              _SubscriptionDropdown<CityModel>(
+                label: 'City',
+                value: controller.cities.contains(controller.selectedCity.value)
+                    ? controller.selectedCity.value
+                    : null,
+                hint: 'Select city',
+                items: controller.cities
+                    .map(
+                      (city) => DropdownMenuItem<CityModel>(
+                    value: city,
+                    child: Text(city.cityName),
+                  ),
+                )
+                    .toList(),
+                onChanged: controller.selectedState.value == null
+                    ? null
+                    : (value) {
+                  if (value == null) return;
+                  controller.selectedCity.value = value;
+                  controller.selectedPlan.value = null;
+                  controller.selectedPlanDetails.value = null;
+                  controller.loadAreas(value.cityId);
+                },
+              ),
+              const SizedBox(height: _Tok.s8),
+              _SubscriptionDropdown<AreaModel>(
+                label: 'Area',
+                value: controller.areas.contains(controller.selectedArea.value)
+                    ? controller.selectedArea.value
+                    : null,
+                hint: 'Select area',
+                items: controller.areas
+                    .map(
+                      (area) => DropdownMenuItem<AreaModel>(
+                    value: area,
+                    child: Text(area.areaName),
+                  ),
+                )
+                    .toList(),
+                onChanged: controller.selectedCity.value == null
+                    ? null
+                    : (value) async {
+                  if (value == null) return;
+                  controller.selectedArea.value = value;
+                  controller.selectedPlan.value = null;
+                  controller.selectedPlanDetails.value = null;
+                  await controller.loadPlans(value.areaId);
+                },
+              ),
+              const SizedBox(height: _Tok.s8),
+              _SubscriptionDropdown<SubscriptionPlanModel>(
+                label: 'Available Plans',
+                value: _selectedPlanInList(),
+                hint: controller.selectedArea.value == null
+                    ? 'Select area first'
+                    : plansLoading
+                        ? 'Loading plans...'
+                        : 'Select plan',
+                items: controller.plans
+                    .map(
+                      (plan) => DropdownMenuItem<SubscriptionPlanModel>(
+                    value: plan,
+                    child: Text(plan.planName),
+                  ),
+                )
+                    .toList(),
+                onChanged: controller.selectedArea.value == null ||
+                        plansLoading ||
+                        controller.plans.isEmpty
+                    ? null
+                    : (value) {
+                  if (value == null) return;
+                  controller.selectPlan(value);
+                },
+              ),
+              if (plansLoading) ...[
+                const SizedBox(height: _Tok.s10),
+                const Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ] else if (!controller.hasPlans && controller.hasError) ...[
+                const SizedBox(height: _Tok.s10),
+                _InlineMessage(
+                  message: controller.errorMessage.value,
+                  isError: true,
+                ),
+              ],
+              if (planDetails != null) ...[
+                const SizedBox(height: _Tok.s10),
+                Container(
+                  padding: const EdgeInsets.all(_Tok.s12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF111827)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(_Tok.r12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: controller.isPlanDetailsLoading.value
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    planDetails.planName,
+                                    style: TextStyle(
+                                      fontFamily: AppThemeData.bold,
+                                      fontSize: _Tok.f14,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: _Tok.s8),
+                                Text(
+                                  Constant.amountShow(
+                                    amount: planDetails.price.toString(),
+                                  ),
+                                  style: TextStyle(
+                                    fontFamily: AppThemeData.bold,
+                                    fontSize: _Tok.f15,
+                                    color: AppThemeData.secondary300,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: _Tok.s6),
+                            _PlanAttributesGrid(
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              items: [
+                                _PlanAttributeItem(
+                                  label: 'Duration',
+                                  value: '${planDetails.durationInDays} Days',
+                                ),
+                                _PlanAttributeItem(
+                                  label: 'Banner Duration',
+                                  value:
+                                      '${planDetails.bannerDurationInDays} Days',
+                                ),
+                                _PlanAttributeItem(
+                                  label: 'Radius',
+                                  value: '${planDetails.radiusInKms} KM',
+                                ),
+                                _PlanAttributeItem(
+                                  label: 'Banner Slot',
+                                  value: '${planDetails.bannerSlot}',
+                                ),
+                                _PlanAttributeItem(
+                                  label: 'Best Restaurant',
+                                  value: '${planDetails.bestRestaurantSlot}',
+                                ),
+                                _PlanAttributeItem(
+                                  label: 'Deals Slot',
+                                  value: '${planDetails.dealsSlot}',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: _Tok.s8),
+                            _PillButton(
+                              label: 'Buy Now'.tr,
+                              gradient: _Tok.subGrad,
+                              fullWidth: true,
+                              compact: true,
+                              onPressed: () => onBuyNow(planDetails),
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          )
+      );
+    });
+  }
+}
+
+class _SubscriptionDropdown<T> extends StatelessWidget {
+  const _SubscriptionDropdown({
+    required this.label,
+    required this.value,
+    required this.hint,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final T? value;
+  final String hint;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark ? const Color(0xFF1A1E38) : Colors.white;
+    final border =
+    isDark ? const Color(0xFF2A3050) : const Color(0xFFE2E8F0);
+
+    return DropdownButtonFormField<T>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label.tr,
+        hintText: hint.tr,
+        filled: true,
+        fillColor: fill,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: _Tok.s12,
+          vertical: _Tok.s10,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(_Tok.r12),
+          borderSide: BorderSide(color: border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(_Tok.r12),
+          borderSide: BorderSide(color: border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(_Tok.r12),
+          borderSide: BorderSide(
+            color: AppThemeData.secondary300,
+            width: 1.5,
+          ),
         ),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: _Tok.s16),
-          padding: const EdgeInsets.symmetric(
-              horizontal: _Tok.s12, vertical: _Tok.s6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(_Tok.r99),
-          ),
-          child: Text(
-            "$planCount plans",
-            style: const TextStyle(
-              fontFamily: AppThemeData.semiBold,
-              fontSize: _Tok.f12,
-              color: Colors.white,
+      hint: Text(hint.tr),
+      isExpanded: true,
+      items: items,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _PlanAttributeItem {
+  const _PlanAttributeItem({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+}
+
+class _PlanAttributesGrid extends StatelessWidget {
+  const _PlanAttributesGrid({
+    required this.items,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  final List<_PlanAttributeItem> items;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileBg =
+        isDark ? const Color(0xFF1A1E38) : Colors.white;
+    final tileBorder =
+        isDark ? const Color(0xFF2A3050) : const Color(0xFFE8ECF5);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 6.0;
+        final tileWidth = (constraints.maxWidth - gap) / 2;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: items
+              .map(
+                (item) => SizedBox(
+                  width: tileWidth,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tileBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: tileBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.label.tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: AppThemeData.medium,
+                            fontSize: 10,
+                            color: textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: AppThemeData.semiBold,
+                            fontSize: 11,
+                            color: textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _PlanAttributeRow extends StatelessWidget {
+  const _PlanAttributeRow({
+    required this.label,
+    required this.value,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  final String label;
+  final String value;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: _Tok.s4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label.tr,
+              style: TextStyle(
+                fontFamily: AppThemeData.medium,
+                fontSize: _Tok.f12,
+                color: textSecondary,
+              ),
             ),
           ),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: AppThemeData.semiBold,
+              fontSize: _Tok.f12,
+              color: textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineMessage extends StatelessWidget {
+  const _InlineMessage({
+    required this.message,
+    required this.isError,
+  });
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isError
+        ? (isDark ? const Color(0xFF3B1F1F) : const Color(0xFFFFF1F2))
+        : (isDark ? const Color(0xFF1A1E38) : const Color(0xFFF8FAFC));
+    final color = isError ? const Color(0xFFDC2626) : const Color(0xFF64748B);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(_Tok.s14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(_Tok.r12),
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: AppThemeData.medium,
+          fontSize: _Tok.f13,
+          color: color,
         ),
-      ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// HEADER
+// ─────────────────────────────────────────────
+
+class _PromotionsTopBar extends StatelessWidget {
+  const _PromotionsTopBar({required this.showBackButton});
+
+  final bool showBackButton;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppThemeData.new_primary,
+      padding: const EdgeInsets.fromLTRB(4, 2, 8, 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            child: showBackButton
+                ? IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: AppThemeData.grey50,
+                      size: 20,
+                    ),
+                  )
+                : null,
+          ),
+          Expanded(
+            child: Text(
+              'Promotions'.tr,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: AppThemeData.semiBold,
+                fontSize: 15,
+                color: AppThemeData.grey50,
+              ),
+            ),
+          ),
+          const SizedBox(width: 40),
+        ],
+      ),
     );
   }
 }
@@ -2351,10 +2818,10 @@ class _CurrentPlanCard extends StatelessWidget {
     final border = isDark ? const Color(0xFF92400E) : const Color(0xFFF59E0B);
     final text = isDark ? Colors.white : const Color(0xFF78350F);
 
-    final expiryDay = plan.expiryDay;
-    final validityText =
-    expiryDay.isEmpty || expiryDay == '0' ? 'Unlimited' : '$expiryDay days';
-
+    // final expiryDay = plan.expiryDay;
+    // final validityText =
+    // expiryDay.isEmpty || expiryDay == '0' ? 'Unlimited' : '$expiryDay days';
+    final validityText = '${plan.durationInDays} Days';
     return Container(
       padding: const EdgeInsets.all(_Tok.s14),
       decoration: BoxDecoration(
@@ -2392,7 +2859,7 @@ class _CurrentPlanCard extends StatelessWidget {
                 ),
                 const SizedBox(height: _Tok.s2),
                 Text(
-                  plan.name,
+                  plan.planName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -2405,7 +2872,7 @@ class _CurrentPlanCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      Constant.amountShow(amount: plan.price),
+                      Constant.amountShow(amount: '${plan.price}'),
                       style: TextStyle(
                         fontFamily: AppThemeData.semiBold,
                         fontSize: _Tok.f13,
@@ -2482,13 +2949,21 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeChange = Provider.of<DarkThemeProvider>(context, listen: false);
+    final themeChange =
+    Provider.of<DarkThemeProvider>(context, listen: false);
+
     final isDark = themeChange.getThem();
-    final cardBg = isDark ? const Color(0xFF1A1E38) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F3C);
-    final textSub = isDark ? const Color(0xFF8892B0) : const Color(0xFF64748B);
-    final isCommission = plan.isCommission;
-    final planGrad = isCommission ? _Tok.commissionGrad : _Tok.subGrad;
+
+    final cardBg =
+    isDark ? const Color(0xFF1A1E38) : Colors.white;
+
+    final textPrimary =
+    isDark ? Colors.white : const Color(0xFF1A1F3C);
+
+    final textSub =
+    isDark ? const Color(0xFF8892B0) : const Color(0xFF64748B);
+
+    final planGrad = _Tok.subGrad;
 
     const double cardH = 88.0;
     const double imgSize = 58.0;
@@ -2517,76 +2992,118 @@ class _PlanCard extends StatelessWidget {
                 ],
               ),
               padding: const EdgeInsets.symmetric(
-                  horizontal: _Tok.s12, vertical: _Tok.s12),
+                horizontal: _Tok.s12,
+                vertical: _Tok.s12,
+              ),
               child: Row(
                 children: [
+                  /// Plan Icon
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(_Tok.r12),
+                    borderRadius:
+                    BorderRadius.circular(_Tok.r12),
                     child: SizedBox(
                       width: imgSize,
                       height: imgSize,
-                      child: plan.image != null && plan.image!.isNotEmpty
-                          ? NetworkImageWidget(
-                        imageUrl: plan.image!,
-                        fit: BoxFit.cover,
-                        width: imgSize,
-                        height: imgSize,
-                        errorWidget:
-                        _SmallPlaceholder(grad: planGrad, size: imgSize),
-                      )
-                          : _SmallPlaceholder(grad: planGrad, size: imgSize),
+                      child: _SmallPlaceholder(
+                        grad: planGrad,
+                        size: imgSize,
+                      ),
                     ),
                   ),
+
                   const SizedBox(width: _Tok.s12),
+
+                  /// Plan Details
                   Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment:
+                      MainAxisAlignment.center,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
                         Text(
-                          plan.name,
+                          plan.planName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontFamily: AppThemeData.semiBold,
+                            fontFamily:
+                            AppThemeData.semiBold,
                             fontSize: _Tok.f15,
                             color: textPrimary,
                             letterSpacing: -0.2,
                           ),
                         ),
+
                         const SizedBox(height: _Tok.s4),
+
                         Text(
-                          Constant.amountShow(amount: plan.price),
-                          style: TextStyle(
-                            fontFamily: AppThemeData.semiBold,
+                          '₹${plan.price}',
+                          style:  TextStyle(
+                            fontFamily:
+                            AppThemeData.semiBold,
                             fontSize: _Tok.f14,
-                            color: AppThemeData.secondary300,
+                            color:
+                            AppThemeData.secondary300,
                           ),
                         ),
+
                         const SizedBox(height: _Tok.s2),
+
                         Row(
                           children: [
-                            Icon(Icons.access_time_rounded,
-                                size: 11, color: textSub),
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 11,
+                              color: textSub,
+                            ),
+
                             const SizedBox(width: 3),
+
                             Text(
-                              plan.expiryDay.isEmpty || plan.expiryDay == '0'
-                                  ? "Unlimited"
-                                  : "${plan.expiryDay} days",
+                              '${plan.durationInDays} Days',
                               style: TextStyle(
-                                fontFamily: AppThemeData.regular,
+                                fontFamily:
+                                AppThemeData.regular,
                                 fontSize: _Tok.f11,
                                 color: textSub,
                               ),
                             ),
+
                             const SizedBox(width: _Tok.s8),
-                            _TypeBadgeInline(isCommission: isCommission),
+
+                            Container(
+                              padding:
+                              const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppThemeData
+                                    .secondary300
+                                    .withValues(
+                                    alpha: 0.15),
+                                borderRadius:
+                                BorderRadius.circular(
+                                    20),
+                              ),
+                              child: const Text(
+                                'Subscription',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight:
+                                  FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(width: _Tok.s10),
+
+                  /// Buy Button
                   _PillButton(
                     label: "Buy Now".tr,
                     gradient: planGrad,
@@ -2601,7 +3118,6 @@ class _PlanCard extends StatelessWidget {
     );
   }
 }
-
 // ─────────────────────────────────────────────
 // PILL BUTTON
 // ─────────────────────────────────────────────
@@ -2611,11 +3127,13 @@ class _PillButton extends StatelessWidget {
     required this.gradient,
     required this.onPressed,
     this.fullWidth = false,
+    this.compact = false,
   });
   final String label;
   final Gradient gradient;
   final VoidCallback onPressed;
   final bool fullWidth;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -2627,7 +3145,9 @@ class _PillButton extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: fullWidth ? 0 : _Tok.s20,
-            vertical: fullWidth ? _Tok.s16 : _Tok.s10,
+            vertical: fullWidth
+                ? (compact ? _Tok.s10 : _Tok.s16)
+                : _Tok.s10,
           ),
           alignment: fullWidth ? Alignment.center : null,
           decoration: BoxDecoration(
@@ -2645,7 +3165,7 @@ class _PillButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontFamily: AppThemeData.semiBold,
-              fontSize: fullWidth ? _Tok.f16 : _Tok.f13,
+              fontSize: fullWidth ? (compact ? _Tok.f13 : _Tok.f16) : _Tok.f13,
               color: Colors.white,
               letterSpacing: 0.2,
             ),
@@ -2795,9 +3315,9 @@ class SubscriptionPlanDetailScreen extends StatelessWidget {
     isDark ? const Color(0xFF8892B0) : const Color(0xFF64748B);
     final divider =
     isDark ? const Color(0xFF2A2F50) : const Color(0xFFE8EDF5);
-    final isCommission = plan.isCommission;
-    final planGrad = isCommission ? _Tok.commissionGrad : _Tok.subGrad;
-
+    // final isCommission = plan.isCommission;
+    // final planGrad = isCommission ? _Tok.commissionGrad : _Tok.subGrad;
+    final planGrad = _Tok.subGrad;
     return Scaffold(
       backgroundColor: bgColor,
       body: CustomScrollView(
@@ -2836,12 +3356,12 @@ class SubscriptionPlanDetailScreen extends StatelessWidget {
                     opacity: 0.06,
                     child: CustomPaint(painter: _DotPatternPainter()),
                   ),
-                  if (plan.image != null && plan.image!.isNotEmpty)
-                    NetworkImageWidget(
-                      imageUrl: plan.image!,
-                      fit: BoxFit.cover,
-                      errorWidget: const SizedBox.shrink(),
-                    ),
+                  // if (plan.image != null && plan.image!.isNotEmpty)
+                  //   NetworkImageWidget(
+                  //     imageUrl: plan.image!,
+                  //     fit: BoxFit.cover,
+                  //     errorWidget: const SizedBox.shrink(),
+                  //   ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -2859,10 +3379,28 @@ class SubscriptionPlanDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _TypeBadge(isCommission: isCommission),
+                        //_TypeBadge(isCommission: isCommission),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Subscription Plan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: _Tok.s8),
                         Text(
-                          plan.name,
+                          plan.planName,
                           style: const TextStyle(
                             fontFamily: AppThemeData.semiBold,
                             fontSize: _Tok.f26,
@@ -2896,37 +3434,37 @@ class SubscriptionPlanDetailScreen extends StatelessWidget {
                     divider: divider,
                   ),
                   const SizedBox(height: _Tok.s16),
-                  if (plan.description.isNotEmpty) ...[
-                    _SectionLabel(
-                        label: "About this plan".tr,
-                        textColor: textPrimary),
-                    const SizedBox(height: _Tok.s8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(_Tok.s16),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(_Tok.r16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        plan.description,
-                        style: TextStyle(
-                          fontFamily: AppThemeData.regular,
-                          fontSize: _Tok.f15,
-                          color: textSub,
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: _Tok.s20),
-                  ],
+                  // if (plan.description.isNotEmpty) ...[
+                  //   _SectionLabel(
+                  //       label: "About this plan".tr,
+                  //       textColor: textPrimary),
+                  //   const SizedBox(height: _Tok.s8),
+                  //   Container(
+                  //     width: double.infinity,
+                  //     padding: const EdgeInsets.all(_Tok.s16),
+                  //     decoration: BoxDecoration(
+                  //       color: cardBg,
+                  //       borderRadius: BorderRadius.circular(_Tok.r16),
+                  //       boxShadow: [
+                  //         BoxShadow(
+                  //           color: Colors.black.withValues(alpha: 0.04),
+                  //           blurRadius: 12,
+                  //           offset: const Offset(0, 2),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     child: Text(
+                  //       plan.description,
+                  //       style: TextStyle(
+                  //         fontFamily: AppThemeData.regular,
+                  //         fontSize: _Tok.f15,
+                  //         color: textSub,
+                  //         height: 1.6,
+                  //       ),
+                  //     ),
+                  //   ),
+                  //   const SizedBox(height: _Tok.s20),
+                  // ],
                   _SectionLabel(
                       label: "Plan details".tr, textColor: textPrimary),
                   const SizedBox(height: _Tok.s8),
@@ -2965,37 +3503,98 @@ class SubscriptionPlanDetailScreen extends StatelessWidget {
     );
   }
 
+  // List<_RowData> _buildRows(
+  //     SubscriptionPlanModel p, Color primary, Color sub) {
+  //   final rows = <_RowData>[];
+  //   rows.add(_RowData(
+  //     icon: Icons.category_rounded,
+  //     label: "Plan type".tr,
+  //     value: p.planType == 'commission' ? 'Commission'.tr : 'Subscription'.tr,
+  //   ));
+  //   if (p.expiryDay.isNotEmpty) {
+  //     rows.add(_RowData(
+  //       icon: Icons.calendar_today_rounded,
+  //       label: "Validity".tr,
+  //       value:
+  //       p.expiryDay == '0' ? "Unlimited".tr : "${p.expiryDay} days",
+  //     ));
+  //   }
+  //   if (p.itemLimit.isNotEmpty && p.itemLimit != 'null') {
+  //     rows.add(_RowData(
+  //       icon: Icons.inventory_2_rounded,
+  //       label: "Item limit".tr,
+  //       value: p.itemLimit == '0' ? "Unlimited".tr : p.itemLimit,
+  //     ));
+  //   }
+  //   if (p.place.isNotEmpty && p.place != '0') {
+  //     rows.add(_RowData(
+  //       icon: Icons.percent,
+  //       label: "Commission".tr,
+  //       value: p.place,
+  //     ));
+  //   }
+  //   return rows;
+  // }
   List<_RowData> _buildRows(
-      SubscriptionPlanModel p, Color primary, Color sub) {
-    final rows = <_RowData>[];
-    rows.add(_RowData(
-      icon: Icons.category_rounded,
-      label: "Plan type".tr,
-      value: p.planType == 'commission' ? 'Commission'.tr : 'Subscription'.tr,
-    ));
-    if (p.expiryDay.isNotEmpty) {
-      rows.add(_RowData(
+      SubscriptionPlanModel p,
+      Color primary,
+      Color sub,
+      ) {
+    return [
+      _RowData(
+        icon: Icons.currency_rupee,
+        label: "Price".tr,
+        value: "₹${p.price}",
+      ),
+
+      _RowData(
         icon: Icons.calendar_today_rounded,
-        label: "Validity".tr,
-        value:
-        p.expiryDay == '0' ? "Unlimited".tr : "${p.expiryDay} days",
-      ));
-    }
-    if (p.itemLimit.isNotEmpty && p.itemLimit != 'null') {
-      rows.add(_RowData(
-        icon: Icons.inventory_2_rounded,
-        label: "Item limit".tr,
-        value: p.itemLimit == '0' ? "Unlimited".tr : p.itemLimit,
-      ));
-    }
-    if (p.place.isNotEmpty && p.place != '0') {
-      rows.add(_RowData(
-        icon: Icons.percent,
-        label: "Commission".tr,
-        value: p.place,
-      ));
-    }
-    return rows;
+        label: "Duration".tr,
+        value: "${p.durationInDays} Days",
+      ),
+
+      _RowData(
+        icon: Icons.image_rounded,
+        label: "Banner Duration".tr,
+        value: "${p.bannerDurationInDays} Days",
+      ),
+
+      _RowData(
+        icon: Icons.location_on_outlined,
+        label: "Radius".tr,
+        value: "${p.radiusInKms} Km",
+      ),
+
+      _RowData(
+        icon: Icons.view_carousel_outlined,
+        label: "Banner Slot".tr,
+        value: "${p.bannerSlot}",
+      ),
+
+      _RowData(
+        icon: Icons.star_outline,
+        label: "Best Restaurant Slot".tr,
+        value: "${p.bestRestaurantSlot}",
+      ),
+
+      _RowData(
+        icon: Icons.local_offer_outlined,
+        label: "Deals Slot".tr,
+        value: "${p.dealsSlot}",
+      ),
+
+      _RowData(
+        icon: Icons.chat_outlined,
+        label: "WhatsApp Broadcast".tr,
+        value: p.whatsappBroadcast ?? "-",
+      ),
+
+      _RowData(
+        icon: Icons.video_collection_outlined,
+        label: "Video Credits".tr,
+        value: p.videoCredits ?? "-",
+      ),
+    ];
   }
 }
 
@@ -3057,7 +3656,8 @@ class _PriceCard extends StatelessWidget {
                   shaderCallback: (bounds) => planGrad.createShader(bounds),
                   blendMode: BlendMode.srcIn,
                   child: Text(
-                    Constant.amountShow(amount: plan.price),
+                    // Constant.amountShow(amount: plan.price.toString())
+                    '₹${plan.price}',
                     style: const TextStyle(
                       fontFamily: AppThemeData.semiBold,
                       fontSize: _Tok.f28,
@@ -3088,10 +3688,18 @@ class _PriceCard extends StatelessWidget {
                   Icon(Icons.access_time_rounded,
                       size: 16, color: textPrimary),
                   const SizedBox(width: 4),
+                  // Text(
+                  //   plan.expiryDay.isEmpty || plan.expiryDay == '0'
+                  //       ? "Unlimited"
+                  //       : "${plan.expiryDay} days",
+                  //   style: TextStyle(
+                  //     fontFamily: AppThemeData.semiBold,
+                  //     fontSize: _Tok.f18,
+                  //     color: textPrimary,
+                  //   ),
+                  // ),
                   Text(
-                    plan.expiryDay.isEmpty || plan.expiryDay == '0'
-                        ? "Unlimited"
-                        : "${plan.expiryDay} days",
+                    "${plan.durationInDays} Days",
                     style: TextStyle(
                       fontFamily: AppThemeData.semiBold,
                       fontSize: _Tok.f18,

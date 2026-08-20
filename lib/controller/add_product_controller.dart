@@ -57,6 +57,7 @@ class AddProductController extends GetxController {
   RxList<AttributesModel> attributesList = <AttributesModel>[].obs;
   RxList<AttributesModel> selectedAttributesList = <AttributesModel>[].obs;
 
+
   RxList<ProductSpecificationModel> specificationList =
       <ProductSpecificationModel>[].obs;
   RxList<ProductSpecificationModel> addonsList =
@@ -154,7 +155,7 @@ class AddProductController extends GetxController {
       });
     }
 
-    await FireStoreUtils.getVendorCategoryById().then((value) {
+    await FireStoreUtils.getMerchantCategoryById().then((value) {
       if (value != null) {
         vendorCategoryList.value = value;
       }

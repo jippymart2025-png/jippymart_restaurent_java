@@ -17,7 +17,9 @@ class SalesReportScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
     final isDark = themeChange.getThem();
-    final controller = Get.put(SalesReportController());
+    final controller = Get.isRegistered<SalesReportController>()
+        ? Get.find<SalesReportController>()
+        : Get.put(SalesReportController());
 
     return Scaffold(
       backgroundColor: isDark ? AppThemeData.grey900 : AppThemeData.grey100,
@@ -234,20 +236,37 @@ class _ReportContent extends StatelessWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.analytics_outlined,
-                  size: 28,
-                  color: isDark ? ColorConst.orange : ColorConst.orange,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.analytics_outlined,
+                      size: 28,
+                      color: isDark ? ColorConst.orange : ColorConst.orange,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Sales Report',
+                      style: TextStyle(
+                        fontFamily: AppThemeData.bold,
+                        fontSize: 24,
+                        color:
+                            isDark ? AppThemeData.grey50 : AppThemeData.grey900,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Sales Report',
-                  style: TextStyle(
-                    fontFamily: AppThemeData.bold,
-                    fontSize: 24,
-                    color: isDark ? AppThemeData.grey50 : AppThemeData.grey900,
+                const SizedBox(height: 6),
+                Obx(
+                  () => Text(
+                    controller.scopeLabel.value,
+                    style: TextStyle(
+                      fontFamily: AppThemeData.medium,
+                      fontSize: 13,
+                      color: isDark ? AppThemeData.grey400 : AppThemeData.grey600,
+                    ),
                   ),
                 ),
               ],

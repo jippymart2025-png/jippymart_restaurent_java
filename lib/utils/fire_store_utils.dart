@@ -58,7 +58,15 @@ import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/create_master_product_model.dart';
+import '../models/merchant_response_model.dart';
+import '../models/merchant_request_model.dart';
+import '../models/outlet_details_model.dart';
+import '../models/outlet_fetch_result.dart';
+import '../models/outlet_model.dart';
 
+import 'package:jippymart_restaurant/models/bulkstore_product_model.dart';
 final headers = {
   "Accept": "application/json",
   "Content-Type": "application/json",
@@ -69,6 +77,12 @@ class _ProductCacheEntry {
   final List<ProductModel> list;
   final DateTime cachedAt;
   _ProductCacheEntry(this.list, this.cachedAt);
+}
+
+class _OutletProductsCacheEntry {
+  final OutletProductsResult result;
+  final DateTime cachedAt;
+  _OutletProductsCacheEntry(this.result, this.cachedAt);
 }
 
 class FireStoreUtils {
@@ -90,10 +104,19 @@ class FireStoreUtils {
   static final Map<String, _ProductCacheEntry> _productCache = {};
   static const Duration _productCacheTTL = Duration(minutes: 3);
 
+  // Outlet inventory cache: keyed by outletId, TTL 3 minutes
+  static final Map<int, _OutletProductsCacheEntry> _outletProductCache = {};
+  static String? _lastOutletProductsError;
+  static String? get lastOutletProductsError => _lastOutletProductsError;
+
   // Vendor categories cache: one global list per app session, TTL 3 minutes
   static List<VendorCategoryModel>? _cachedVendorCategories;
   static DateTime? _vendorCategoriesCacheTime;
   static const Duration _vendorCategoriesCacheTTL = Duration(minutes: 3);
+  static void clearVendorCategoriesCache() {
+    _cachedVendorCategories = null;
+    _vendorCategoriesCacheTime = null;
+  }
 
   static DateTime? _settingsCacheTime;
   static const Duration _settingsCacheTTL = Duration(minutes: 30);
@@ -129,19 +152,33 @@ class FireStoreUtils {
     _deliveryChargeCacheTime = null;
   }
 
-  static Future<String> getCurrentUid() async{
-    return await getFirebaseId()??'';
+  static Future<String> getCurrentUid() async {
+    final firebaseId = await getFirebaseId() ?? '';
+    if (firebaseId.isNotEmpty) return firebaseId;
+
+    final userId = Preferences.getInt('userId');
+    if (userId > 0) return userId.toString();
+
+    final userIdStr = Preferences.getString('user_id');
+    if (userIdStr.isNotEmpty) return userIdStr;
+
+    return '';
   }
+
   static Future<bool> isLogin() async {
-    bool isLogin = false;
-    String? userId = await getFirebaseId();
-    print("isLogin $userId ");
-    if (userId != null) {
-      isLogin = await userExistOrNot(userId);
-    } else {
-      isLogin = false;
+    final token = Preferences.getString('authToken');
+    final loggedIn = Preferences.pref.getBool('is_logged_in') ?? false;
+
+    // Java API session — token + logged-in flag saved on login.
+    if (loggedIn && token.isNotEmpty) {
+      return true;
     }
-    return isLogin;
+
+    final userId = await getFirebaseId() ?? '';
+    if (userId.isNotEmpty) {
+      return await userExistOrNot(userId);
+    }
+    return false;
   }
 
 
@@ -172,9 +209,9 @@ class FireStoreUtils {
   static Future<UserModel?> getUserProfile(String uuid, {bool forceRefresh = false}) async {
     try {
       // Performance Optimization: Check cache first (transparent to caller)
-      if (!forceRefresh && 
-          _cachedUserProfile != null && 
-          _cachedUserProfileUuid == uuid && 
+      if (!forceRefresh &&
+          _cachedUserProfile != null &&
+          _cachedUserProfileUuid == uuid &&
           _userProfileCacheTime != null) {
         final cacheAge = DateTime.now().difference(_userProfileCacheTime!);
         if (cacheAge < _userProfileCacheTTL) {
@@ -220,6 +257,399 @@ class FireStoreUtils {
       return null;
     }
   }
+
+  // ADD this new method below existing getUserProfile()
+  static Future<UserModel?> getMerchantProfile(String merchantId) async {
+    try {
+      if (merchantId.trim().isEmpty) {
+        print("Merchant ID is empty");
+        return null;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+
+      final url =
+          'http://187.127.156.147:8084/api/fm/merchants/getMerchantProfile?merchantId=$merchantId';
+
+      print("Request URL: $url");
+      print("Token Present: ${token.isNotEmpty}");
+      print("Token = $token");
+      print({
+        "Authorization": "Bearer $token",
+      });
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        print("Merchant Profile JSON = $jsonData");
+
+        final profileData = jsonData is Map<String, dynamic> &&
+                jsonData['data'] is Map
+            ? Map<String, dynamic>.from(jsonData['data'] as Map)
+            : Map<String, dynamic>.from(jsonData as Map);
+
+        print(profileData);
+        return UserModel.fromJson(profileData);
+      }
+
+
+      print(
+        "Failed to fetch profile. Status: ${response.statusCode}",
+      );
+      return null;
+    } catch (e, stackTrace) {
+      print("getMerchantProfile Error: $e");
+      print(stackTrace);
+      return null;
+    }
+  }
+  //(end)
+
+  // this code  is for java method (start)
+  static Future<bool> updateMerchantProfile(String merchantId, UserModel userModel) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+
+    // ADD HERE 👇
+    print("===== UPDATE MERCHANT REQUEST =====");
+    print(json.encode({
+    'merchantId': merchantId,
+    'merchantName': userModel.merchantName,
+    'businessType': userModel.merchantBusinessType,
+    'merchantEmail': userModel.email,
+    'merchantPhone': userModel.phoneNumber,
+    'accountNumber': userModel.accountNumber,
+    'ifscCode': userModel.ifscCode,
+    'bankName': userModel.bankName,
+    'accountHolderName': userModel.accountHolderName,
+    }));
+
+      final response = await http.put(
+        Uri.parse('http://187.127.156.147:8084/api/fm/merchants/updateMerchantProfile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'merchantId': int.parse(merchantId),
+          'merchantName': userModel.merchantName,
+          'businessType': userModel.merchantBusinessType,
+          'merchantEmail': userModel.email,
+          'merchantPhone': userModel.phoneNumber,
+          'bankId': userModel.bankId,
+          'recipientId': userModel.recipientId,
+          'accountNumber': userModel.accountNumber,
+          'ifscCode': userModel.ifscCode,
+          'bankName': userModel.bankName,
+          'accountHolderName': userModel.accountHolderName,
+          'userType': 'MERCHANT'
+        }),
+      );
+      if (response.statusCode == 200) {
+        log("updateMerchantProfile success: ${response.body}");
+        return true;
+      } else {
+        log("updateMerchantProfile failed: ${response.statusCode} - ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      log("updateMerchantProfile error: $e");
+      return false;
+    }
+  }
+  //(end)
+//  THIS IS JAVA API OF CREATE MERCHANT PROFILE   create merchant profile
+  static Future<MerchantModel?> createMerchant(MerchantRequestModel request,) async {
+    try {
+      final token = Preferences.getString('authToken');
+      final response = await http.post(
+        Uri.parse(
+          'http://187.127.156.147:8084/api/fm/merchants/createMerchant',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization':'Bearer $token'
+        },
+        body: jsonEncode(
+          request.toJson(),
+        ),
+      );
+
+      print("Status Code : ${response.statusCode}");
+      print("Response : ${response.body}");
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201) {
+
+        final jsonResponse =
+        jsonDecode(response.body);
+
+        return MerchantModel.fromJson(
+          jsonResponse['data'],
+        );
+      }
+
+      return null;
+    } catch (e) {
+      print("createMerchant Error : $e");
+      return null;
+    }
+  }
+  // end
+  // THIS IS THE CODE OF JAVA GETTING THE LIST OF OUTLETS BY USING THE MERCHANT ID
+  static Future<List<OutletModel>> getMerchantOutlets(int merchantId,) async {
+    try {
+      final token = Preferences.getString('authToken');
+      final url =
+          'http://187.127.156.147:8084/api/fm/outlets/merchant/$merchantId';
+
+      print("===== getMerchantOutlets API =====");
+      print("URL: $url");
+      print("merchantId: $merchantId");
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+
+        final dynamic rawData = jsonResponse['data'];
+        final List<dynamic> data = rawData is List
+            ? rawData
+            : rawData == null
+                ? <dynamic>[]
+                : <dynamic>[];
+
+        print("API DATA COUNT = ${data.length}");
+
+        final outlets = data
+            .map((e) {
+              try {
+                if (e is Map<String, dynamic>) {
+                  return OutletModel.fromJsonSafe(e);
+                }
+                if (e is Map) {
+                  return OutletModel.fromJsonSafe(
+                    Map<String, dynamic>.from(e),
+                  );
+                }
+              } catch (parseError) {
+                print("Outlet list item parse warning: $parseError");
+              }
+              return null;
+            })
+            .whereType<OutletModel>()
+            .toList();
+
+        print("PARSED OUTLET COUNT = ${outlets.length}");
+
+        return outlets;
+      }
+
+      if (response.statusCode == 404) {
+        print("getMerchantOutlets: no outlets found (404)");
+        return [];
+      }
+
+      return [];
+    } catch (e, stackTrace) {
+      print("getMerchantOutlets Error = $e");
+      print(stackTrace);
+      return [];
+    }
+  }
+
+  /// Fetches a single outlet by ID with safe parsing and structured result.
+  static Future<OutletFetchResult> fetchOutletById(int outletId) async {
+    try {
+      final token = Preferences.getString('authToken');
+      final url = 'http://187.127.156.147:8084/api/fm/outlets/getOutletById/$outletId';
+
+      print("===== getOutletById API =====");
+      print("URL: $url");
+      print("outletId: $outletId");
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      final parsed = _parseOutletFetchResult(response.body, outletId);
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        print("[getOutletById] HTTP failure — ${response.statusCode}");
+        if (parsed.isSuccess && parsed.outletId != null) {
+          return parsed;
+        }
+        return OutletFetchResult.httpError(
+          response.statusCode,
+          response.body,
+        );
+      }
+
+      return parsed;
+    } catch (e, stackTrace) {
+      print("getOutletById Error = $e");
+      print(stackTrace);
+      return OutletFetchResult.parseError(e.toString());
+    }
+  }
+
+  static OutletFetchResult _parseOutletFetchResult(
+    String body,
+    int requestedOutletId,
+  ) {
+    Map<String, dynamic>? decoded;
+    try {
+      final raw = jsonDecode(body);
+      if (raw is Map<String, dynamic>) {
+        decoded = raw;
+      } else if (raw is Map) {
+        decoded = Map<String, dynamic>.from(raw);
+      }
+    } catch (decodeError, stackTrace) {
+      print("[getOutletById] JSON decode error — $decodeError");
+      print(stackTrace);
+
+      final fallbackMerchantId = OutletModel.extractMerchantIdFromRaw(body);
+      if (fallbackMerchantId != null && fallbackMerchantId > 0) {
+        print(
+          "[getOutletById] Fallback merchantId=$fallbackMerchantId from raw body",
+        );
+        final fallbackOutletId = OutletModel.extractOutletIdFromRaw(body);
+        if (fallbackOutletId != null && fallbackOutletId > 0) {
+          return OutletFetchResult.success(
+            outlet: OutletModel(
+              outletId: fallbackOutletId,
+              merchantId: fallbackMerchantId,
+            ),
+            merchantId: fallbackMerchantId,
+            outletId: fallbackOutletId,
+            hadParseWarning: true,
+          );
+        }
+      }
+      return OutletFetchResult.parseError(decodeError.toString());
+    }
+
+    if (decoded == null) {
+      return OutletFetchResult.empty();
+    }
+
+    if (decoded['success'] == false) {
+      final msg =
+          decoded['message']?.toString() ?? 'API returned success=false';
+      print("[getOutletById] API failure — $msg");
+      return OutletFetchResult.apiError(msg);
+    }
+
+    final dynamic rawData = decoded['data'] ?? decoded;
+    if (rawData is! Map) {
+      print("[getOutletById] No outlet data map in response");
+      return OutletFetchResult.empty();
+    }
+
+    final dataMap = Map<String, dynamic>.from(rawData);
+
+    OutletModel outlet;
+    var hadParseWarning = false;
+    try {
+      outlet = OutletModel.fromJsonSafe(dataMap);
+    } catch (parseError, stackTrace) {
+      hadParseWarning = true;
+      print("[getOutletById] Model parse warning — $parseError");
+      print(stackTrace);
+      outlet = OutletModel(
+        outletId: OutletModel.parseOutletIdFromMap(dataMap),
+        merchantId: OutletModel.extractMerchantId(dataMap),
+        outletName: dataMap['outletName']?.toString(),
+      );
+    }
+
+    final merchantId =
+        outlet.merchantId ?? OutletModel.extractMerchantId(dataMap);
+    final resolvedOutletId = outlet.outletId ??
+        OutletModel.parseOutletIdFromMap(dataMap);
+
+    if (resolvedOutletId == null || resolvedOutletId <= 0) {
+      print('[getOutletById] outletId missing in response body');
+      return OutletFetchResult.apiError('outletId missing in outlet response');
+    }
+
+    print(
+      "[getOutletById] Parsed merchantId=$merchantId outletId=$resolvedOutletId",
+    );
+
+    if (merchantId == null || merchantId <= 0) {
+      final fallbackMerchantId = OutletModel.extractMerchantIdFromRaw(body);
+      if (fallbackMerchantId != null && fallbackMerchantId > 0) {
+        print("[getOutletById] Using fallback merchantId=$fallbackMerchantId");
+        return OutletFetchResult.success(
+          outlet: OutletModel(
+            outletId: resolvedOutletId,
+            merchantId: fallbackMerchantId,
+            outletName: outlet.outletName,
+          ),
+          merchantId: fallbackMerchantId,
+          outletId: resolvedOutletId,
+          hadParseWarning: true,
+        );
+      }
+      return OutletFetchResult.apiError(
+        'merchantId missing in outlet response',
+      );
+    }
+
+    return OutletFetchResult.success(
+      outlet: outlet.outletId != null
+          ? outlet
+          : OutletModel(
+              outletId: resolvedOutletId,
+              merchantId: merchantId,
+              outletName: outlet.outletName,
+              outletCategoryId: outlet.outletCategoryId,
+            ),
+      merchantId: merchantId,
+      outletId: resolvedOutletId,
+      hadParseWarning: hadParseWarning,
+    );
+  }
+
+  /// Backward-compatible wrapper — returns outlet model or null.
+  static Future<OutletModel?> getOutletById(int outletId) async {
+    final result = await fetchOutletById(outletId);
+    return result.isSuccess ? result.outlet : null;
+  }
+  //END
   static Future<UserModel?> getUserById(String uuid) async {
     try {
       String url = '${Constant.baseUrl}restaurant/users/$uuid';
@@ -262,6 +692,8 @@ class FireStoreUtils {
       return null;
     }
   }
+
+
   static Future<bool?> updateUserWallet({
     required String amount,
     required String userId
@@ -303,6 +735,7 @@ class FireStoreUtils {
         },
         body: json.encode(userModel.toJson()),
       );
+
       if (response.statusCode == 200) {
         Constant.userModel = userModel;
         // Performance Optimization: Invalidate user profile cache after update
@@ -1122,6 +1555,333 @@ class FireStoreUtils {
     return productList;
   }
 
+  /// Active outlet for merchant/outlet sessions (outlet login or merchant picked outlet).
+  static int resolveActiveOutletId() {
+    final outletId = Preferences.getInt('outletId');
+    if (outletId > 0) return outletId;
+    return Preferences.getInt('selectedOutletId');
+  }
+
+  /// Resolves the outlet id to use for getOutletDetails (merchant list is source of truth).
+  static Future<int?> resolveOutletIdForMenu({int? preferredId}) async {
+    final loginType = Preferences.getString('loginType').trim().toUpperCase();
+
+    if (loginType == 'MERCHANT') {
+      final merchantId = int.tryParse(Preferences.getString('merchantId')) ?? 0;
+      if (merchantId <= 0) {
+        _lastOutletProductsError =
+            'Merchant session not found. Please log in again.';
+        return null;
+      }
+
+      final outlets = await getMerchantOutlets(merchantId);
+      if (outlets.isEmpty) {
+        _lastOutletProductsError = 'No outlets found for this merchant.';
+        return null;
+      }
+
+      final storedId = preferredId ?? resolveActiveOutletId();
+      final storedName = Preferences.getString('selectedOutletName').trim();
+
+      if (storedId > 0) {
+        for (final outlet in outlets) {
+          final id = outlet.outletId;
+          if (id != null && id > 0 && id == storedId) {
+            await _syncOutletPreferences(id, outletName: outlet.outletName);
+            print('[resolveOutletIdForMenu] using list outletId=$id');
+            return id;
+          }
+        }
+      }
+
+      if (storedName.isNotEmpty) {
+        for (final outlet in outlets) {
+          final name = (outlet.outletName ?? '').trim();
+          final id = outlet.outletId;
+          if (id != null &&
+              id > 0 &&
+              name.isNotEmpty &&
+              name.toLowerCase() == storedName.toLowerCase()) {
+            print(
+              '[resolveOutletIdForMenu] corrected $storedId -> $id '
+              'for outlet "$storedName"',
+            );
+            await _syncOutletPreferences(id, outletName: outlet.outletName);
+            return id;
+          }
+        }
+      }
+
+      _lastOutletProductsError =
+          'Selected outlet not found. Go back and select your outlet again.';
+      return null;
+    }
+
+    final candidate = preferredId ?? resolveActiveOutletId();
+    if (candidate <= 0) return null;
+
+    final result = await fetchOutletById(candidate);
+    if (!result.isSuccess ||
+        result.outletId == null ||
+        result.outletId! <= 0) {
+      _lastOutletProductsError =
+          result.message ?? 'Outlet session is invalid. Please log in again.';
+      return null;
+    }
+
+    await _syncOutletPreferences(
+      result.outletId!,
+      outletName: result.outlet?.outletName,
+    );
+    return result.outletId;
+  }
+
+  static Future<void> _syncOutletPreferences(
+    int outletId, {
+    String? outletName,
+  }) async {
+    await Preferences.setInt('outletId', outletId);
+    await Preferences.setInt('selectedOutletId', outletId);
+    if (outletName != null && outletName.trim().isNotEmpty) {
+      await Preferences.setString('selectedOutletName', outletName.trim());
+    }
+  }
+
+  /// GET /api/fm/outlets/getOutletDetails — outlet-scoped inventory (Java API).
+  /// Does not replace [getProduct]; use when an outlet is selected.
+  static Future<OutletProductsResult?> getOutletProducts({
+    int? outletId,
+    bool forceRefresh = false,
+  }) async {
+    _lastOutletProductsError = null;
+
+    final verifiedOutletId =
+        await resolveOutletIdForMenu(preferredId: outletId);
+    if (verifiedOutletId == null || verifiedOutletId <= 0) {
+      _lastOutletProductsError =
+          'Invalid outlet session. Please go back and select your outlet again.';
+      return null;
+    }
+
+    final resolvedOutletId = verifiedOutletId;
+
+    if (!forceRefresh) {
+      final entry = _outletProductCache[resolvedOutletId];
+      if (entry != null &&
+          DateTime.now().difference(entry.cachedAt) < _productCacheTTL) {
+        return entry.result;
+      }
+    }
+
+    try {
+      //final loginType = Preferences.getString('loginType').trim().toUpperCase();
+      //final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
+      final userType = 'MERCHANT';
+      final token = Preferences.getString('authToken');
+      final url =
+          'http://187.127.156.147:8084/api/fm/outlets/getOutletDetails'
+          '?outletId=$resolvedOutletId&userType=$userType';
+
+      print('getOutletProducts => $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('getOutletProducts status => ${response.statusCode}');
+      print('getOutletProducts body => ${response.body}');
+
+      if (response.statusCode != 200) {
+        print(
+          'getOutletProducts failed: ${response.statusCode} — ${response.body}',
+        );
+        try {
+          final errBody = json.decode(response.body);
+          if (errBody is Map && errBody['message'] != null) {
+            _lastOutletProductsError = errBody['message'].toString();
+          } else {
+            _lastOutletProductsError =
+                'Failed to load outlet menu (HTTP ${response.statusCode})';
+          }
+        } catch (_) {
+          _lastOutletProductsError =
+              'Failed to load outlet menu (HTTP ${response.statusCode})';
+        }
+        return null;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is! Map) {
+        print('getOutletProducts: response is not a JSON object');
+        _lastOutletProductsError = 'Invalid menu response from server';
+        return const OutletProductsResult(products: [], categories: []);
+      }
+
+      final map = Map<String, dynamic>.from(decoded);
+      if (map['success'] == false) {
+        final msg = map['message']?.toString() ??
+            'Could not load outlet menu';
+        print('getOutletProducts API error: $msg');
+        _lastOutletProductsError = msg;
+        return null;
+      }
+
+      final dynamic rawData = map['data'] ?? map;
+      Map<String, dynamic> detailsMap;
+      if (rawData is Map) {
+        detailsMap = Map<String, dynamic>.from(rawData);
+      } else {
+        print('getOutletProducts: no outlet details object in response');
+        return const OutletProductsResult(products: [], categories: []);
+      }
+
+      final details = OutletDetailsModel.fromJson(detailsMap);
+      final result = details.toProductsResult();
+      print("========== PARSED PRODUCTS ==========");
+
+      for (final p in result.products) {
+        print(
+          "Name=${p.name}, "
+              "Id=${p.id}, "
+              "Category=${p.categoryID}",
+        );
+      }
+
+      print("Total Parsed Products = ${result.products.length}");
+      _outletProductCache[resolvedOutletId] =
+          _OutletProductsCacheEntry(result, DateTime.now());
+
+      print(
+        'getOutletProducts loaded ${result.products.length} products, '
+        '${result.categories.length} categories',
+      );
+
+      return result;
+    } catch (error, stackTrace) {
+      print('getOutletProducts error: $error');
+      print(stackTrace);
+      _lastOutletProductsError = 'Failed to load outlet menu';
+      return null;
+    }
+  }
+
+  /// Call after outlet product writes to force next [getOutletProducts] to hit the API.
+  static void invalidateOutletProductCache([int? outletId]) {
+    if (outletId != null) {
+      _outletProductCache.remove(outletId);
+    } else {
+      _outletProductCache.clear();
+    }
+  }
+
+  /// Loads outlet menu as nested API model (used for edit/update outlet products).
+  static Future<OutletDetailsModel?> fetchOutletDetailsModel({
+    int? outletId,
+  }) async {
+    final verifiedOutletId =
+        await resolveOutletIdForMenu(preferredId: outletId);
+    if (verifiedOutletId == null || verifiedOutletId <= 0) {
+      return null;
+    }
+
+    try {
+      final loginType = Preferences.getString('loginType').trim().toUpperCase();
+      final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
+      final token = Preferences.getString('authToken');
+      final url =
+          'http://187.127.156.147:8084/api/fm/outlets/getOutletDetails'
+          '?outletId=$verifiedOutletId&userType=$userType';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode != 200) return null;
+
+      final decoded = json.decode(response.body);
+      if (decoded is! Map) return null;
+
+      final map = Map<String, dynamic>.from(decoded);
+      if (map['success'] == false) return null;
+
+      final dynamic rawData = map['data'] ?? map;
+      if (rawData is! Map) return null;
+
+      return OutletDetailsModel.fromJson(
+        Map<String, dynamic>.from(rawData),
+      );
+    } catch (e, st) {
+      print('fetchOutletDetailsModel error: $e $st');
+      return null;
+    }
+  }
+
+  /// PUT /api/fm/outlets/editAndUpdateOutletProducts
+  static Future<bool> editAndUpdateOutletProducts({
+    required OutletDetailsModel outletDetails,
+  }) async {
+    final outletId = outletDetails.outletId ?? resolveActiveOutletId();
+    if (outletId <= 0) return false;
+
+    try {
+      final loginType = Preferences.getString('loginType').trim().toUpperCase();
+      final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
+      final token = Preferences.getString('authToken');
+      final url =
+          'http://187.127.156.147:8084/api/fm/outlets/editAndUpdateOutletProducts'
+          '?outletId=$outletId&userType=$userType';
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(outletDetails.toJson()),
+      );
+
+      print(
+        'editAndUpdateOutletProducts status=${response.statusCode} '
+        'body=${response.body}',
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        invalidateOutletProductCache(outletId);
+        return true;
+      }
+      return false;
+    } catch (e, st) {
+      print('editAndUpdateOutletProducts error: $e $st');
+      return false;
+    }
+  }
+
+  /// Updates one outlet product inside the nested outlet menu payload.
+  static Future<bool> updateOutletProductItem({
+    required int productId,
+    required OutletProductModel updatedProduct,
+    int? outletId,
+  }) async {
+    final details = await fetchOutletDetailsModel(outletId: outletId);
+    if (details == null) return false;
+    if (details.findProductById(productId) == null) return false;
+
+    final payload = details.copyWithUpdatedProduct(
+      productId: productId,
+      updatedProduct: updatedProduct,
+    );
+
+    return editAndUpdateOutletProducts(outletDetails: payload);
+  }
+
   /// Call after any product write (set/update/delete) to force next getProduct() to hit the API.
   static void invalidateProductCache([String? vendorID]) {
     if (vendorID != null) {
@@ -1206,7 +1966,37 @@ class FireStoreUtils {
 
     return advertisementdata;
   }
+  static Future<CreateMasterProductResponse?>
+  createMasterProduct(
+      CreateMasterProductRequest request,
+      ) async {
+    try {
+      final token =
+      Preferences.getString('authToken');
 
+      final response = await http.post(
+        Uri.parse(
+          'http://187.127.156.147:8084/api/fm/master-products/create',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(request.toJson()),
+      );
+
+      print(response.body);
+
+      return CreateMasterProductResponse.fromJson(
+        jsonDecode(response.body),
+      );
+    } catch (e) {
+      print(
+        "createMasterProduct Error => $e",
+      );
+      return null;
+    }
+  }
   static Future<bool> updateProduct(ProductModel productModel) async {
     bool isUpdate = false;
     try {
@@ -1235,6 +2025,35 @@ class FireStoreUtils {
     return isUpdate;
   }
 
+  /// Updates a master product via the Java API PUT endpoint.
+  static Future<bool> updateMasterProduct(int masterProductId, Map<String, dynamic> payload) async {
+    try {
+      final token = Preferences.getString('authToken');
+      final url = 'http://187.127.156.147:8084/api/fm/master-products/$masterProductId';
+      log('updateMasterProduct PUT $url');
+      log('updateMasterProduct payload: ${json.encode(payload)}');
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization':'Bearer $token'
+        },
+
+        body: json.encode(payload),
+      );
+      log('updateMasterProduct response: ${response.statusCode} ${response.body}');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        invalidateProductCache(Constant.userModel?.vendorID);
+        return true;
+      } else {
+        print('updateMasterProduct failed: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('updateMasterProduct error: $e');
+      return false;
+    }
+  }
 
   static Future<bool> deleteProduct(ProductModel productModel) async {
     bool isDeleted = false;
@@ -1604,106 +2423,204 @@ class FireStoreUtils {
     return vendorModel;
   }
 
-  static Future<List<VendorCategoryModel>?> getVendorCategoryById() async {
+  // static Future<List<VendorCategoryModel>?> getVendorCategoryById() async {
+  //   if (_cachedVendorCategories != null &&
+  //       _vendorCategoriesCacheTime != null &&
+  //       DateTime.now().difference(_vendorCategoriesCacheTime!) < _vendorCategoriesCacheTTL) {
+  //     return _cachedVendorCategories!;
+  //   }
+  //
+  //   try {
+  //     final vendorID = Constant.userModel?.vendorID;
+  //     final query = vendorID != null && vendorID.isNotEmpty ? '?vendorID=$vendorID' : '';
+  //     final url = 'http://187.127.156.147:8084/api/fm/categories';
+  //     print("getVendorCategoryById $url");
+  //     final response = await http.get(
+  //       Uri.parse(url),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final body = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+  //       if (body.isEmpty) return null;
+  //       if (!body.startsWith('[') && !body.startsWith('{')) {
+  //         log('getVendorCategoryById: response is not JSON (got text). Use vendor categories endpoint that returns JSON.');
+  //         return null;
+  //       }
+  //
+  //       dynamic decoded;
+  //       try {
+  //         decoded = json.decode(body);
+  //       } catch (_) {
+  //         log('getVendorCategoryById: response is not valid JSON (e.g. server returned CSV/text).');
+  //         return null;
+  //       }
+  //       List<dynamic>? rawList;
+  //
+  //       if (decoded is List) {
+  //         rawList = decoded;
+  //       } else if (decoded is Map) {
+  //         final jsonResponse = Map<String, dynamic>.from(decoded);
+  //         final success = jsonResponse['success'];
+  //         final isSuccess = success == true || success == 1 || success == 'true';
+  //         final data = jsonResponse['data'] ?? jsonResponse['categories'] ?? jsonResponse['vendor_categories'] ?? jsonResponse['result'];
+  //
+  //         if (!isSuccess && data == null) {
+  //           throw Exception('API returned unsuccessful response: ${jsonResponse['message']}');
+  //         }
+  //         if (data is List) {
+  //           rawList = data;
+  //         } else if (data is Map) {
+  //           final map = Map<String, dynamic>.from(data as Map);
+  //           final list = map['categories'] ?? map['vendor_categories'] ?? map['data'] ?? map['list'];
+  //           if (list is List) {
+  //             rawList = list;
+  //           } else if (map.containsKey('id') || map.containsKey('title') || map.containsKey('name')) {
+  //             final categories = [VendorCategoryModel.fromJson(map)];
+  //             _cachedVendorCategories = categories;
+  //             _vendorCategoriesCacheTime = DateTime.now();
+  //             return categories;
+  //           } else {
+  //             rawList = map.values.where((e) => e is Map).toList();
+  //           }
+  //         } else if (data != null) {
+  //           rawList = null;
+  //         }
+  //       }
+  //
+  //       if (rawList != null && rawList.isNotEmpty) {
+  //         final categories = <VendorCategoryModel>[];
+  //         for (final e in rawList) {
+  //           if (e is! Map) continue;
+  //           try {
+  //             categories.add(VendorCategoryModel.fromJson(Map<String, dynamic>.from(e)));
+  //           } catch (_) {
+  //             continue;
+  //           }
+  //         }
+  //         if (categories.isNotEmpty) {
+  //           _cachedVendorCategories = categories;
+  //           _vendorCategoriesCacheTime = DateTime.now();
+  //           log('getVendorCategoryById: loaded ${categories.length} categories, first title: "${categories.first.title}"');
+  //           return categories;
+  //         }
+  //       }
+  //       log('getVendorCategoryById: no categories parsed. decoded type: ${decoded.runtimeType}');
+  //       return null;
+  //     } else {
+  //       throw Exception('Failed to load categories: ${response.statusCode}');
+  //     }
+  //   } catch (e, _) {
+  //     if (e is FormatException) {
+  //       log('getVendorCategoryById: response not valid JSON or category field invalid (e.g. review_attributes CSV).');
+  //     } else {
+  //       print('Error fetching vendor categories getVendorCategoryById: $e');
+  //     }
+  //     return null;
+  //   }
+  // }
+  //
+
+  static Future<List<VendorCategoryModel>?> getMerchantCategoryById() async {
     if (_cachedVendorCategories != null &&
         _vendorCategoriesCacheTime != null &&
-        DateTime.now().difference(_vendorCategoriesCacheTime!) < _vendorCategoriesCacheTTL) {
+        DateTime.now().difference(_vendorCategoriesCacheTime!) <
+            _vendorCategoriesCacheTTL) {
       return _cachedVendorCategories!;
     }
 
     try {
-      final vendorID = Constant.userModel?.vendorID;
-      final query = vendorID != null && vendorID.isNotEmpty ? '?vendorID=$vendorID' : '';
-      final url = '${Constant.baseUrl}restaurant/vendor-categories$query';
-      print("getVendorCategoryById $url");
+      const String url =
+          "http://187.127.156.147:8084/api/fm/getHomeOrAllCategories?filter=ALL";
+
+      print("getVendorCategoryById => $url");
+      final token =
+      Preferences.getString('authToken');
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          'Authorization': 'Bearer $token',
         },
       );
 
-      if (response.statusCode == 200) {
-        final body = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
-        if (body.isEmpty) return null;
-        if (!body.startsWith('[') && !body.startsWith('{')) {
-          log('getVendorCategoryById: response is not JSON (got text). Use vendor categories endpoint that returns JSON.');
-          return null;
-        }
+      print("Status Code => ${response.statusCode}");
+      print("Response => ${response.body}");
 
-        dynamic decoded;
-        try {
-          decoded = json.decode(body);
-        } catch (_) {
-          log('getVendorCategoryById: response is not valid JSON (e.g. server returned CSV/text).');
-          return null;
-        }
-        List<dynamic>? rawList;
-
-        if (decoded is List) {
-          rawList = decoded;
-        } else if (decoded is Map) {
-          final jsonResponse = Map<String, dynamic>.from(decoded);
-          final success = jsonResponse['success'];
-          final isSuccess = success == true || success == 1 || success == 'true';
-          final data = jsonResponse['data'] ?? jsonResponse['categories'] ?? jsonResponse['vendor_categories'] ?? jsonResponse['result'];
-
-          if (!isSuccess && data == null) {
-            throw Exception('API returned unsuccessful response: ${jsonResponse['message']}');
-          }
-          if (data is List) {
-            rawList = data;
-          } else if (data is Map) {
-            final map = Map<String, dynamic>.from(data as Map);
-            final list = map['categories'] ?? map['vendor_categories'] ?? map['data'] ?? map['list'];
-            if (list is List) {
-              rawList = list;
-            } else if (map.containsKey('id') || map.containsKey('title') || map.containsKey('name')) {
-              final categories = [VendorCategoryModel.fromJson(map)];
-              _cachedVendorCategories = categories;
-              _vendorCategoriesCacheTime = DateTime.now();
-              return categories;
-            } else {
-              rawList = map.values.where((e) => e is Map).toList();
-            }
-          } else if (data != null) {
-            rawList = null;
-          }
-        }
-
-        if (rawList != null && rawList.isNotEmpty) {
-          final categories = <VendorCategoryModel>[];
-          for (final e in rawList) {
-            if (e is! Map) continue;
-            try {
-              categories.add(VendorCategoryModel.fromJson(Map<String, dynamic>.from(e)));
-            } catch (_) {
-              continue;
-            }
-          }
-          if (categories.isNotEmpty) {
-            _cachedVendorCategories = categories;
-            _vendorCategoriesCacheTime = DateTime.now();
-            log('getVendorCategoryById: loaded ${categories.length} categories, first title: "${categories.first.title}"');
-            return categories;
-          }
-        }
-        log('getVendorCategoryById: no categories parsed. decoded type: ${decoded.runtimeType}');
-        return null;
-      } else {
-        throw Exception('Failed to load categories: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception(
+            "Failed to load categories: ${response.statusCode}");
       }
-    } catch (e, _) {
-      if (e is FormatException) {
-        log('getVendorCategoryById: response not valid JSON or category field invalid (e.g. review_attributes CSV).');
-      } else {
-        print('Error fetching vendor categories getVendorCategoryById: $e');
+
+      final Map<String, dynamic> jsonResponse =
+      jsonDecode(response.body);
+
+      if (jsonResponse["success"] != true) {
+        throw Exception(
+            jsonResponse["message"] ?? "Failed to load categories");
       }
+
+      final List<dynamic> data =
+          jsonResponse["data"] ?? [];
+
+      final List<VendorCategoryModel> categories =
+      data.map((item) {
+        return VendorCategoryModel.fromJson(
+          Map<String, dynamic>.from(item),
+        );
+      }).toList();
+
+      _cachedVendorCategories = categories;
+      _vendorCategoriesCacheTime = DateTime.now();
+
+      print(
+          "Loaded Categories => ${categories.length}");
+
+      return categories;
+    } catch (e) {
+      print(
+          "Error fetching categories: $e");
       return null;
     }
   }
 
+  static Future<bool> createCategory({
+    required String categoryName,
+    required String categoryType,
+    required String categoryImageUrl,
+    required int createdBy,
+  }) async {
+    try {
+      final token = Preferences.getString('authToken');
 
+      final response = await http.post(
+        Uri.parse(
+          'http://187.127.156.147:8084/api/fm/createCategory',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          "categoryName": categoryName,
+          "categoryType": categoryType,
+          "categoryImageUrl": categoryImageUrl,
+          "createdBy": createdBy,
+        }),
+      );
+
+      print(response.body);
+
+      return response.statusCode == 200 ||
+          response.statusCode == 201;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
   static Future<ProductModel?> getProductById(String productId) async {
     ProductModel? productModel;
 
@@ -2526,6 +3443,127 @@ class FireStoreUtils {
       rethrow;
     }
   }
+  // THIS IS JAVA API OF CREATING NEW OUTLET API POST METHOD
+  static Future<OutletModel?> createOutlet(Map<String, dynamic> body) async {
+
+    try {
+      final token = Preferences.getString('authToken');
+      final response = await http.post(
+        Uri.parse(
+          'http://187.127.156.147:8084/api/fm/outlets/createOutlet',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+
+          // temporary token
+          'Authorization':
+          'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      print("STATUS CODE = ${response.statusCode}");
+      print("RESPONSE = ${response.body}");
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201) {
+
+        final jsonResponse = jsonDecode(response.body);
+        final data = jsonResponse['data'];
+        if (data is Map<String, dynamic>) {
+          return OutletModel.fromJsonSafe(data);
+        }
+        if (data is Map) {
+          return OutletModel.fromJsonSafe(Map<String, dynamic>.from(data));
+        }
+      }
+
+      return null;
+
+    } catch (e) {
+      print("CREATE OUTLET ERROR = $e");
+      return null;
+    }
+  }
+// END OF THIS APIJ
+// GET OUTLET PROFILE STARTED
+  static Future<OutletModel?> getOutletProfile(int outletId) async {
+    try {
+      if (outletId <= 0) {
+        print("Outlet ID is invalid");
+        return null;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+
+      final url = 'http://187.127.156.147:8084/api/fm/outlets/getOutletById/$outletId';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("getOutletProfile Status: ${response.statusCode}");
+      print("getOutletProfile Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final data = jsonData is Map<String, dynamic> && jsonData['data'] is Map
+            ? Map<String, dynamic>.from(jsonData['data'] as Map)
+            : Map<String, dynamic>.from(jsonData as Map);
+        return OutletModel.fromJson(data);
+      }
+      return null;
+    } catch (e, st) {
+      print("getOutletProfile Error: $e");
+      print(st);
+      return null;
+    }
+  }
+//END
+ // UPDATE OUTLET PROFILE  STARTED
+  static Future<bool> updateOutletProfile(int outletId, Map<String, dynamic> body) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+
+      final url =
+          'http://187.127.156.147:8084/api/fm/outlets/updateOutletDetailsByMerchant/$outletId';
+
+      print("===== UPDATE OUTLET REQUEST =====");
+      print(json.encode(body));
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(body),
+      );
+
+      print("updateOutletProfile Status: ${response.statusCode}");
+      print("updateOutletProfile Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        log("updateOutletProfile success: ${response.body}");
+        return true;
+      } else {
+        log("updateOutletProfile failed: ${response.statusCode} - ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      log("updateOutletProfile error: $e");
+      return false;
+    }
+  }
+//ENDED
 
 // Helper method to convert VendorModel to JSON with proper GeoPoint handling
 // Helper method to convert VendorModel to JSON with proper GeoPoint handling
@@ -2627,14 +3665,16 @@ class FireStoreUtils {
 
   static Future<VendorModel?> updateVendor(VendorModel vendor) async {
     try {
-      print(' updateVendor ${Constant.baseUrl}restaurant/vendors/${vendor.id}');
-      print(' updateVendor ${vendor.toJson()}');
-      final response = await http.put(
-        Uri.parse('${Constant.baseUrl}restaurant/vendors/${vendor.id}'),
+      //final response = await http.post(
+       final response = await http.put(
+         Uri.parse('${Constant.baseUrl}restaurant/vendors/${vendor.id}'),
+
         headers: {
           'Content-Type': 'application/json',
+
         },
         body: json.encode(vendor.toJson()),
+
       );
       log("updateVendor ${response.body} ");
       if (response.statusCode == 200) {
@@ -2647,12 +3687,12 @@ class FireStoreUtils {
           } else {
             updatedVendor = vendor;
           }
-          
+
           // Performance Optimization: Invalidate vendor cache and update with new data
           _cachedVendor = updatedVendor;
           _cachedVendorId = updatedVendor.id;
           _vendorCacheTime = DateTime.now();
-          
+
           return updatedVendor;
         } else {
           throw Exception('API returned success: false: ${responseData['message']}');
@@ -3405,6 +4445,108 @@ class FireStoreUtils {
     } catch (e) {
       print('Error updating products availability: $e');
       throw e;
+    }
+  }
+
+  /// POST /api/fm/outlet-unavailability — mark product/category/outlet unavailable.
+  static Future<bool> postOutletItemUnavailability({
+    required String type,
+    required int unavailabilityId,
+    String reason = 'Temporarily unavailable',
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final from = fromDate ?? now;
+      final to = toDate ?? DateTime(2099, 12, 31, 23, 59, 59);
+      final token = Preferences.getString('authToken');
+
+      final body = {
+        'type': type.toUpperCase(),
+        'unavailabilityId': unavailabilityId,
+        'unavailabilityFromDate': from.toIso8601String().split('.').first,
+        'unavailabilityToDate': to.toIso8601String().split('.').first,
+        'reason': reason,
+      };
+
+      final response = await http.post(
+        Uri.parse(
+          'http://187.127.156.147:8084/api/fm/outlet-unavailability',
+        ),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      print('postOutletItemUnavailability => ${jsonEncode(body)}');
+      print('postOutletItemUnavailability status => ${response.statusCode}');
+      print('postOutletItemUnavailability body => ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        return false;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map && decoded['success'] == false) {
+        return false;
+      }
+
+      return true;
+    } catch (e, stackTrace) {
+      print('postOutletItemUnavailability error: $e');
+      print(stackTrace);
+      return false;
+    }
+  }
+
+  /// PATCH /api/fm/outlet-unavailability/restore — restore availability.
+  static Future<bool> restoreOutletItemAvailability({
+    required String type,
+    required int unavailabilityId,
+    String reason = 'Restored availability',
+  }) async {
+    try {
+      final token = Preferences.getString('authToken');
+      final body = {
+        'type': type.toUpperCase(),
+        'unavailabilityId': unavailabilityId,
+        'reason': reason,
+      };
+
+      final response = await http.patch(
+        Uri.parse(
+          'http://187.127.156.147:8084/api/fm/outlet-unavailability/restore',
+        ),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      print('restoreOutletItemAvailability => ${jsonEncode(body)}');
+      print('restoreOutletItemAvailability status => ${response.statusCode}');
+      print('restoreOutletItemAvailability body => ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        return false;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map && decoded['success'] == false) {
+        return false;
+      }
+
+      return true;
+    } catch (e, stackTrace) {
+      print('restoreOutletItemAvailability error: $e');
+      print(stackTrace);
+      return false;
     }
   }
 }

@@ -402,6 +402,9 @@ import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/service/audio_player_service.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
+import '../models/outlet_model.dart';
+import '../utils/preferences.dart';
+
 class HomeController extends GetxController {
   // ── Observables ──────────────────────────────────────────────────────────────
   final RxBool isLoading = true.obs;
@@ -425,6 +428,9 @@ class HomeController extends GetxController {
   final RxList<UserModel> driverUserList = <UserModel>[].obs;
   final Rx<UserModel> selectDriverUser = UserModel().obs;
 
+  RxList<OutletModel> outletList = <OutletModel>[].obs;
+  RxInt selectedOutletId = 0.obs;
+
   // ── Private state ─────────────────────────────────────────────────────────
   Timer? _orderPollingTimer;
   bool _isPollingActive = false;
@@ -433,8 +439,8 @@ class HomeController extends GetxController {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   @override
   void onInit() {
-    super.onInit();
     getUserProfile();
+    super.onInit();
   }
 
   @override
@@ -485,6 +491,8 @@ class HomeController extends GetxController {
     }
   }
 
+
+
   // ── Polling ───────────────────────────────────────────────────────────────
   void _startOrderPolling() {
     if (_isPollingActive) return;
@@ -517,8 +525,101 @@ class HomeController extends GetxController {
       _startOrderPolling();
     }
   }
+  Future<void> loadOutletData(
+      int outletId,
+      ) async {
 
+    print(
+      "Loading outlet data => $outletId",
+    );
+
+    selectedOutletId.value =
+        outletId;
+
+    await getOrder();
+
+  }
   // ── Orders ────────────────────────────────────────────────────────────────
+  // Future<void> getOrder({bool silent = false}) async {
+  //   if (isFetchingOrders.value && silent) return;
+  //
+  //   // final vendorId = Constant.userModel?.vendorID;
+  //   // if (vendorId == null || vendorId.isEmpty) {
+  //   //   debugPrint('⚠️ No vendor ID – skipping order fetch');
+  //   //   return;
+  //   // }
+  //   //
+  //   // final url = '${Constant.baseUrl}orders/vendor/$vendorId';
+  //   // if (!silent) debugPrint('🔄 Fetching orders: $url');
+  //   //
+  //   // isFetchingOrders.value = true;
+  //   // try {
+  //   //   final response = await http
+  //   //       .get(Uri.parse(url),
+  //   //       headers: {'Content-Type': 'application/json'})
+  //   //       .timeout(const Duration(seconds: 15),
+  //   //       onTimeout: () =>
+  //   //       throw TimeoutException('Order fetch timed out'));
+  //   final merchantId =
+  //   Preferences.getString('merchantId');
+  //
+  //   if (merchantId.isEmpty) {
+  //     debugPrint('⚠️ No merchantId – skipping order fetch',);
+  //     return;
+  //   }
+  //   final url = '${Constant.baseUrl}orders/merchant/$merchantId';
+  //   if (!silent) {
+  //     debugPrint('🔄 Fetching orders: $url', );
+  //   }
+  //   isFetchingOrders.value = true;
+  //   try {
+  //     final response = await http
+  //         .get(
+  //       Uri.parse(url),
+  //       headers: {
+  //         'Content-Type':
+  //         'application/json',
+  //       },
+  //     )
+  //         .timeout(
+  //       const Duration(seconds: 15),
+  //       onTimeout: () => throw TimeoutException(
+  //         'Order fetch timed out',),);
+  //
+  //
+  //     if (response.statusCode != 200) {
+  //       if (!silent) debugPrint('❌ HTTP ${response.statusCode}');
+  //       return;
+  //     }
+  //
+  //     final json = jsonDecode(response.body) as Map<String, dynamic>;
+  //     if (json['success'] != true) {
+  //       if (!silent) {
+  //         debugPrint('⚠️ API error: ${json['message']}');
+  //       }
+  //       return;
+  //     }
+  //
+  //     final rawList = json['data'] as List<dynamic>;
+  //     final parsed = <OrderModel>[];
+  //     var errors = 0;
+  //
+  //     for (final el in rawList) {
+  //       try {
+  //         final order = OrderModel.fromJson(el as Map<String, dynamic>);
+  //         order.id = el['id'] as String?;
+  //         parsed.add(order);
+  //       } catch (e) {
+  //         errors++;
+  //         if (!silent) debugPrint('❌ Parse error [${el['id']}]: $e');
+  //       }
+  //     }
+  //
+  //     if (!silent) {
+  //       debugPrint(
+  //           '📊 Parsed ${parsed.length} ok / $errors failed');
+  //     }
+
   Future<void> getOrder({bool silent = false}) async {
     if (isFetchingOrders.value && silent) return;
 

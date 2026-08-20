@@ -58,7 +58,7 @@ class ProfileScreen extends StatelessWidget {
               iconTheme:
                   const IconThemeData(color: AppThemeData.grey50, size: 20),
               title: Text(
-                "Restaurant Profile".tr,
+                "Outlet Profile".tr,
                 style: TextStyle(
                     color: themeChange.getThem()
                         ? AppThemeData.grey50
@@ -111,18 +111,25 @@ class ProfileScreen extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
+                                      // Text(
+                                      //   //"${controller.userModel.value.fullName()}",
+                                      //   controller.isOutletContext.value
+                                      //       ? (controller.outletModel.value.outletName ?? '')
+                                      //       : "${controller.userModel.value.fullName()}",
+                                      //   style: TextStyle(
+                                      //       color: themeChange.getThem()
+                                      //           ? AppThemeData.grey50
+                                      //           : AppThemeData.grey900,
+                                      //       fontFamily: AppThemeData.semiBold,
+                                      //       fontWeight: FontWeight.w500,
+                                      //       fontSize: 18),
+                                      // ),
                                       Text(
-                                        "${controller.userModel.value.fullName()}",
-                                        style: TextStyle(
-                                            color: themeChange.getThem()
-                                                ? AppThemeData.grey50
-                                                : AppThemeData.grey900,
-                                            fontFamily: AppThemeData.semiBold,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 18),
-                                      ),
-                                      Text(
-                                        controller.userModel.value.email ?? '',
+                                        //controller.userModel.value.email ?? '',
+                                        controller.isOutletContext.value
+                                            ? (controller.outletModel.value.outletEmail ?? '')
+                                            : (controller.userModel.value.email ?? ''),
+
                                         style: TextStyle(
                                             color: themeChange.getThem()
                                                 ? AppThemeData.grey400
@@ -408,13 +415,13 @@ class ProfileScreen extends StatelessWidget {
                                     "assets/icons/ic_subscription.svg"),
                               ),
                             ),
-                            "Subscription Plans",
+                            "Promotion Plans",
                                 () {
                               Get.to(const SubscriptionPlansScreen());
                             },
                           ),
                           Text(
-                            "Restaurant Information".tr,
+                            "Outlet Information".tr,
                             style: TextStyle(
                               color: themeChange.getThem()
                                   ? AppThemeData.grey400
@@ -476,7 +483,7 @@ class ProfileScreen extends StatelessWidget {
                                                     ),
                                                   ),
                                                 ),
-                                                "Restaurant Information's",
+                                                "Outlet Information's",
                                                 () {
                                                   Get.to(const AddRestaurantScreen())
                                                       ?.then((v) {
@@ -1145,15 +1152,15 @@ class ProfileScreen extends StatelessWidget {
                                     () async {
                                       final InAppReview inAppReview =
                                           InAppReview.instance;
-                                      
+
                                       try {
                                         // Open store listing directly - this is more reliable
                                         // than requestReview() which has strict quotas and may not show
                                         // For Android: automatically uses packageName from the app
                                         // For iOS: uses appStoreId if provided
                                         await inAppReview.openStoreListing(
-                                          appStoreId: Constant.appStoreId.isEmpty 
-                                              ? null 
+                                          appStoreId: Constant.appStoreId.isEmpty
+                                              ? null
                                               : Constant.appStoreId,
                                         );
                                       } catch (e) {

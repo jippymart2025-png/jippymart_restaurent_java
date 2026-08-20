@@ -337,104 +337,116 @@ import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/utils/const/image_const.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
+import 'package:jippymart_restaurant/service/dashboard_api_service.dart';
+import '../../models/bottom_nav_item.dart';
+import '../../utils/preferences.dart';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nav item data – plain const records, no runtime allocation
 // ─────────────────────────────────────────────────────────────────────────────
-class _NavItemData {
-  const _NavItemData({required this.icon, required this.label});
-  final String icon;
-  final String label;
-}
+//
 
-final List<_NavItemData> _kStandardNav = [
-  _NavItemData(icon: ImageConst.homeIcon, label: 'Home'),
-  _NavItemData(icon: ImageConst.products, label: 'Items'),
-  _NavItemData(icon: ImageConst.report, label: 'Sales'),
-  _NavItemData(icon: ImageConst.profile, label: 'Profile'),
-];
-
- List<_NavItemData> _kDineInNav = [
-  _NavItemData(icon: ImageConst.homeIcon, label: 'Home'),
-  _NavItemData(icon: 'assets/icons/ic_dinein.svg', label: 'Dine In'),
-  _NavItemData(icon: ImageConst.products, label: 'Inventory'),
-  _NavItemData(icon: ImageConst.report, label: 'Report'),
-  _NavItemData(icon: ImageConst.profile, label: 'Profile'),
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DashBoardScreen
 // ─────────────────────────────────────────────────────────────────────────────
 class DashBoardScreen extends StatelessWidget {
-  const DashBoardScreen({super.key});
+  final String outletName;
+
+  const DashBoardScreen({
+    super.key,
+    this.outletName = '',
+  });
 
   @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
     final controller = Get.put(DashBoardController());
-    final productCtrl = Get.put(ProductListController());
+    final productCtrl = Get.put(ProductListController(), permanent: true);
 
-    return Obx(() => PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        if (controller.onBackPressed()) {
-          Navigator.of(context).pop();
-        } else {
-          _showExitSnack(context, themeChange.getThem());
-        }
-      },
-      child: Scaffold(
-        backgroundColor: themeChange.getThem()
-            ? AppThemeData.grey900
-            : const Color(0xFFF5F6FA),
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              // ── Restaurant status banner ───────────────────────────
-              _StatusBanner(controller: controller),
-              // ── Page content ──────────────────────────────────────
-              Expanded(
-                child: IndexedStack(
-                  index: controller.selectedIndex.value,
-                  children: controller.pageList,
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint("Dashboard opened");
+      debugPrint("selectedIndex = ${controller.selectedIndex.value}");
+    });
+
+    return Obx(() {
+      final navItems = controller.getNavItems();
+
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+
+          if (controller.onBackPressed()) {
+            Navigator.of(context).pop();
+          } else {
+            _showExitSnack(context, themeChange.getThem());
+          }
+        },
+        child: Scaffold(
+          backgroundColor: themeChange.getThem()
+              ? AppThemeData.grey900
+              : const Color(0xFFF5F6FA),
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                if (controller.showStatusBanner)
+                  _StatusBanner(controller: controller),
+
+                Expanded(
+                  child: IndexedStack(
+                    key: ValueKey(
+                      'dashboard-${controller.activeOutletId.value}',
+                    ),
+                    index: controller.selectedIndex.value,
+                    children: controller.pageList,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+
+          bottomNavigationBar: _BottomNavBar(
+            themeChange: themeChange,
+            controller: controller,
+            productCtrl: productCtrl,
+            items: navItems,
           ),
         ),
-        // ── Custom bottom nav ─────────────────────────────────────
-        bottomNavigationBar: _BottomNavBar(
-          themeChange: themeChange,
-          controller: controller,
-          productCtrl: productCtrl,
-          items: Constant.isDineInEnable ? _kDineInNav : _kStandardNav,
-        ),
-      ),
-    ));
+      );
+    });
   }
 
   void _showExitSnack(BuildContext context, bool isDark) {
     HapticFeedback.lightImpact();
+
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(
-        content: Text(
-          'Press back again to exit'.tr,
-          style: const TextStyle(
-              fontFamily: AppThemeData.medium, fontSize: 13),
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            'Press back again to exit'.tr,
+            style: const TextStyle(
+              fontFamily: AppThemeData.medium,
+              fontSize: 13,
+            ),
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor:
+          isDark ? AppThemeData.grey700 : AppThemeData.grey800,
         ),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor:
-        isDark ? AppThemeData.grey700 : AppThemeData.grey800,
-      ));
+      );
   }
 }
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status Banner
@@ -442,6 +454,7 @@ class DashBoardScreen extends StatelessWidget {
 class _StatusBanner extends StatelessWidget {
   const _StatusBanner({required this.controller});
   final DashBoardController controller;
+
 
   static const _kGreen = Color(0xFF0A9E6E);
   static const _kRed = Color(0xFFDC3545);
@@ -453,6 +466,7 @@ class _StatusBanner extends StatelessWidget {
     return Obx(() {
       final isOpen = controller.vendorModel.value.isOpen ?? false;
       final isLoading = controller.isUpdatingStatus.value;
+      final showBack = controller.isMerchantOutletDashboard;
       final fg = isOpen ? _kGreen : _kRed;
       final bg = isOpen ? _kGreenBg : _kRedBg;
 
@@ -462,59 +476,83 @@ class _StatusBanner extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(0, 2, 0, 2),
         decoration: BoxDecoration(
           color: bg,
-          // borderRadius: BorderRadius.circular(14),
-          // border: Border.all(color: fg.withOpacity(0.25)),
         ),
         child: Material(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            splashColor: fg.withOpacity(0.1),
-            onTap: isLoading ? null : () => _onTap(context, isOpen),
-            child: Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  _LiveDot(color: fg, active: isOpen),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isOpen ? 'Open for Orders' : 'Currently Closed',
-                          style: TextStyle(
-                            color: fg,
-                            fontSize: 13,
-                            fontFamily: AppThemeData.bold,
-                          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Row(
+              children: [
+                if (showBack)
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: fg),
+                    tooltip: 'Back to outlets'.tr,
+                    onPressed: () => controller.switchToMerchantMode(),
+                  ),
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      splashColor: fg.withOpacity(0.1),
+                      onTap: isLoading ? null : () => _onTap(context, isOpen),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 10,
                         ),
-                        Text(
-                          isOpen
-                              ? 'Accepting new orders'
-                              : 'Not accepting orders',
-                          style: TextStyle(
-                            color: fg.withOpacity(0.7),
-                            fontSize: 11,
-                            fontFamily: AppThemeData.medium,
-                          ),
+                        child: Row(
+                          children: [
+                            _LiveDot(color: fg, active: isOpen),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isOpen
+                                        ? 'Open for Orders'
+                                        : 'Currently Closed',
+                                    style: TextStyle(
+                                      color: fg,
+                                      fontSize: 13,
+                                      fontFamily: AppThemeData.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    isOpen
+                                        ? 'Accepting new orders'
+                                        : 'Not accepting orders',
+                                    style: TextStyle(
+                                      color: fg.withOpacity(0.7),
+                                      fontSize: 11,
+                                      fontFamily: AppThemeData.medium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isLoading)
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: fg,
+                                ),
+                              )
+                            else
+                              _TogglePill(isOn: isOpen, color: fg),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                  if (isLoading)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: fg),
-                    )
-                  else
-                    _TogglePill(isOn: isOpen, color: fg),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -522,108 +560,339 @@ class _StatusBanner extends StatelessWidget {
     });
   }
 
+  // Future<void> _onTap(BuildContext context, bool isOpen) async {
+  //   if (isOpen) {
+  //     final ok = await showDialog<bool>(
+  //       context: context,
+  //       builder: (_) => const _ConfirmDialog(
+  //         iconData: Icons.storefront_rounded,
+  //         iconColor: _kRed,
+  //         title: 'Close Restaurant?',
+  //         message:
+  //         'Customers will not be able to place new orders while your restaurant is closed.',
+  //         confirmLabel: 'Close',
+  //         confirmColor: _kRed,
+  //         isDanger: true,
+  //       ),
+  //     ) ??
+  //         false;
+  //
+  //     if (!ok) return;
+  //
+  //     // Ask for duration before calling API
+  //     if (!context.mounted) return;
+  //     final option = await showDialog<RestaurantCloseOption>(
+  //       context: context,
+  //       builder: (_) => const _CloseOptionsDialog(),
+  //     );
+  //     if (option == null) return;
+  //
+  //     final success = await controller.(false);
+  //     if (!success && context.mounted) {
+  //       ShowToastDialog.showToast('Failed to update status'.tr);
+  //       return;
+  //     }
+  //     if (option != RestaurantCloseOption.today && context.mounted) {
+  //       await _maybeSendEmail(context, option);
+  //     }
+  //   } else {
+  //     final ok = await showDialog<bool>(
+  //       context: context,
+  //       builder: (_) => const _ConfirmDialog(
+  //         iconData: Icons.storefront_rounded,
+  //         iconColor: _kGreen,
+  //         title: 'Open Restaurant?',
+  //         message:
+  //         'Your restaurant will be visible to customers and start accepting orders.',
+  //         confirmLabel: 'Open Now',
+  //         confirmColor: _kGreen,
+  //       ),
+  //     ) ??
+  //         false;
+  //
+  //     if (!ok) return;
+  //     final success = await controller.updateRestStatus(true);
+  //     if (!success && context.mounted) {
+  //       ShowToastDialog.showToast('Failed to update status'.tr);
+  //     }
+  //   }
+  // }
+
   Future<void> _onTap(BuildContext context, bool isOpen) async {
     if (isOpen) {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (_) => const _ConfirmDialog(
-          iconData: Icons.storefront_rounded,
-          iconColor: _kRed,
-          title: 'Close Restaurant?',
-          message:
-          'Customers will not be able to place new orders while your restaurant is closed.',
-          confirmLabel: 'Close',
-          confirmColor: _kRed,
-          isDanger: true,
-        ),
-      ) ??
-          false;
+      // ================= CLOSE RESTAURANT =================
+
+      final bool ok =
+          await showDialog<bool>(
+            context: context,
+            builder: (_) => const _ConfirmDialog(
+              iconData: Icons.storefront_rounded,
+              iconColor: _kRed,
+              title: 'Close Outlet?',
+              message:
+              'Customers will not be able to place new orders while your restaurant is closed.',
+              confirmLabel: 'Close',
+              confirmColor: _kRed,
+              isDanger: true,
+            ),
+          ) ??
+              false;
 
       if (!ok) return;
 
-      // Ask for duration before calling API
       if (!context.mounted) return;
-      final option = await showDialog<RestaurantCloseOption>(
+
+      final RestaurantCloseOption? option =
+      await showDialog<RestaurantCloseOption>(
         context: context,
         builder: (_) => const _CloseOptionsDialog(),
       );
+
       if (option == null) return;
 
-      final success = await controller.updateRestStatus(false);
-      if (!success && context.mounted) {
-        ShowToastDialog.showToast('Failed to update status'.tr);
+      final DateTime now = DateTime.now();
+
+      DateTime? toDate;
+
+      switch (option) {
+        case RestaurantCloseOption.today:
+          toDate = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            23,
+            59,
+            59,
+          );
+          break;
+
+        case RestaurantCloseOption.tomorrow:
+          toDate = DateTime(
+            now.year,
+            now.month,
+            now.day + 1,
+            23,
+            59,
+            59,
+          );
+          break;
+
+        case RestaurantCloseOption.threeDays:
+          toDate = now.add(const Duration(days: 3));
+          break;
+
+        case RestaurantCloseOption.sevenDays:
+          toDate = now.add(const Duration(days: 7));
+          break;
+
+        case RestaurantCloseOption.untilReopened:
+          toDate = DateTime(2099, 12, 31, 23, 59, 59);
+          break;
+
+        case RestaurantCloseOption.custom:
+        // Use custom selected date here
+          return;
+      }
+
+      final outletId = DashBoardController.resolveActiveOutletId();
+      if (outletId <= 0) {
+        ShowToastDialog.showToast('No outlet selected'.tr);
         return;
       }
-      if (option != RestaurantCloseOption.today && context.mounted) {
-        await _maybeSendEmail(context, option);
+
+      final success = await DashBoardController.updateOutletUnavailability(
+        type: "OUTLET",
+        unavailabilityId: outletId,
+        fromDate: now,
+        toDate: toDate,
+        reason: "Outlet temporarily unavailable",
+      );
+
+      if (!success) {
+        ShowToastDialog.showToast(
+          "Failed to close outlet",
+        );
+        return;
+      }
+
+// Update UI
+      controller.vendorModel.update((vendor) {
+        if (vendor != null) {
+          vendor.isOpen = false;
+          vendor.reststatus = false;
+        }
+      });
+
+      await Preferences.setBoolean(
+        Preferences.vendorIsOpenKey,
+        false,
+      );
+
+      controller.vendorModel.refresh();
+
+      ShowToastDialog.showToast(
+        "Outlet closed successfully",
+      );
+
+
+      // switch (option) {
+      //   case RestaurantCloseOption.today:
+      //     fromDate = now;
+      //     toDate = DateTime(
+      //       now.year,
+      //       now.month,
+      //       now.day,
+      //       23,
+      //       59,
+      //       59,
+      //     );
+      //     reason = "Restaurant closed for today";
+      //     break;
+      //
+      //   case RestaurantCloseOption.tomorrow:
+      //     fromDate = now;
+      //     toDate = now.add(const Duration(days: 1));
+      //     reason = "Restaurant closed until tomorrow";
+      //     break;
+      //
+      //   case RestaurantCloseOption.custom:
+      //     fromDate = now;
+      //     toDate = now.add(const Duration(days: 7));
+      //     reason = "Restaurant temporarily unavailable";
+      //     break;
+      // }
+
+      // final bool success =
+      // await ApiService.updateOutletUnavailability(
+      //   type: "outlet",
+      //   unavailabilityId: 7,
+      //   fromDate: fromDate,
+      //   toDate: toDate,
+      //   reason: reason,
+      // );
+
+      // if (!success) {
+      //   if (context.mounted) {
+      //     ShowToastDialog.showToast(
+      //       'Failed to update status'.tr,
+      //     );
+      //   }
+      //   return;
+      // }
+
+
+
+      if (option != RestaurantCloseOption.today &&
+          context.mounted) {
+        // await _maybeSendEmail(context, option);
       }
     } else {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (_) => const _ConfirmDialog(
-          iconData: Icons.storefront_rounded,
-          iconColor: _kGreen,
-          title: 'Open Restaurant?',
-          message:
-          'Your restaurant will be visible to customers and start accepting orders.',
-          confirmLabel: 'Open Now',
-          confirmColor: _kGreen,
-        ),
-      ) ??
-          false;
+      // ================= OPEN RESTAURANT =================
+
+      // ================= OPEN RESTAURANT =================
+
+      final bool ok =
+          await showDialog<bool>(
+            context: context,
+            builder: (_) => const _ConfirmDialog(
+              iconData: Icons.storefront_rounded,
+              iconColor: _kGreen,
+              title: 'Open Outlet?',
+              message:
+              'Your restaurant will be visible to customers and start accepting orders.',
+              confirmLabel: 'Open Now',
+              confirmColor: _kGreen,
+            ),
+          ) ??
+              false;
 
       if (!ok) return;
-      final success = await controller.updateRestStatus(true);
-      if (!success && context.mounted) {
-        ShowToastDialog.showToast('Failed to update status'.tr);
+
+      final outletId = DashBoardController.resolveActiveOutletId();
+      if (outletId <= 0) {
+        ShowToastDialog.showToast('No outlet selected'.tr);
+        return;
       }
-    }
-  }
 
-  Future<void> _maybeSendEmail(
-      BuildContext context, RestaurantCloseOption option) async {
-    final dur = switch (option) {
-      RestaurantCloseOption.threeDays => '3 days',
-      RestaurantCloseOption.sevenDays => '7 days',
-      RestaurantCloseOption.untilReopened => 'until reopened',
-      RestaurantCloseOption.today => 'today',
-    };
-    final name =
-        controller.vendorModel.value.title ?? 'Unknown Restaurant';
-    final phone =
-        controller.vendorModel.value.phonenumber ?? 'Unknown Restaurant';
-    final subject = '[$name] Temporary closure – $dur';
-    final body =
-        'Hello,\nThe restaurant "$name" has been temporarily closed for $dur.\n'
-        'Please review if any action is needed.\n\n'
-        'phone number: "$phone"\n'
-        'Thanks,\nJippyMart';
-
-    // iOS is stricter with mailto parsing; use one "to" address and the other as cc.
-    final uri = Uri(
-      scheme: 'mailto',
-      path: 'Sivapm@jippymart.in',
-      query:
-          'cc=${Uri.encodeComponent('Sudheer@jippymart.in')}&subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
-    );
-
-    // Try platform default first, then explicit external app handoff.
-    bool launched = await launchUrl(uri);
-    if (!launched) {
-      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-    if (!launched && context.mounted) {
-      await Constant.sendMail(
-        subject: subject,
-        body: body,
-        recipients: <dynamic>[
-          'Sivapm@jippymart.in',
-          'Sudheer@jippymart.in',
-        ],
-        isAdmin: true,
+      final bool success =
+      await DashboardApiService.restoreOutletAvailability(
+        type: "OUTLET",
+        unavailabilityId: outletId,
+        reason: "Outlet reopened",
       );
+      if (!success) {
+        ShowToastDialog.showToast(
+          "Failed to update status",
+        );
+        return;
+      }
+
+// Update UI
+      controller.vendorModel.update((vendor) {
+        if (vendor != null) {
+          vendor.isOpen = true;
+          vendor.reststatus = true;
+        }
+      });
+
+      await Preferences.setBoolean(
+        Preferences.vendorIsOpenKey,
+        true,
+      );
+
+      controller.vendorModel.refresh();
+
+      ShowToastDialog.showToast(
+        "Outlet opened successfully",
+      );
+
     }
   }
+  //
+  // Future<void> _maybeSendEmail(
+  //     BuildContext context, RestaurantCloseOption option) async {
+  //   final dur = switch (option) {
+  //     RestaurantCloseOption.threeDays => '3 days',
+  //     RestaurantCloseOption.sevenDays => '7 days',
+  //     RestaurantCloseOption.untilReopened => 'until reopened',
+  //     RestaurantCloseOption.today => 'today',
+  //   };
+  //   final name =
+  //       controller.vendorModel.value.title ?? 'Unknown Restaurant';
+  //   final phone =
+  //       controller.vendorModel.value.phonenumber ?? 'Unknown Restaurant';
+  //   final subject = '[$name] Temporary closure – $dur';
+  //   final body =
+  //       'Hello,\nThe restaurant "$name" has been temporarily closed for $dur.\n'
+  //       'Please review if any action is needed.\n\n'
+  //       'phone number: "$phone"\n'
+  //       'Thanks,\nJippyMart';
+  //
+  //   // iOS is stricter with mailto parsing; use one "to" address and the other as cc.
+  //   final uri = Uri(
+  //     scheme: 'mailto',
+  //     path: 'Sivapm@jippymart.in',
+  //     query:
+  //         'cc=${Uri.encodeComponent('Sudheer@jippymart.in')}&subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
+  //   );
+  //
+  //   // Try platform default first, then explicit external app handoff.
+  //   bool launched = await launchUrl(uri);
+  //   if (!launched) {
+  //     launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  //   }
+  //   if (!launched && context.mounted) {
+  //     await Constant.sendMail(
+  //       subject: subject,
+  //       body: body,
+  //       recipients: <dynamic>[
+  //         'Sivapm@jippymart.in',
+  //         'Sudheer@jippymart.in',
+  //       ],
+  //       isAdmin: true,
+  //     );
+  //   }
+  // }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -744,7 +1013,7 @@ class _BottomNavBar extends StatelessWidget {
   final DarkThemeProvider themeChange;
   final DashBoardController controller;
   final ProductListController productCtrl;
-  final List<_NavItemData> items;
+  final List<BottomNavItem>items;
 
   @override
   Widget build(BuildContext context) {
@@ -793,18 +1062,53 @@ class _BottomNavBar extends StatelessWidget {
         ),
       ),    );
   }
-
   void _handleTap(int index) {
     HapticFeedback.selectionClick();
+
+    final item = items[index];
+
+    if (controller.isMerchantListMode &&
+        item.id != BottomNavId.home &&
+        item.id != BottomNavId.profile &&
+        item.id != BottomNavId.sales) {
+      ShowToastDialog.showToast(
+        'Select an outlet first'.tr,
+      );
+      return;
+    }
+
+    final prevIndex = controller.selectedIndex.value;
+
     controller.selectedIndex.value = index;
 
-    if (index == 1 && productCtrl.productList.isEmpty) {
-      productCtrl
-        ..getUserProfile()
-        ..getProduct();
-    }
-    if (index == 2 && Get.isRegistered<SalesReportController>()) {
-      Get.find<SalesReportController>().fetchReport();
+    switch (item.id) {
+      case BottomNavId.home:
+        break;
+
+      case BottomNavId.dineIn:
+        break;
+
+      case BottomNavId.inventory:
+        productCtrl.refreshInventory(
+          forceRefresh: true,
+          outletId: DashBoardController.resolveActiveOutletId(),
+        );
+        break;
+
+      case BottomNavId.subscription:
+        if (prevIndex != index) {
+          controller.resetPromotionsQuickAction();
+        }
+        break;
+
+      case BottomNavId.sales:
+        if (Get.isRegistered<SalesReportController>()) {
+          Get.find<SalesReportController>().fetchReport();
+        }
+        break;
+
+      case BottomNavId.profile:
+        break;
     }
   }
 }
@@ -821,7 +1125,7 @@ class _NavTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final _NavItemData data;
+  final BottomNavItem data;
   final int index;
   final bool isDark;
   final DashBoardController controller;

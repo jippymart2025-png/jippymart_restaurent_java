@@ -23,6 +23,10 @@ import 'package:http/http.dart' as http;
 import '../app/on_boarding_screen.dart' show OnBoardingScreen;
 import '../models/vendor_model.dart';
 import '../utils/preferences.dart' show Preferences;
+import 'package:jippymart_restaurant/app/Home_screen/outlet_home_screen.dart';
+
+import 'dash_board_controller.dart';
+import 'merchant_outlet_controller.dart';
 
 
 class LoginController extends GetxController {
@@ -30,8 +34,6 @@ class LoginController extends GetxController {
 
   void proceedToMainApp() async {
     try {
-      String userId = await FireStoreUtils.getCurrentUid();
-
       if (Preferences.getBoolean(Preferences.isFinishOnBoardingKey) == false) {
         Get.offAll(
               () => const OnBoardingScreen(),
@@ -49,10 +51,55 @@ class LoginController extends GetxController {
         return;
       }
 
+      final loginType = Preferences.getString('loginType');
+      final authToken = Preferences.getString('authToken');
+
+      // Restore Java merchant/outlet session saved at login.
+      if (authToken.isNotEmpty &&
+          (loginType == 'MERCHANT' || loginType == 'OUTLET')) {
+        if (loginType == 'MERCHANT') {
+          if (!Get.isRegistered<MerchantOutletController>()) {
+            Get.put(MerchantOutletController(), permanent: true);
+          }
+          await Get.find<MerchantOutletController>()
+              .initializeMerchantSession();
+        } else {
+          final merchantId = Preferences.getString('merchantId');
+          if (merchantId.isNotEmpty) {
+            try {
+              final profile =
+                  await FireStoreUtils.getMerchantProfile(merchantId);
+              if (profile != null) {
+                Constant.userModel = profile;
+              }
+            } catch (e) {
+              print('proceedToMainApp outlet profile restore: $e');
+            }
+          }
+        }
+
+        Get.offAll(
+          () => const DashBoardScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 500),
+        );
+        return;
+      }
+
+      final userId = await FireStoreUtils.getCurrentUid();
+      if (userId.isEmpty) {
+        Get.offAll(() => const LandingScreen());
+        return;
+      }
+
       final userModel = await FireStoreUtils.getUserProfile(userId);
       if (userModel == null) {
         Get.offAll(() => const LandingScreen());
         return;
+      }
+
+      if (userModel.merchantId != null && userModel.merchantId!.isNotEmpty) {
+        Preferences.setString('merchantId', userModel.merchantId!);
       }
 
       if (userModel.role != Constant.userRoleVendor || userModel.active != true) {
@@ -60,11 +107,10 @@ class LoginController extends GetxController {
         return;
       }
 
-      // Navigate first, then refresh FCM token and update profile (token can change after init)
       Get.offAll(
             () => const DashBoardScreen(),
         transition: Transition.fadeIn,
-        duration: const Duration(milliseconds: 3000),
+        duration: const Duration(milliseconds: 500),
       );
 
       final fcmToken = await NotificationService.getToken();
@@ -86,82 +132,394 @@ class LoginController extends GetxController {
       TextEditingController().obs;
 
   RxBool passwordVisible = true.obs;
-  @override
-  void onInit() {
-    super.onInit();
-  }
+  // @override
+  // void onInit() {
+  //   super.onInit();
+  // }
+
+  //THIS IS THE PHP CODE OF LOGIN API
+  // static Future<Map<String, dynamic>> loginWithEmailAndPasswordApi(
+  //     String email, String password) async {
+  //   try {
+  //     final body = {
+  //       'email': email,
+  //       'password': password,
+  //     };
+  //     print(" loginWithEmailAndPasswordApi ${body}");
+  //     final response = await http.post(
+  //       Uri.parse('${Constant.baseUrl}restaurant/login'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: json.encode(body),
+  //     );
+  //     if (response.statusCode == 200) {
+  //       return json.decode(response.body);
+  //     } else {
+  //       throw Exception('Failed to login: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     throw Exception('Login failed: $e');
+  //   }
+  // }
+  //END PHPCODE
+
+  // THIS IS JAVA CODE OF LOGINAPI
   static Future<Map<String, dynamic>> loginWithEmailAndPasswordApi(
-      String email, String password) async {
-    try {
-      final body = {
-        'email': email,
-        'password': password,
-      };
-      print(" loginWithEmailAndPasswordApi ${body}");
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/login'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(body),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Failed to login: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Login failed: $e');
+      String username,
+      String password,
+      ) async {
+    final response = await http.post(
+      Uri.parse(
+        'http://187.127.156.147:8084/api/fm/auth/login',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "username": username,
+        "password": password,
+      }),
+    );
+    print("LOGIN RESPONSE =====>");
+    print(response.body);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
     }
+
+
+    throw Exception("Login failed");
   }
+
+  // END
+
+  // THIS IS THE PHP METHOD OR LOGIN START
+//   loginWithEmailAndPassword() async {
+//     ShowToastDialog.showLoader("Please wait.".tr);
+//     try {
+//       final response = await loginWithEmailAndPasswordApi(
+//         emailEditingController.value.text.toLowerCase().trim(),
+//         passwordEditingController.value.text.trim(),
+//       );
+//       if (response['success'] == true) {
+//         final userData = response['data'];
+//         print("=== FULL LOGIN RESPONSE: $userData ===");
+//
+// // ADD — adjust key name based on what login returns
+//
+//         // Validate that we have a firebase_id before proceeding
+//         if (userData['firebase_id'] == null || userData['firebase_id'].toString().isEmpty) {
+//           print("⚠️ Login error: firebase_id is missing or empty");
+//           ShowToastDialog.showToast("Login failed: Invalid user data".tr);
+//           ShowToastDialog.closeLoader();
+//           return;
+//         }
+//         await _saveUserDataToSharedPreferences(userData);
+//         UserModel? userModel = await _convertApiResponseToUserModel(userData);
+//         if (userModel != null) {
+//           if (userModel.role == Constant.userRoleVendor) {
+//             if (userModel.active == true) {
+//               // ADD THIS LINE ↓
+//               Preferences.setString('merchantId', userModel.merchantId ?? '');
+//               // Update FCM token after every login and call profile update API
+//               userModel.fcmToken = await NotificationService.getToken();
+//               await FireStoreUtils.updateUser(userModel);
+//               proceedToMainApp();
+//             } else {
+//               await clearUserData();
+//               ShowToastDialog.showToast(
+//                   "This user is disable please contact to administrator".tr);
+//             }
+//           } else {
+//             await clearUserData();
+//           }
+//         } else {
+//           print("⚠️ Login error: Failed to convert user data to UserModel");
+//           await clearUserData();
+//           ShowToastDialog.showToast("Login failed: Invalid user data".tr);
+//         }
+//       } else {
+//         ShowToastDialog.showToast(response['message'] ?? "Login failed".tr);
+//       }
+//     } catch (e, stackTrace) {
+//       print("Login error: $e");
+//       print("Stack trace: $stackTrace");
+//       ShowToastDialog.showToast("Login failed. Please try again.".tr);
+//     }
+//     ShowToastDialog.closeLoader();
+//   }
+  // END OF PHP METHOD
+
+// THIS IS THE JAVA CODE OF LOGIN METHOD START
   loginWithEmailAndPassword() async {
     ShowToastDialog.showLoader("Please wait.".tr);
+
     try {
-      final response = await loginWithEmailAndPasswordApi(
-        emailEditingController.value.text.toLowerCase().trim(),
+      final response =
+      await loginWithEmailAndPasswordApi(
+        emailEditingController.value.text.trim(),
         passwordEditingController.value.text.trim(),
       );
-      if (response['success'] == true) {
-        final userData = response['data'];
 
-        // Validate that we have a firebase_id before proceeding
-        if (userData['firebase_id'] == null || userData['firebase_id'].toString().isEmpty) {
-          print("⚠️ Login error: firebase_id is missing or empty");
-          ShowToastDialog.showToast("Login failed: Invalid user data".tr);
+      print("=== LOGIN RESPONSE ===");
+      print(response);
+
+      final String? token = response['jwt'];
+      final int userId = response['userId'] ?? 0;
+      print("===== LOGIN DEBUG =====");
+      print("userId = $userId");
+      print("userType = ${response['userType']}");
+      print("outletId = ${response['outletId']}");
+      print("merchantId = ${response['merchantId']}");
+      print("=======================");
+
+      final String role =
+          (response['roles'] as List).isNotEmpty
+              ? response['roles'][0]
+              : '';
+
+      Preferences.setInt('userId', userId);
+      Preferences.setString('role', role);
+
+      String loginType = '';
+      if (role == "ROLE_ADMIN" || role == "ROLE_MERCHANT") {
+        loginType = 'MERCHANT';
+      } else if (role == "ROLE_OUTLET" ||
+          response['outletId'] != null ||
+          response['userType']?.toString().toUpperCase() == 'OUTLET') {
+        loginType = 'OUTLET';
+      }
+      Preferences.setString('loginType', loginType);
+
+      int merchantId = 0;
+      int outletId = 0;
+
+      if (loginType == 'MERCHANT') {
+        merchantId = _parseLoginInt(response['merchantId']) ?? userId;
+        await Preferences.setString('merchantId', merchantId.toString());
+        await Preferences.setInt('outletId', 0);
+        await Preferences.setInt('selectedOutletId', 0);
+      } else if (loginType == 'OUTLET') {
+        outletId = _parseLoginInt(response['outletId']) ??
+            _parseLoginInt(response['id']) ??
+            _parseLoginInt(response['userId']) ??
+            0;
+
+        print("OUTLET ID CALCULATED = $outletId");
+
+        if (outletId <= 0) {
           ShowToastDialog.closeLoader();
+          ShowToastDialog.showToast(
+            'Outlet ID missing from login. Please contact support.'.tr,
+          );
           return;
         }
-        await _saveUserDataToSharedPreferences(userData);
-        UserModel? userModel = await _convertApiResponseToUserModel(userData);
-        if (userModel != null) {
-          if (userModel.role == Constant.userRoleVendor) {
-            if (userModel.active == true) {
-              // Update FCM token after every login and call profile update API
-              userModel.fcmToken = await NotificationService.getToken();
-              await FireStoreUtils.updateUser(userModel);
-              proceedToMainApp();
-            } else {
-              await clearUserData();
-              ShowToastDialog.showToast(
-                  "This user is disable please contact to administrator".tr);
-            }
-          } else {
-            await clearUserData();
-          }
-        } else {
-          print("⚠️ Login error: Failed to convert user data to UserModel");
-          await clearUserData();
-          ShowToastDialog.showToast("Login failed: Invalid user data".tr);
-        }
-      } else {
-        ShowToastDialog.showToast(response['message'] ?? "Login failed".tr);
+        await Preferences.setInt('outletId', outletId);
+        await Preferences.setInt('selectedOutletId', outletId);
+        await Preferences.clearKeyData('merchantId');
       }
-    } catch (e, stackTrace) {
-      print("Login error: $e");
-      print("Stack trace: $stackTrace");
-      ShowToastDialog.showToast("Login failed. Please try again.".tr);
+
+      print("=== LOGIN PARSED ===");
+      print("loginType=$loginType userId=$userId merchantId=$merchantId outletId=$outletId role=$role");
+
+      if (token == null || token.isEmpty) {
+        ShowToastDialog.showToast("Login failed".tr);
+        return;
+      }
+
+      Preferences.setString('authToken', token);
+
+      print("JWT Saved Successfully");
+
+      ShowToastDialog.showToast("Login Successful".tr);
+
+      print("=== LOGIN SUCCESS ===");
+
+      if (loginType == 'MERCHANT') {
+        if (Get.isRegistered<MerchantOutletController>()) {
+          Get.delete<MerchantOutletController>(force: true);
+        }
+        final outletController =
+            Get.put(MerchantOutletController(), permanent: true);
+        await outletController.initializeMerchantSession();
+        print("=== MERCHANT SESSION COMPLETE ===");
+        print(
+          "sessionState=${outletController.sessionState.value} "
+          "outletCount=${outletController.outletList.length}",
+        );
+      } else if (loginType == 'OUTLET') {
+        if (Get.isRegistered<MerchantOutletController>()) {
+          Get.delete<MerchantOutletController>(force: true);
+        }
+        final ok = await _initializeOutletSession(outletId);
+        if (!ok) {
+          await clearUserData();
+          ShowToastDialog.showToast(
+            "Unable to load outlet. Please try again.".tr,
+          );
+          return;
+        }
+        print("=== OUTLET SESSION COMPLETE ===");
+      } else {
+        await clearUserData();
+        ShowToastDialog.showToast("Unknown user role".tr);
+        return;
+      }
+
+      await _persistLoginSession(userId: userId, token: token);
+      await _navigateToDashboardAfterLogin();
+
+    } catch (e) {
+      print("LOGIN ERROR = $e");
+      ShowToastDialog.showToast(
+        "Login Failed".tr,
+      );
+    } finally {
+      ShowToastDialog.closeLoader();
     }
-    ShowToastDialog.closeLoader();
+  }
+// this is excute whenTHE LOGIN RESPONSE I HAVING THE USERID AND MERCHANT ID
+      // final String userType =
+      //     response['userType'] ?? '';
+      //
+      // if (userType == "MERCHANT") {
+      //
+      //   Get.offAll(
+      //         () => const DashBoardScreen(),
+      //     transition: Transition.fadeIn,
+      //     duration: const Duration(milliseconds: 500),
+      //   );
+      //
+      // } else if (userType == "OUTLET") {
+      //
+      //   Get.offAll(
+      //         () => const OutletHomeScreen(),
+      //     transition: Transition.fadeIn,
+      //     duration: const Duration(milliseconds: 500),
+      //   );
+      //
+      // } else {
+      //
+      //   ShowToastDialog.showToast(
+      //     "Unknown user type",
+      //   );
+      //
+      // }
+      // Get.offAll(
+      //       () => const DashBoardScreen(),
+      //   transition: Transition.fadeIn,
+      //   duration: const Duration(milliseconds: 500),
+      // );
+
+  // END OF JAVA METHOD
+
+  int? _parseLoginInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
+  Future<void> _persistLoginSession({
+    required int userId,
+    required String token,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', true);
+    await prefs.setString('firebase_id', userId.toString());
+    await prefs.setString('user_id', userId.toString());
+    await Preferences.setString('authToken', token);
+  }
+
+  Future<void> _markLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', true);
+  }
+
+  Future<void> _navigateToDashboardAfterLogin() async {
+    if (Get.isRegistered<DashBoardController>()) {
+      Get.delete<DashBoardController>(force: true);
+    }
+    Get.offAll(
+      () => const DashBoardScreen(),
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 500),
+    );
+  }
+
+  /// Outlet login: outletId → getOutletById → merchantId → profile (best-effort)
+  Future<bool> _initializeOutletSession(int outletId) async {
+    debugPrint('[OutletSession] START — loginType=OUTLET outletId=$outletId');
+
+    if (outletId <= 0) {
+      debugPrint('[OutletSession] ERROR — invalid outletId');
+      return false;
+    }
+
+    debugPrint('[OutletSession] getOutletById REQUEST — outletId=$outletId');
+    final result = await FireStoreUtils.fetchOutletById(outletId);
+    print("===== OUTLET DEBUG =====");
+    print("result.outlet = ${result.outlet}");
+    print("result.outlet?.outletName = ${result.outlet?.outletName}");
+
+    debugPrint(
+      '[OutletSession] getOutletById RESULT — '
+      'status=${result.status} merchantId=${result.merchantId} '
+      'parseWarning=${result.hadParseWarning}',
+    );
+
+    if (result.hasMerchantId) {
+      final merchantId = result.merchantId!;
+      final resolvedOutletId = result.outletId ?? outletId;
+
+      await Preferences.setInt('outletId', resolvedOutletId);
+      await Preferences.setInt('selectedOutletId', resolvedOutletId);
+      await Preferences.setString('selectedOutletName', result.outlet?.outletName ?? '',);
+      print("selectedOutletName after save = ${Preferences.getString('selectedOutletName')}");
+      await Preferences.setString('loginType', 'OUTLET');
+      await Preferences.setString('merchantId', merchantId.toString());
+      // ADD THIS
+      // await Preferences.setString(
+      //   'outletName',
+      //   result.outletName ?? '',
+      // );
+
+      debugPrint(
+        '[OutletSession] Session context — '
+        'outletId=$resolvedOutletId merchantId=$merchantId (NOT mixed)',
+      );
+
+      if (result.hadParseWarning) {
+        debugPrint(
+          '[OutletSession] Parse warning ignored — session continues with merchantId',
+        );
+      }
+
+      try {
+        debugPrint(
+          '[OutletSession] getMerchantProfile REQUEST — merchantId=$merchantId',
+        );
+        final profile =
+            await FireStoreUtils.getMerchantProfile(merchantId.toString());
+        debugPrint(
+          '[OutletSession] getMerchantProfile RESPONSE — '
+          'success=${profile != null}',
+        );
+        if (profile != null) {
+          Constant.userModel = profile;
+        }
+      } catch (profileError) {
+        debugPrint(
+          '[OutletSession] Profile warning (non-fatal) — $profileError',
+        );
+      }
+
+      debugPrint('[OutletSession] SUCCESS → Outlet Dashboard (products tab)');
+      return true;
+    }
+
+    debugPrint('[OutletSession] FAILURE — ${result.message}');
+    return false;
   }
 
 // Helper method to parse bool from various types
@@ -192,10 +550,16 @@ class LoginController extends GetxController {
     await prefs.setBool('is_active', _parseBoolValue(userData['active'] ?? userData['active']));
     await prefs.setString('user_id', userData['id'].toString());
     await prefs.setString('profile_picture', userData['profilePictureURL'] ?? '');
+    await prefs.setString('merchantId', userData['merchantId']?.toString() ?? '');
 
     // Do NOT persist zone here – vendor data is not available yet.
     await prefs.setBool('is_document_verify', _parseBoolValue(userData['isDocumentVerify']));
     await prefs.setBool('is_logged_in', true);
+    await prefs.setBool('is_logged_in', true);
+    await prefs.setString('authToken',
+        userData['token'] ??
+            userData['accessToken'] ??
+            userData['jwtToken'] ?? '');
   }
 
 // Helper method to convert API response to UserModel
@@ -238,6 +602,8 @@ class LoginController extends GetxController {
         isDocumentVerify: _parseBoolValue(userData['isDocumentVerify']),
         subscriptionPlanId: userData['subscriptionPlanId'],
         subscriptionExpiryDate:_parseTimestamp(userData['subscriptionExpiryDate'],),
+        // ADD THIS LINE ↓
+        merchantId: userData['merchantId']?.toString() ?? '',
         // userData['subscriptionExpiryDate'] != null
         //     ? Timestamp.fromDate(DateTime.parse(userData['subscriptionExpiryDate']))
         //     : null,
@@ -249,14 +615,53 @@ class LoginController extends GetxController {
       return null;
     }
   }
-  void logoutFunction()async{
-    await AudioPlayerService
-        .playSound(false);
-    Constant.userModel!.fcmToken = "";
-    await FireStoreUtils.updateUser(
-        Constant.userModel!);
+  // void logoutFunction()async{
+  //   await AudioPlayerService
+  //       .playSound(false);
+  //   Constant.userModel!.fcmToken = "";
+  //   await FireStoreUtils.updateUser(
+  //       Constant.userModel!);
+  //   Constant.userModel = null;
+  //   // ADD THIS
+  //   if (Get.isRegistered<MerchantOutletController>()) {
+  //     Get.delete<MerchantOutletController>(
+  //       force: true,
+  //     );
+  //   }
+  //
+  //   if (Get.isRegistered<DashBoardController>()) {
+  //     Get.delete<DashBoardController>(
+  //       force: true,
+  //     );
+  //   }
+  //
+  //   Get.offAll(
+  //         () => const LandingScreen(),
+  //   );
+  //
+  //     await  clearUserData();
+  //   Get.offAll(() => const LandingScreen());
+  // }
+  void logoutFunction() async {
+    await AudioPlayerService.playSound(false);
+
+    if (Constant.userModel != null) {
+      Constant.userModel!.fcmToken = "";
+      await FireStoreUtils.updateUser(Constant.userModel!);
+    }
+
     Constant.userModel = null;
-    clearUserData();
+
+    if (Get.isRegistered<MerchantOutletController>()) {
+      Get.delete<MerchantOutletController>(force: true);
+    }
+
+    if (Get.isRegistered<DashBoardController>()) {
+      Get.delete<DashBoardController>(force: true);
+    }
+
+    await clearUserData();
+
     Get.offAll(() => const LandingScreen());
   }
 // Helper method to clear user data on logout/error
@@ -277,7 +682,12 @@ class LoginController extends GetxController {
     await prefs.remove('zone_id');
     await prefs.remove('is_document_verify');
     await prefs.setBool('is_logged_in', false);
-
+    await prefs.remove('merchantId');
+    await prefs.remove('userId');
+    await prefs.remove('outletId');
+    await prefs.remove('loginType');
+    await prefs.remove('authToken');
+    await prefs.remove('selectedOutletId');
   }
 // loginWithEmailAndPassword() async {
 //   ShowToastDialog.showLoader("Please wait.".tr);

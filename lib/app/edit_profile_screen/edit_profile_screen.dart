@@ -93,41 +93,304 @@ class EditProfileScreen extends StatelessWidget {
                       const SizedBox(
                         height: 40,
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFieldWidget(
-                              title: 'First Name'.tr,
-                              controller: controller.firstNameController.value,
-                              hintText: 'First Name'.tr,
+                      Obx(() {
+                        if (controller.isOutletMode.value) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextFieldWidget(
+                                title: 'Outlet Name'.tr,
+                                controller: controller.outletNameController.value,
+                                hintText: 'Outlet Name'.tr,
+                              ),
+                              TextFieldWidget(
+                                title: 'Email'.tr,
+                                textInputType: TextInputType.emailAddress,
+                                controller: controller.emailController.value,
+                                hintText: 'Email'.tr,
+                              ),
+                              TextFieldWidget(
+                                title: 'Phone Number'.tr,
+                                controller: controller.outletPhoneController.value,
+                                hintText: 'Phone Number'.tr,
+                              ),
+                              TextFieldWidget(
+                                title: 'Cuisine Type'.tr,
+                                controller: controller.cuisineTypeController.value,
+                                hintText: 'Cuisine Type'.tr,
+                              ),
+                              TextFieldWidget(
+                                title: 'Delivery Radius (km)'.tr,
+                                controller: controller.radiusController.value,
+                                hintText: 'Radius'.tr,
+                                textInputType: TextInputType.number,
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppThemeData.secondary300,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 12,
+                                        top: 10,
+                                        bottom: 4,
+                                      ),
+                                      child: Text(
+                                        'Address Information'.tr,
+                                        style: TextStyle(
+                                          color: AppThemeData.secondary300,
+                                          fontFamily: AppThemeData.semiBold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Column(
+                                        children: [
+
+                                          TextFieldWidget(
+                                            title: 'Building Number'.tr,
+                                            controller:
+                                            controller.buildingNumberController.value,
+                                            hintText: 'Building Number'.tr,
+                                          ),
+
+                                          TextFieldWidget(
+                                            title: 'Road'.tr,
+                                            controller:
+                                            controller.roadController.value,
+                                            hintText: 'Road'.tr,
+                                          ),
+
+                                          TextFieldWidget(
+                                            title: 'Landmark'.tr,
+                                            controller:
+                                            controller.landmarkController.value,
+                                            hintText: 'Landmark'.tr,
+                                          ),
+
+                                          const SizedBox(height: 8),
+
+                                          // STATE DROPDOWN WILL COME HERE
+
+                                          // CITY DROPDOWN WILL COME HERE
+
+                                          // AREA DROPDOWN WILL COME HERE
+
+                                          const SizedBox(height: 8),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppThemeData.secondary300,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 12,
+                                        top: 10,
+                                        bottom: 4,
+                                      ),
+                                      child: Text(
+                                        'Bank Information'.tr,
+                                        style: TextStyle(
+                                          color: AppThemeData.secondary300,
+                                          fontFamily: AppThemeData.semiBold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          TextFieldWidget(
+                                            title: 'Bank Name'.tr,
+                                            controller:
+                                            controller.bankNameController.value,
+                                            hintText: 'Bank Name'.tr,
+                                          ),
+
+                                          TextFieldWidget(
+                                            title: 'Account Holder Name'.tr,
+                                            controller:
+                                            controller.accountHolderNameController.value,
+                                            hintText: 'Account Holder Name'.tr,
+                                          ),
+
+                                          TextFieldWidget(
+                                            title: 'Account Number'.tr,
+                                            controller:
+                                            controller.accountNumberController.value,
+                                            hintText: 'Account Number'.tr,
+                                            textInputType: TextInputType.number,
+                                          ),
+
+                                          TextFieldWidget(
+                                            title: 'IFSC Code'.tr,
+                                            controller:
+                                            controller.ifscCodeController.value,
+                                            hintText: 'IFSC Code'.tr,
+                                          ),
+
+                                          const SizedBox(height: 8),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFieldWidget(
+                              title: 'Merchant Name'.tr,
+                              controller: controller.merchantNameController.value,
+                              hintText: 'Merchant Name'.tr,
                             ),
-                          ),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          Expanded(
-                            child: TextFieldWidget(
-                              title: 'Last Name'.tr,
-                              controller: controller.lastNameController.value,
-                              hintText: 'Last Name'.tr,
+                            TextFieldWidget(
+                              title: 'Email'.tr,
+                              textInputType: TextInputType.emailAddress,
+                              controller: controller.emailController.value,
+                              hintText: 'Email'.tr,
+                              enable: false,
                             ),
-                          ),
-                        ],
-                      ),
-                      TextFieldWidget(
-                        title: 'Email'.tr,
-                        textInputType: TextInputType.emailAddress,
-                        controller: controller.emailController.value,
-                        hintText: 'Email'.tr,
-                        enable: false,
-                      ),
-                      TextFieldWidget(
-                        title: 'Phone Number'.tr,
-                        textInputType: TextInputType.emailAddress,
-                        controller: controller.phoneNumberController.value,
-                        hintText: 'Phone Number'.tr,
-                        enable: false,
-                      ),
+                            TextFieldWidget(
+                              title: 'Phone Number'.tr,
+                              controller: controller.phoneNumberController.value,
+                              hintText: 'Phone Number'.tr,
+                              enable: false,
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppThemeData.secondary300, width: 1.5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12, top: 10, bottom: 4),
+                                    child: Text(
+                                      'Business Information'.tr,
+                                      style: TextStyle(
+                                        color: AppThemeData.secondary300,
+                                        fontFamily: AppThemeData.semiBold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Column(
+                                      children: [
+                                        TextFieldWidget(
+                                          title: 'Business Type'.tr,
+                                          controller: controller.businessTypeController.value,
+                                          hintText: 'Business Type'.tr,
+                                        ),
+                                        TextFieldWidget(
+                                          title: 'Status'.tr,
+                                          controller: controller.statusController.value,
+                                          hintText: 'Status'.tr,
+                                          enable: false,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppThemeData.secondary300, width: 1.5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12, top: 10, bottom: 4),
+                                    child: Text(
+                                      'Bank Information'.tr,
+                                      style: TextStyle(
+                                        color: AppThemeData.secondary300,
+                                        fontFamily: AppThemeData.semiBold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Column(
+                                      children: [
+                                        TextFieldWidget(
+                                          title: 'Bank Name'.tr,
+                                          controller: controller.bankNameController.value,
+                                          hintText: 'Bank Name'.tr,
+                                        ),
+                                        TextFieldWidget(
+                                          title: 'Account Holder Name'.tr,
+                                          controller: controller.accountHolderNameController.value,
+                                          hintText: 'Account Holder Name'.tr,
+                                        ),
+                                        TextFieldWidget(
+                                          title: 'Account Number'.tr,
+                                          controller: controller.accountNumberController.value,
+                                          hintText: 'Account Number'.tr,
+                                          textInputType: TextInputType.number,
+                                        ),
+                                        TextFieldWidget(
+                                          title: 'IFSC Code'.tr,
+                                          controller: controller.ifscCodeController.value,
+                                          hintText: 'IFSC Code'.tr,
+                                        ),
+                                        const SizedBox(height: 8),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+// ADD FROM HERE ↓
+
                     ],
                   ),
                 ),
@@ -178,28 +441,6 @@ class EditProfileScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Padding(
-                      //   padding: const EdgeInsets.all(18.0),
-                      //   child: Column(
-                      //     crossAxisAlignment: CrossAxisAlignment.center,
-                      //     children: [
-                      //       IconButton(
-                      //           onPressed: () => controller.pickFile(
-                      //               source: ImageSource.camera),
-                      //           icon: const Icon(
-                      //             Icons.camera_alt,
-                      //             size: 32,
-                      //           )),
-                      //       Padding(
-                      //         padding: const EdgeInsets.only(top: 3),
-                      //         child: Text(
-                      //           "camera".tr,
-                      //           style: const TextStyle(),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
                       Padding(
                         padding: const EdgeInsets.all(18.0),
                         child: Column(

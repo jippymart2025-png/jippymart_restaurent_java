@@ -306,7 +306,7 @@ class SubscriptionPaymentController extends GetxController {
       return;
     }
 
-    final int amount = int.tryParse(plan.price) ?? 0;
+    final int amount = int.tryParse('${plan.price}') ?? 0;
 
     // Free plan — activate immediately without payment.
     if (amount <= 0) {
@@ -355,7 +355,7 @@ class SubscriptionPaymentController extends GetxController {
         'key': _razorPayModel!.razorpayKey,
         'amount': amount * 100, // paise
         'name': 'Jippymart Restaurant',
-        'description': plan.name,
+        'description': plan.planName,
         'prefill': {
           'name': user.fullName(),
           'email': user.email ?? '',
@@ -433,8 +433,8 @@ class SubscriptionPaymentController extends GetxController {
   }
 
   DateTime? _computeExpiry(SubscriptionPlanModel plan) {
-    final days = int.tryParse(plan.expiryDay);
-    if (days == null || days <= 0) return null;
+    final days = plan.durationInDays;
+    if ( days <= 0) return null;
     return DateTime.now().add(Duration(days: days));
   }
 

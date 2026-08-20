@@ -60,9 +60,9 @@ class LoginScreen extends StatelessWidget {
                       height: 32,
                     ),
                     TextFieldWidget(
-                      title: 'Email'.tr,
+                      title: 'Username'.tr,
                       controller: controller.emailEditingController.value,
-                      hintText: 'Enter email address'.tr,
+                      hintText: 'Enter userName'.tr,
                       prefix: Padding(
                         padding: const EdgeInsets.all(12),
                         child: SvgPicture.asset(
@@ -102,7 +102,7 @@ class LoginScreen extends StatelessWidget {
                             },
                             child: controller.passwordVisible.value
                                 ? SvgPicture.asset(
-                                    "assets/icons/ic_password_show.svg",
+                                    "assets/icons/ic_password_close.svg",
                                     colorFilter: ColorFilter.mode(
                                       themeChange.getThem()
                                           ? AppThemeData.grey300
@@ -111,7 +111,7 @@ class LoginScreen extends StatelessWidget {
                                     ),
                                   )
                                 : SvgPicture.asset(
-                                    "assets/icons/ic_password_close.svg",
+                                      "assets/icons/ic_password_show.svg",
                                     colorFilter: ColorFilter.mode(
                                       themeChange.getThem()
                                           ? AppThemeData.grey300

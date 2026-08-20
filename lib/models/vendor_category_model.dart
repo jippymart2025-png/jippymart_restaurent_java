@@ -2,11 +2,21 @@ import 'dart:convert';
 
 class VendorCategoryModel {
   List<dynamic>? reviewAttributes;
+
+  /// Old fields used in UI
   String? photo;
   String? description;
   String? id;
   String? title;
   bool? isActive;
+
+  /// New Backend Fields
+  String? categoryType;
+  String? categoryImageUrl;
+
+  /// Java outlet-category link id
+  int? outletCategoryId;
+
   VendorCategoryModel({
     this.reviewAttributes,
     this.photo,
@@ -14,48 +24,100 @@ class VendorCategoryModel {
     this.id,
     this.title,
     this.isActive,
+    this.categoryType,
+    this.categoryImageUrl,
+    this.outletCategoryId,
   });
-  VendorCategoryModel.fromJson(Map<String, dynamic> json) {
-    final raw = json['review_attributes'];
-    if (raw is List) {
-      reviewAttributes = raw;
-    } else if (raw is String) {
-      try {
-        reviewAttributes = jsonDecode(raw) as List<dynamic>? ?? [];
-      } catch (_) {
-        reviewAttributes = raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      }
-    } else {
-      reviewAttributes = [];
-    }
-    photo = json['photo'] ?? "";
-    description = json['description'] ?? '';
-    final rawId = json['id'] ?? json['category_id'];
-    id = rawId?.toString() ?? "";
-    final rawTitle = json['title'] ?? json['Title'] ?? json['name'] ?? json['category_name'] ?? json['categoryName'] ?? json['label'];
-    title = (rawTitle ?? '').toString().trim();
-    isActive = _parseBool(json['isActive']);
+
+  factory VendorCategoryModel.fromJson(Map<String, dynamic> json) {
+    return VendorCategoryModel(
+      /// Existing UI fields
+      id: (json['categoryId'] ?? json['id'])?.toString() ?? '',
+
+      title: (json['categoryName'] ??
+          json['title'] ??
+          json['name'])
+          ?.toString() ??
+          '',
+
+      description: json['description']?.toString() ?? '',
+
+      /// New API returns categoryImageUrl instead of photo
+      photo: (json['categoryImageUrl'] ??
+          json['photo'])
+          ?.toString(),
+
+      categoryImageUrl:
+      json['categoryImageUrl']?.toString(),
+
+      categoryType:
+      json['categoryType']?.toString(),
+
+      reviewAttributes: const [],
+
+      isActive: _parseBool(json['isActive']),
+
+      outletCategoryId:
+      _parseInt(json['outletCategoryId']) ??
+          _parseInt(json['outlet_category_id']) ??
+          _parseInt(json['outletCategoryID']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "categoryId": id,
+      "categoryName": title,
+      "categoryType": categoryType,
+      "categoryImageUrl": categoryImageUrl,
+      "outletCategoryId": outletCategoryId,
+    };
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
   }
 
   static bool? _parseBool(dynamic value) {
     if (value == null) return null;
+
     if (value is bool) return value;
+
     if (value is int) return value != 0;
+
     if (value is String) {
-      final n = value.toLowerCase();
-      if (n == 'true' || n == '1') return true;
-      if (n == 'false' || n == '0') return false;
+      switch (value.toLowerCase()) {
+        case "true":
+        case "1":
+          return true;
+        case "false":
+        case "0":
+          return false;
+      }
     }
+
     return null;
   }
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['review_attributes'] = reviewAttributes;
-    data['photo'] = photo;
-    data['description'] = description;
-    data['id'] = id;
-    data['title'] = title;
-    data['isActive'] = isActive;
-    return data;
-  }
+  // Map<String, dynamic> toJson() {
+  //   final Map<String, dynamic> data = <String, dynamic>{};
+  //   data['review_attributes'] = reviewAttributes;
+  //   data['photo'] = photo;
+  //   data['description'] = description;
+  //   data['id'] = id;
+  //   data['title'] = title;
+  //   data['isActive'] = isActive;
+  //   return data;
+  // }
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     "categoryId": id,
+  //     "categoryName": title,
+  //   };
+  // }
+
+
 }

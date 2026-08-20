@@ -3523,6 +3523,11 @@ import 'package:jippymart_restaurant/utils/network_image_widget.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/widget/my_separator.dart';
 
+import '../../controller/merchant_outlet_controller.dart';
+import '../../utils/preferences.dart';
+
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HomeScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3539,6 +3544,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addObserver(this);
 
     if (Get.isRegistered<HomeController>()) {
@@ -3547,6 +3553,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } else {
       controller = Get.put(HomeController());
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadSelectedOutlet();
+    });
   }
 
   @override
@@ -3620,12 +3630,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         text: 'Welcome to '.tr,
                         style: const TextStyle(
                           color: AppThemeData.grey50,
-                          fontSize: 13,
-                          fontFamily: AppThemeData.medium,
+                          fontSize: 18,
+                          fontFamily: AppThemeData.bold,
                         ),
                       ),
                       TextSpan(
-                        text: ctrl.vendermodel.value.title ?? 'Restaurant',
+                        text: Preferences.getString('selectedOutletName').isNotEmpty
+                            ? Preferences.getString('selectedOutletName')
+                            : (ctrl.vendermodel.value.title ?? 'Restaurant'),
                         style: const TextStyle(
                           color: AppThemeData.grey50,
                           fontSize: 18,
@@ -3692,18 +3704,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     // No restaurant linked
-    if (ctrl.userModel.value.vendorID == null ||
-        ctrl.userModel.value.vendorID!.isEmpty) {
+    // if (ctrl.userModel.value.vendorID == null ||
+    //     ctrl.userModel.value.vendorID!.isEmpty) {
+    //   return _EmptyStateView(
+    //     icon: 'assets/icons/ic_building_two.svg',
+    //     title: 'Add Your First Outlet'.tr,
+    //     subtitle:
+    //     'Get started by adding your outlet details to manage your menu, orders, and reservations.'
+    //         .tr,
+    //     buttonLabel: 'Add Outlet'.tr,
+    //     onTap: () async {
+    //       final result = await Get.to(const AddRestaurantScreen());
+    //       if (result == true) ctrl.getUserProfile();
+    //     },
+    //     themeChange: themeChange,
+    //   );
+    // }
+    final outletId = Preferences.getInt('outletId');
+    if (ctrl.outletList.isEmpty && outletId <= 0) {
       return _EmptyStateView(
         icon: 'assets/icons/ic_building_two.svg',
-        title: 'Add Your First Restaurant'.tr,
+        title: 'Add Your First Outlet'.tr,
         subtitle:
-        'Get started by adding your restaurant details to manage your menu, orders, and reservations.'
+        'Get started by adding your outlet details to manage your menu, orders, and reservations.'
             .tr,
-        buttonLabel: 'Add Restaurant'.tr,
+        buttonLabel: 'Add Outlet'.tr,
         onTap: () async {
-          final result = await Get.to(const AddRestaurantScreen());
-          if (result == true) ctrl.getUserProfile();
+          final result = await Get.to(
+            const AddRestaurantScreen(),
+          );
+
+          if (result == true) {
+            if (Get.isRegistered<MerchantOutletController>()) {
+              await Get.find<MerchantOutletController>().refreshOutletsOnly();
+            }
+          }
         },
         themeChange: themeChange,
       );
@@ -3715,7 +3750,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         children: [
           _OrderTab(
             orders: ctrl.newOrderList,
-            emptyMessage: 'New Orders Not found'.tr,
+            emptyMessage: ' Waiting For New Orders'.tr,
             onRefresh: () => ctrl.refreshApp(),
             itemBuilder: (order) => _NewOrderCard(
               orderModel: order,
@@ -3816,7 +3851,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     h == 0 ? '${d.inMinutes} minutes' : '$h:${pad(m)}';
     ctrl.estimatedTimeController.refresh();
   }
+  Future<void> loadSelectedOutlet() async {
+    if (Preferences.getInt('outletId') <= 0) return;
+
+    final selectedOutletId = Preferences.getInt('selectedOutletId');
+    if (selectedOutletId > 0) {
+      await controller.loadOutletData(selectedOutletId);
+    }
+  }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Generic tab wrapper

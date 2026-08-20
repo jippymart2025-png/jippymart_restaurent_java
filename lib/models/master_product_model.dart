@@ -5,6 +5,8 @@ class MasterProductModel {
   String? name;
   String? description;
   String? photo;
+  String? categoryId;
+  String? categoryName;
   double? suggestedPrice;
   bool? nonveg;
   bool? veg;
@@ -30,6 +32,8 @@ class MasterProductModel {
     this.id,
     this.name,
     this.description,
+    this.categoryId,
+    this.categoryName,
     this.photo,
     this.suggestedPrice,
     this.nonveg,
@@ -49,61 +53,96 @@ class MasterProductModel {
     this.vendorOptions,
   });
 
-  factory MasterProductModel.fromJson(Map<String, dynamic> json) {
-    final opt = json['options'];
-    List<MasterProductOption>? opts;
-    if (opt is List) {
-      opts = opt.map((e) => MasterProductOption.fromJson(Map<String, dynamic>.from(e as Map))).toList();
-    }
+//   factory MasterProductModel.fromJson(Map<String, dynamic> json) {
+//     final opt = json['options'];
+//     List<MasterProductOption>? opts;
+//     if (opt is List) {
+//       opts = opt.map((e) => MasterProductOption.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+//     }
+//
+//     final vOpts = json['vendor_options'];
+//     List<VendorOptionOverride>? vOptionsList;
+//     if (vOpts is List) {
+//       vOptionsList = vOpts.map((e) => VendorOptionOverride.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+//     }
+//
+//     final vTimings = json['vendor_available_timings'];
+//     List<VendorTimingSlot>? timingsList;
+//     if (vTimings is List) {
+//       timingsList = vTimings.map((e) => VendorTimingSlot.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+//     }
+//
+//     List<String>? addOnsTitle;
+//     if (json['vendor_addOnsTitle'] is List) {
+//       addOnsTitle = (json['vendor_addOnsTitle'] as List).map((e) => e.toString()).toList();
+//     }
+//     List<String>? addOnsPrice;
+//     if (json['vendor_addOnsPrice'] is List) {
+//       addOnsPrice = (json['vendor_addOnsPrice'] as List).map((e) => e.toString()).toList();
+//     }
+//     List<String>? days;
+//     if (json['vendor_available_days'] is List) {
+//       days = (json['vendor_available_days'] as List).map((e) => e.toString()).toList();
+//     }
+//
+//     return MasterProductModel(
+//       id: json['id']?.toString(),
+//       name: json['name']?.toString(),
+//       description: json['description']?.toString(),
+//       photo: json['photo']?.toString(),
+//       suggestedPrice: _toDouble(json['suggested_price']),
+//       nonveg: json['nonveg'] == true || json['nonveg'] == 1,
+//       veg: json['veg'] == true || json['veg'] == 1,
+//       isExisting: json['is_existing'] == true || json['is_existing'] == 1,
+//       options: opts,
+//       vendorProductId: json['vendor_product_id']?.toString(),
+//       vendorPrice: json['vendor_price']?.toString(),
+//       vendorMerchantPrice: (json['vendor_merchantPrice'] ?? json['vendor_merchant_price'])?.toString(),
+//       vendorDisPrice: (json['vendor_disPrice'] ?? json['vendor_dis_price'])?.toString(),
+//       vendorPublish: json['vendor_publish'] == true || json['vendor_publish'] == 1,
+//       vendorIsAvailable: json['vendor_isAvailable'] == true || json['vendor_isAvailable'] == 1,
+//       vendorAddOnsTitle: addOnsTitle,
+//       vendorAddOnsPrice: addOnsPrice,
+//       vendorAvailableDays: days,
+//       vendorAvailableTimings: timingsList,
+//       vendorOptions: vOptionsList,
+//     );
+//   }
+//
 
-    final vOpts = json['vendor_options'];
-    List<VendorOptionOverride>? vOptionsList;
-    if (vOpts is List) {
-      vOptionsList = vOpts.map((e) => VendorOptionOverride.fromJson(Map<String, dynamic>.from(e as Map))).toList();
-    }
-
-    final vTimings = json['vendor_available_timings'];
-    List<VendorTimingSlot>? timingsList;
-    if (vTimings is List) {
-      timingsList = vTimings.map((e) => VendorTimingSlot.fromJson(Map<String, dynamic>.from(e as Map))).toList();
-    }
-
-    List<String>? addOnsTitle;
-    if (json['vendor_addOnsTitle'] is List) {
-      addOnsTitle = (json['vendor_addOnsTitle'] as List).map((e) => e.toString()).toList();
-    }
-    List<String>? addOnsPrice;
-    if (json['vendor_addOnsPrice'] is List) {
-      addOnsPrice = (json['vendor_addOnsPrice'] as List).map((e) => e.toString()).toList();
-    }
-    List<String>? days;
-    if (json['vendor_available_days'] is List) {
-      days = (json['vendor_available_days'] as List).map((e) => e.toString()).toList();
-    }
-
+  factory MasterProductModel.fromJson(
+      Map<String, dynamic> json) {
     return MasterProductModel(
-      id: json['id']?.toString(),
-      name: json['name']?.toString(),
-      description: json['description']?.toString(),
+      id: json['masterProductId']?.toString(),
+      name: json['masterProductName']?.toString(),
+      categoryId: json['categoryId']?.toString(),
+      categoryName: json['categoryName']?.toString(),
+
       photo: json['photo']?.toString(),
-      suggestedPrice: _toDouble(json['suggested_price']),
-      nonveg: json['nonveg'] == true || json['nonveg'] == 1,
-      veg: json['veg'] == true || json['veg'] == 1,
-      isExisting: json['is_existing'] == true || json['is_existing'] == 1,
-      options: opts,
-      vendorProductId: json['vendor_product_id']?.toString(),
-      vendorPrice: json['vendor_price']?.toString(),
-      vendorMerchantPrice: (json['vendor_merchantPrice'] ?? json['vendor_merchant_price'])?.toString(),
-      vendorDisPrice: (json['vendor_disPrice'] ?? json['vendor_dis_price'])?.toString(),
-      vendorPublish: json['vendor_publish'] == true || json['vendor_publish'] == 1,
-      vendorIsAvailable: json['vendor_isAvailable'] == true || json['vendor_isAvailable'] == 1,
-      vendorAddOnsTitle: addOnsTitle,
-      vendorAddOnsPrice: addOnsPrice,
-      vendorAvailableDays: days,
-      vendorAvailableTimings: timingsList,
-      vendorOptions: vOptionsList,
+      description: '',
+
+      veg: json['veg'] == 1 ||
+          json['veg'] == true,
+
+      nonveg: json['nonVeg'] == 1 ||
+          json['nonVeg'] == true,
+
+      vendorPublish:
+      json['publish'] == 1 ||
+          json['publish'] == true,
+
+      isExisting: false,
+      suggestedPrice: null,
+
+      options: [],
+      vendorOptions: [],
+      vendorAvailableTimings: [],
+      vendorAvailableDays: [],
+      vendorAddOnsTitle: [],
+      vendorAddOnsPrice: [],
     );
   }
+
 
   static double? _toDouble(dynamic v) {
     if (v == null) return null;

@@ -37,6 +37,20 @@ class UserModel {
   String? subscriptionPlanId;
   Timestamp? subscriptionExpiryDate;
   Map<String, dynamic>? subscriptionPlan;
+  // these are new fields
+  String? merchantName;
+  String? merchantBusinessType;
+  String? dob;
+  String? status;
+  String? merchantId;
+  String? accountNumber;
+  String? ifscCode;
+  String? bankName;
+  String? accountHolderName;
+  String? userType;
+  int? bankId;
+  int? recipientId;
+
 
   UserModel(
       {this.id,
@@ -68,7 +82,21 @@ class UserModel {
       this.provider,
       this.subscriptionPlanId,
       this.subscriptionExpiryDate,
-      this.subscriptionPlan});
+      this.subscriptionPlan,
+      this.merchantName,
+        this.merchantBusinessType,
+        this.dob,
+        this.status,
+        this.merchantId,
+        this.accountNumber,
+        this.ifscCode,
+        this.bankName,
+        this.accountHolderName,
+        this.userType,
+        this.bankId,
+        this.recipientId
+      });
+
 
   fullName() {
     return "${firstName ?? ''} ${lastName ?? ''}";
@@ -155,6 +183,24 @@ class UserModel {
     }
     appIdentifier = json['appIdentifier'];
     provider = json['provider'];
+    // Add lines for ui in java fields(start)
+    merchantId = json['merchantId']?.toString();
+    merchantName = json['merchantName'];
+    // merchantBusinessType = json['merchantBusinessType'];
+    merchantBusinessType =
+        json['merchantBusinessType'] ?? json['businessType'];
+    dob = json['dob'];
+    status = json['status'];
+    email = json['merchantEmail'] ?? json['email'];
+    phoneNumber = json['merchantPhone'] ?? json['phoneNumber'] ?? json['phone'];
+    accountNumber = json['accountNumber'];
+    ifscCode = json['ifscCode'];
+    bankName = json['bankName'];
+    accountHolderName = json['accountHolderName'];
+    userType = json['userType'];
+    bankId = json['bankId'];
+    recipientId = json['recipientId'];
+    //(end)
     subscriptionPlanId = json['subscriptionPlanId'];
     subscriptionExpiryDate = _parseTimestamp(json['subscriptionExpiryDate']);
     if (json['subscription_plan'] != null && json['subscription_plan'] is Map) {
@@ -296,7 +342,23 @@ class UserModel {
     }
     data['appIdentifier'] = appIdentifier;
     data['provider'] = provider;
+    // adding lines for java useage(start)json
+    data['merchantId'] = merchantId;
+    data['merchantName'] = merchantName;
+    data['merchantBusinessType'] = merchantBusinessType;
+    data['dob'] = dob;
+    data['status'] = status;
+    data['merchantEmail'] = email;
+    data['merchantPhone'] = phoneNumber;
+    data['accountNumber'] = accountNumber;
+    data['ifscCode'] = ifscCode;
+    data['bankName'] = bankName;
+    data['accountHolderName'] = accountHolderName;
+    data['userType'] = userType;
+    data['bankId'] = bankId;
+    data['recipientId'] = recipientId;
 
+    //end
     return data;
   }
 }

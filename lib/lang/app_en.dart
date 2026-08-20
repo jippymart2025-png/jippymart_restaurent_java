@@ -403,6 +403,9 @@ const Map<String, String> enUS = {
   "View Review": "View Review",
   "Rate for": "Rate for",
   "Add Product": "Add Product",
+  "Add from Catalog": "Add from Catalog",
+  "Unable to Load Menu": "Unable to Load Menu",
+  "Retry": "Retry",
   "Edit product": "Edit product",
   "Product prices include a 15% admin commission. For instance, a \$100 product will cost \$115 for the customer. 15% will be applied automatically.":
       "Product prices include a 15% admin commission. For instance, a \$100 product will cost \$115 for the customer. 15% will be applied automatically.",

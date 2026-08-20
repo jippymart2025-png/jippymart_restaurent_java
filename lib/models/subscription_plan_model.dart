@@ -1,67 +1,82 @@
-/// Model for subscription plan from API: GET subscription-plans?zone_id=...
 class SubscriptionPlanModel {
-  final String id;
-  final String name;
-  final String price;
-  final String? image;
-  final String description;
-  final String itemLimit;
-  final String orderLimit;
-  final String expiryDay;
-  final String planType;
-  final String place;
+  final int subscriptionPlanId;
+  final String planName;
+  final num price;
+  final int durationInDays;
+  final int bannerDurationInDays;
+  final num radiusInKms;
+  final int bannerSlot;
+  final int bestRestaurantSlot;
+  final int dealsSlot;
+  final String? whatsappBroadcast;
+  final String? videoCredits;
+  final int? stateId;
+  final int? cityId;
+  final int? areaId;
 
   SubscriptionPlanModel({
-    required this.id,
-    required this.name,
+    required this.subscriptionPlanId,
+    required this.planName,
     required this.price,
-    this.image,
-    required this.description,
-    required this.itemLimit,
-    required this.orderLimit,
-    required this.expiryDay,
-    required this.planType,
-    required this.place,
+    required this.durationInDays,
+    required this.bannerDurationInDays,
+    required this.radiusInKms,
+    required this.bannerSlot,
+    required this.bestRestaurantSlot,
+    required this.dealsSlot,
+    this.whatsappBroadcast,
+    this.videoCredits,
+    this.stateId,
+    this.cityId,
+    this.areaId,
   });
 
-  factory SubscriptionPlanModel.fromJson(Map<String, dynamic> json) {
-    String safeString(dynamic v) {
-      if (v == null) return '';
-      final s = v.toString().trim();
-      return (s == 'null' || s.isEmpty) ? '' : s;
-    }
-
+  factory SubscriptionPlanModel.fromJson(
+      Map<String, dynamic> json) {
     return SubscriptionPlanModel(
-      id: safeString(json['id']),
-      name: safeString(json['name']),
-      price: safeString(json['price']),
-      image: json['image'] != null && json['image'].toString().trim().isNotEmpty && json['image'].toString() != 'null'
-          ? json['image'].toString()
-          : null,
-      description: safeString(json['description']),
-      itemLimit: safeString(json['itemLimit']),
-      orderLimit: safeString(json['orderLimit']),
-      expiryDay: safeString(json['expiryDay']),
-      planType: safeString(json['plan_type']),
-      place: safeString(json['place']),
+      subscriptionPlanId:
+      json['subscriptionPlanId'] ?? 0,
+      planName: json['planName'] ?? '',
+      price: json['price'] ?? 0,
+      durationInDays:
+      json['durationInDays'] ?? 0,
+      bannerDurationInDays:
+      json['bannerDurationInDays'] ?? 0,
+      radiusInKms:
+      json['radiusInKms'] ?? 0,
+      bannerSlot:
+      json['bannerSlot'] ?? 0,
+      bestRestaurantSlot:
+      json['bestRestaurantSlot'] ?? 0,
+      dealsSlot:
+      json['dealsSlot'] ?? 0,
+      whatsappBroadcast:
+      json['whatsappBroadcast']
+          ?.toString(),
+      videoCredits:
+      json['videoCredits']
+          ?.toString(),
+      stateId: json['stateId'],
+      cityId: json['cityId'],
+      areaId: json['areaId'],
     );
   }
-
-  bool get isCommission => planType == 'commission';
-  bool get isSubscription => planType == 'subscription';
-
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
+      'subscriptionPlanId': subscriptionPlanId,
+      'planName': planName,
       'price': price,
-      'image': image,
-      'description': description,
-      'itemLimit': itemLimit,
-      'orderLimit': orderLimit,
-      'expiryDay': expiryDay,
-      'plan_type': planType,
-      'place': place,
+      'durationInDays': durationInDays,
+      'bannerDurationInDays': bannerDurationInDays,
+      'radiusInKms': radiusInKms,
+      'bannerSlot': bannerSlot,
+      'bestRestaurantSlot': bestRestaurantSlot,
+      'dealsSlot': dealsSlot,
+      'whatsappBroadcast': whatsappBroadcast,
+      'videoCredits': videoCredits,
+      'stateId': stateId,
+      'cityId': cityId,
+      'areaId': areaId,
     };
   }
 }

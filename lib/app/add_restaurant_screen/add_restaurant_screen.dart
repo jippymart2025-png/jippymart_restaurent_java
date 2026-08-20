@@ -50,7 +50,7 @@ class AddRestaurantScreen extends StatelessWidget {
                         : AppThemeData.grey100,
                     size: 20),
                 title: Text(
-                  "Restaurant Details".tr,
+                  "Outlet Details".tr,
                   style: TextStyle(
                       color: themeChange.getThem()
                           ? AppThemeData.grey800
@@ -79,7 +79,7 @@ class AddRestaurantScreen extends StatelessWidget {
                         onPress: () async {
                           if (controller.vendorModel.value.id == null) {
                             ShowToastDialog.showToast(
-                                "First save a restaurant details".tr);
+                                "First save a outlet details".tr);
                           } else {
                             Get.to(const QrCodeScreen(), arguments: {
                               "vendorModel": controller.vendorModel.value
@@ -246,13 +246,13 @@ class AddRestaurantScreen extends StatelessWidget {
                                     ),
                                   ),
                             TextFieldWidget(
-                              title: 'Restaurant Name'.tr,
+                              title: 'Outlet Name'.tr,
                               controller:
                                   controller.restaurantNameController.value,
-                              hintText: 'Enter restaurant name'.tr,
+                              hintText: 'Enter outlet name'.tr,
                             ),
                             TextFieldWidget(
-                              title: 'Restaurant Description'.tr,
+                              title: 'Outlet  Description'.tr,
                               controller: controller
                                   .restaurantDescriptionController.value,
                               maxLine: 5,

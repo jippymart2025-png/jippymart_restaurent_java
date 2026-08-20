@@ -751,30 +751,47 @@ import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
 import 'package:jippymart_restaurant/config/app_config.dart';
 
+
 import '../../models/product_model.dart';
+import '../../utils/fire_store_utils.dart';
+import '../../utils/preferences.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductToggles — identical look, removed redundant IgnorePointer wrapper
 // ─────────────────────────────────────────────────────────────────────────────
 class ProductToggles extends StatelessWidget {
   const ProductToggles({
-    required this.isPublished,
     required this.isAvailable,
-    required this.onPublishChanged,
     required this.onAvailableChanged,
+    this.showPublish = true,
+    this.isPublished = false,
+    this.onPublishChanged,
     super.key,
   });
 
+  final bool showPublish;
   final bool isPublished;
   final bool isAvailable;
-  final ValueChanged<bool> onPublishChanged;
+  final ValueChanged<bool>? onPublishChanged;
   final ValueChanged<bool> onAvailableChanged;
 
   @override
   Widget build(BuildContext context) {
     final isSmall = MediaQuery.of(context).size.width < 350;
-    final publish = _toggleRow('Publish', isPublished, onPublishChanged);
     final available = _toggleRow('Available', isAvailable, onAvailableChanged);
+
+    if (!showPublish) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [available],
+      );
+    }
+
+    final publish = _toggleRow(
+      'Publish',
+      isPublished,
+      onPublishChanged ?? (_) {},
+    );
 
     return isSmall
         ? Column(
@@ -808,12 +825,40 @@ class ProductToggles extends StatelessWidget {
       ],
     );
   }
+
+  /// Compact vertical toggle for product card trailing column.
+  static Widget compactToggle({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Transform.scale(
+          scale: 0.62,
+          child: CupertinoSwitch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFF229954),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductListScreen
 // ─────────────────────────────────────────────────────────────────────────────
-class ProductListScreen extends StatelessWidget {
+class ProductListScreen extends GetView<ProductListController> {
   const ProductListScreen({super.key});
 
   // ── Price helpers ──────────────────────────────────────────────────────────
@@ -906,21 +951,30 @@ class ProductListScreen extends StatelessWidget {
   }
 
   // ── AppBar action visibility ───────────────────────────────────────────────
+  static bool _hasActiveOutlet() =>
+      FireStoreUtils.resolveActiveOutletId() > 0;
+
   static bool _canShowActions(ProductListController c) {
     final pendingVerify = Constant.isRestaurantVerification == true &&
         c.userModel.value.isDocumentVerify == false;
-    final noVendor =
-        c.userModel.value.vendorID?.isEmpty != false;
+
+    // Merchant/outlet session with a resolved outlet id
+    if (_hasActiveOutlet()) {
+      return !pendingVerify;
+    }
+
+    final noVendor = c.userModel.value.vendorID?.isEmpty != false;
     return !pendingVerify && !noVendor;
   }
 
   @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
+    if (!Get.isRegistered<ProductListController>()) {
+      Get.put(ProductListController(), permanent: true);
+    }
 
-    return GetX<ProductListController>(
-      init: ProductListController(),
-      builder: (controller) => Scaffold(
+    return Obx(() => Scaffold(
         appBar: AppBar(
           backgroundColor: ColorConst.orange,
           centerTitle: false,
@@ -938,21 +992,21 @@ class ProductListScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // From catalog (tap target preserved, content commented out as original)
+                  // InkWell(
+                  //   onTap: () => Get.to(const AddFromCatalogScreen())
+                  //       ?.then((v) {
+                  //     if (v == true) controller.getProduct();
+                  //   }),
+                  //   child: const Padding(
+                  //     padding: EdgeInsets.symmetric(horizontal: 8),
+                  //     // Intentionally empty — matches original commented-out UI
+                  //   ),
+                  // ),
+                  // Add product
                   InkWell(
                     onTap: () => Get.to(const AddFromCatalogScreen())
                         ?.then((v) {
-                      if (v == true) controller.getProduct();
-                    }),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      // Intentionally empty — matches original commented-out UI
-                    ),
-                  ),
-                  // Add product
-                  InkWell(
-                    onTap: () => Get.to(const AddProductScreen())
-                        ?.then((v) {
-                      if (v == true) controller.getProduct();
+                      if (v == true) controller.refreshInventory(forceRefresh: true);
                     }),
                     child: Padding(
                       padding:
@@ -981,8 +1035,7 @@ class ProductListScreen extends StatelessWidget {
         body: controller.isLoading.value
             ? Constant.loader()
             : _buildBody(context, themeChange, controller),
-      ),
-    );
+      ));
   }
 
   // ── Body ───────────────────────────────────────────────────────────────────
@@ -1006,8 +1059,21 @@ class ProductListScreen extends StatelessWidget {
       );
     }
 
-    // No restaurant linked
-    if (controller.userModel.value.vendorID?.isEmpty != false) {
+    // API failed to load outlet menu
+    if (controller.loadError.value.isNotEmpty) {
+      return _EmptyState(
+        svgAsset: 'assets/icons/ic_knife_fork.svg',
+        title: 'Unable to Load Menu'.tr,
+        subtitle: controller.loadError.value,
+        buttonLabel: 'Retry'.tr,
+        onTap: () => controller.refreshInventory(forceRefresh: true),
+        themeChange: themeChange,
+      );
+    }
+
+    // No outlet / restaurant linked
+    if (!_hasActiveOutlet() &&
+        controller.userModel.value.vendorID?.isEmpty != false) {
       return _EmptyState(
         svgAsset: 'assets/icons/ic_building_two.svg',
         title: 'Add Your First Restaurant'.tr,
@@ -1023,7 +1089,7 @@ class ProductListScreen extends StatelessWidget {
       );
     }
 
-    // No products
+    // No products — outlet catalog flow (Add from Catalog)
     if (controller.productList.isEmpty) {
       return _EmptyState(
         svgAsset: 'assets/icons/ic_knife_fork.svg',
@@ -1035,12 +1101,12 @@ class ProductListScreen extends StatelessWidget {
         ),
         title: 'No Products Available'.tr,
         subtitle:
-        'Your menu is currently empty. Create your first product to start showcasing your offerings.'
+        'Your menu is currently empty. Pick a category from the catalog to add your first product.'
             .tr,
-        buttonLabel: 'Add Product'.tr,
-        onTap: () => Get.to(const AddProductScreen())
+        buttonLabel: 'Add from Catalog'.tr,
+        onTap: () => Get.to(const AddFromCatalogScreen())
             ?.then((v) {
-          if (v == true) controller.getProduct();
+          if (v == true) controller.refreshInventory(forceRefresh: true);
         }),
         themeChange: themeChange,
       );
@@ -1119,8 +1185,10 @@ class ProductListScreen extends StatelessWidget {
                       Switch(
                         value: isActive,
                         onChanged: (_) =>
-                            controller.toggleCategoryActive(
-                                index - 1),
+                            controller.handleCategoryActiveToggle(
+                              context,
+                              index - 1,
+                            ),
                         activeColor: AppThemeData.secondary300,
                         thumbColor:
                         const MaterialStatePropertyAll(
@@ -1224,11 +1292,11 @@ class _ProductCard extends StatelessWidget {
       onTap: !isAvailable
           ? null
           : () => Get.to(() => AddProductScreen(product: product))
-          ?.then((v) {
-        if (v == true) controller.getProduct();
-      }),
+                  ?.then((v) {
+                if (v == true) controller.getProduct();
+              }),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Opacity(
           opacity: isAvailable ? 1.0 : 0.5,
           child: Container(
@@ -1239,99 +1307,122 @@ class _ProductCard extends StatelessWidget {
                   ? AppThemeData.grey900
                   : AppThemeData.grey50,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              padding: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      // Product image
-                      _ProductImage(
-                        imageUrl: product.photo,
-                        height: Responsive.height(12, context),
-                        width: Responsive.width(24, context),
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 10),
-
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  _ProductImage(
+                    imageUrl: product.photo,
+                    height: Responsive.height(10, context),
+                    width: Responsive.width(20, context),
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          product.name.toString(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDark
+                                ? AppThemeData.grey50
+                                : AppThemeData.grey900,
+                            fontFamily: AppThemeData.semiBold,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        priceWidget,
+                        Row(
                           children: [
-                            Text(
-                              product.name.toString(),
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: isDark
-                                    ? AppThemeData.grey50
-                                    : AppThemeData.grey900,
-                                fontFamily: AppThemeData.semiBold,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            SvgPicture.asset(
+                              'assets/icons/ic_star.svg',
+                              height: 14,
+                              width: 14,
+                              colorFilter: const ColorFilter.mode(
+                                  AppThemeData.warning300,
+                                  BlendMode.srcIn),
                             ),
-                            priceWidget,
-                            Row(
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/ic_star.svg',
-                                  colorFilter: const ColorFilter.mode(
-                                      AppThemeData.warning300,
-                                      BlendMode.srcIn),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '${Constant.calculateReview(reviewCount: (product.reviewsCount ?? 0).toStringAsFixed(0), reviewSum: (product.reviewsSum ?? 0).toString())} (${(product.reviewsCount ?? 0).toStringAsFixed(0)})',
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? AppThemeData.grey50
-                                        : AppThemeData.grey900,
-                                    fontFamily: AppThemeData.regular,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            const SizedBox(width: 4),
                             Text(
-                              product.description.toString(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              '${Constant.calculateReview(reviewCount: (product.reviewsCount ?? 0).toStringAsFixed(0), reviewSum: (product.reviewsSum ?? 0).toString())} (${(product.reviewsCount ?? 0).toStringAsFixed(0)})',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark
                                     ? AppThemeData.grey50
                                     : AppThemeData.grey900,
                                 fontFamily: AppThemeData.regular,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
+                        if ((product.description ?? '').trim().isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            product.description.toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppThemeData.grey400
+                                  : AppThemeData.grey600,
+                              fontFamily: AppThemeData.regular,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (!controller.isOutletInventoryMode)
+                        ProductToggles.compactToggle(
+                          label: 'Publish',
+                          value: product.publish ?? false,
+                          onChanged: (_) => controller.updateList(
+                            product.id!,
+                            product.publish ?? false,
+                          ),
+                        ),
+                      ProductToggles.compactToggle(
+                        label: 'Available',
+                        value: product.isAvailable ?? true,
+                        onChanged: (_) =>
+                            controller.handleProductAvailabilityToggle(
+                          context,
+                          product.id!,
+                          product.isAvailable ?? true,
+                        ),
                       ),
-
-                      // Delete
                       IconButton(
-                        icon: const Icon(Icons.delete,
-                            color: Color(0xFFC0392B)),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Color(0xFFC0392B),
+                          size: 20,
+                        ),
                         onPressed: _confirmDelete,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  ProductToggles(
-                    isPublished: product.publish ?? false,
-                    isAvailable: product.isAvailable ?? true,
-                    onPublishChanged: (_) => controller.updateList(
-                        product.id!, product.publish ?? false),
-                    onAvailableChanged: (_) =>
-                        controller.updateAvailableStatus(
-                            product.id!, product.isAvailable ?? true),
-                  ),
-                  // App Store: Subscription limitations removed - app is 100% free
                 ],
               ),
             ),

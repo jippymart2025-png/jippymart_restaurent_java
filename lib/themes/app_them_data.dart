@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppThemeData {
-  static const Color primary50 = Color(0xFFFFEBE5);
+  static const Color primary50 = Color(0xFFF6FFE5);
   static const Color primary100 = Color(0xFFFFC0AB);
   static const Color primary200 = Color(0xFFFF9472);
   static const Color primary300 = Color(0xFFFF6839);

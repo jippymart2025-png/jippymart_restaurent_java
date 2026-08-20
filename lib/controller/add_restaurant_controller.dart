@@ -89,7 +89,7 @@ class AddRestaurantController extends GetxController {
       }
 
       // Get vendor categories
-      List<VendorCategoryModel>? categories = await FireStoreUtils.getVendorCategoryById();
+      List<VendorCategoryModel>? categories = await FireStoreUtils.getMerchantCategoryById();
       if (categories != null) {
         vendorCategoryList.value = categories;
         print("✅ Loaded ${categories.length} vendor categories");
