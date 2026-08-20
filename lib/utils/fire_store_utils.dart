@@ -1843,6 +1843,7 @@ class FireStoreUtils {
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
+
           'Authorization': 'Bearer $token',
         },
         body: json.encode(outletDetails.toJson()),
