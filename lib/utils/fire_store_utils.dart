@@ -1842,6 +1842,7 @@ class FireStoreUtils {
       final response = await http.put(
         Uri.parse(url),
         headers: {
+
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
