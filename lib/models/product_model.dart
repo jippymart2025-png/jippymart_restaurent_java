@@ -441,6 +441,48 @@ class ProductModel {
     }
     return data;
   }
+  Map<String, dynamic> toMasterProductJson() {
+    return {
+      "productName": name ?? "",
+      "description": description ?? "",
+
+      "merchantPrice":
+      double.tryParse(merchant_price ?? price ?? "0") ?? 0,
+
+      "isVeg": veg ?? false,
+
+      "hasProductVariants":
+      itemAttribute?.variants?.isNotEmpty ?? false,
+
+      "variants": itemAttribute?.variants?.map((v) {
+        return {
+          "variantId": int.tryParse(v.variantId ?? "0") ?? 0,
+          "variantSku": v.variantSku ?? "",
+          "variantPrice":
+          double.tryParse(v.variantPrice ?? "0") ?? 0,
+          "variantQuantity":
+          int.tryParse(v.variantQuantity ?? "0") ?? 0,
+        };
+      }).toList() ??
+          [],
+
+      "masterProductId": int.tryParse(id ?? "0") ?? 0,
+
+      "categoryId": int.tryParse(categoryID ?? "0") ?? 0,
+
+      "csvDayOfWeek": "MONDAY",
+      "csvTiming": "09:00-22:00",
+
+      "timings": [
+        {
+          "dayOfWeekId": 1,
+          "startTime": "09:00",
+          "endTime": "22:00"
+        }
+      ]
+    };
+  }
+
 }
 
 class ItemAttribute {
@@ -560,6 +602,7 @@ class Variants {
   String? variantId;
   String? variantImage;
   String? variantPrice;
+  String? variantMerchantPrice;
   String? variantQuantity;
   String? variantSku;
 
@@ -567,6 +610,7 @@ class Variants {
     this.variantId,
     this.variantImage,
     this.variantPrice,
+    this.variantMerchantPrice,
     this.variantQuantity,
     this.variantSku,
   });

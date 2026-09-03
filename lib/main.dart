@@ -78,6 +78,7 @@ Future<void> initializeFirebase() async {
 // Add this to your main screen or somewhere accessible
 // Replace your _testNotifications function with this:
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

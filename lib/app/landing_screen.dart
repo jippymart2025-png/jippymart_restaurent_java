@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
-import 'package:jippymart_restaurant/app/auth_screen/signup_screen.dart';
 import 'package:jippymart_restaurant/app/guest_browse_screen.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
-import 'package:jippymart_restaurant/utils/const/image_const.dart';
+
+import 'auth_screen/email_verification_screen.dart';
 
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
@@ -170,15 +170,15 @@ class LandingScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 16),
-
                   RoundedButtonFill(
                     title: "Register",
                     color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey300,
                     textColor: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
                     onPress: () {
-                      Get.to(() => const SignupScreen());
+                      Get.to(() => const EmailVerificationScreen());
                     },
                   ),
+
                   const SizedBox(height: 30),
 
                   // Footer text
@@ -200,26 +200,26 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDemoImage(String imagePath) {
-    return Container(
-      width: 80,
-      height: 140,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        image: DecorationImage(
-          image: AssetImage(imagePath),
-          fit: BoxFit.cover,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDemoImage(String imagePath) {
+  //   return Container(
+  //     width: 80,
+  //     height: 140,
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(12),
+  //       image: DecorationImage(
+  //         image: AssetImage(imagePath),
+  //         fit: BoxFit.cover,
+  //       ),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.2),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildHowItWorksStep({
     required IconData icon,

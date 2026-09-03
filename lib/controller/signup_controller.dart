@@ -11,7 +11,14 @@ import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/utils/notification/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
+import 'package:jippymart_restaurant/models/merchant_request_model.dart';
 
+import '../models/location_model.dart';
+import '../models/outlet_model.dart';
+import '../service/location_api_service.dart';
+import '../utils/fire_store_utils.dart';
+import '../utils/preferences.dart';
 class SignupController extends GetxController {
   Rx<TextEditingController> firstNameEditingController =
       TextEditingController().obs;
@@ -23,15 +30,92 @@ class SignupController extends GetxController {
       TextEditingController().obs;
   Rx<TextEditingController> countryCodeEditingController =
       TextEditingController().obs;
+  Rx<TextEditingController> usernameController =
+      TextEditingController().obs;
   Rx<TextEditingController> passwordEditingController =
       TextEditingController().obs;
-  Rx<TextEditingController> conformPasswordEditingController =
+  // Rx<TextEditingController> conformPasswordEditingController =
+  //     TextEditingController().obs;
+  //  this is the new java fields
+  Rx<TextEditingController> dobController =
       TextEditingController().obs;
 
+  Rx<TextEditingController> outletTypeController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> panController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> aadhaarController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> fssaiController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> gstController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> accountNumberController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> ifscController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> bankLocationController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> accountHolderController =
+      TextEditingController().obs;
+//
   RxBool passwordVisible = true.obs;
   RxBool conformPasswordVisible = true.obs;
 
   RxString type = "".obs;
+  RxString accountType = "Merchant".obs;
+  //
+  Rx<TextEditingController> outletNameController =
+      TextEditingController().obs;
+  Rx<TextEditingController> merchantIdController =
+      TextEditingController().obs;
+  Rx<TextEditingController> cuisineTypeController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> outletPhoneController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> buildingNumberController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> roadController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> landmarkController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> stateNameController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> cityController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> areaNameController =
+      TextEditingController().obs;
+  Rx<TextEditingController> latitudeController =
+      TextEditingController().obs;
+
+  Rx<TextEditingController> longitudeController =
+      TextEditingController().obs;
+  RxList<StateModel> states = <StateModel>[].obs;
+  RxList<CityModel> cities = <CityModel>[].obs;
+  RxList<AreaModel> areas = <AreaModel>[].obs;
+
+  Rx<StateModel?> selectedState = Rx<StateModel?>(null);
+  Rx<CityModel?> selectedCity = Rx<CityModel?>(null);
+  Rx<AreaModel?> selectedArea = Rx<AreaModel?>(null);
+  final locationDisplayController = TextEditingController();
+
+  //
+
 
   Rx<UserModel> userModel = UserModel().obs;
 
@@ -41,14 +125,47 @@ class SignupController extends GetxController {
     getArgument();
     // Set default country code to India
     countryCodeEditingController.value.text = '+91';
+    loadStates(); // NEW
     super.onInit();
   }
+  Future<void> loadStates() async {
+    try {
+      print("Loading states...");
+      states.value = await LocationApiService.fetchStates();
+      print("States loaded: ${states.length}");
+    } catch (e) {
+      print("Error loading states: $e");
+    }
+  }
+  Future<void> onStateSelected(StateModel? state) async {
+    selectedState.value = state;
+    selectedCity.value = null;
+    selectedArea.value = null;
+    cities.clear();
+    areas.clear();
+    if (state == null) return;
+    cities.value = await LocationApiService.fetchCities(state.stateId);
+  }
 
+  Future<void> onCitySelected(CityModel? city) async {
+    selectedCity.value = city;
+    selectedArea.value = null;
+    areas.clear();
+    if (city == null) return;
+    areas.value = await LocationApiService.fetchAreas(city.cityId);
+  }
+
+  void onAreaSelected(AreaModel? area) {
+    selectedArea.value = area;
+  }
   getArgument() {
     dynamic argumentData = Get.arguments;
     if (argumentData != null) {
       type.value = argumentData['type'];
-      userModel.value = argumentData['userModel'];
+      // Only overwrite userModel if one was actually passed
+      if (argumentData['userModel'] != null) {
+        userModel.value = argumentData['userModel'];
+      }
       if (type.value == "mobileNumber") {
         phoneNUmberEditingController.value.text =
             userModel.value.phoneNumber.toString();
@@ -58,82 +175,254 @@ class SignupController extends GetxController {
         emailEditingController.value.text = userModel.value.email ?? "";
         firstNameEditingController.value.text = userModel.value.firstName ?? "";
         lastNameEditingController.value.text = userModel.value.lastName ?? "";
+      }else if (type.value == "emailVerified") {
+        emailEditingController.value.text = argumentData['email'] ?? "";
+        phoneNUmberEditingController.value.text = argumentData['mobile'] ?? "";
       }
     }
   }
   signUpWithEmailAndPassword() async {
     await signUp();
   }
+// THIS IS PHP SIGNUP() METHOD
+//   signUp() async {
+//     ShowToastDialog.showLoader("Please wait");
+//     try {
+//       userModel.value.firstName = firstNameEditingController.value.text.toString();
+//       userModel.value.lastName = lastNameEditingController.value.text.toString();
+//       userModel.value.email = emailEditingController.value.text.toString().toLowerCase();
+//       userModel.value.phoneNumber = phoneNUmberEditingController.value.text.toString();
+//       userModel.value.role = Constant.userRoleVendor;
+//       userModel.value.fcmToken = await NotificationService.getToken();
+//       userModel.value.active = Constant.autoApproveRestaurant == true ? true : false;
+//       userModel.value.countryCode = countryCodeEditingController.value.text;
+//       userModel.value.isDocumentVerify = Constant.isRestaurantVerification == true ? false : true;
+//       userModel.value.createdAt = Timestamp.now();
+//       userModel.value.appIdentifier = Platform.isAndroid ? 'android' : 'ios';
+//       if (type.value == "email") {
+//         userModel.value.provider = 'email';
+//       }
+//       final bodyJson = {
+//         "type": "email",
+//         "first_name": userModel.value.firstName,
+//         "last_name": userModel.value.lastName,
+//         "email": userModel.value.email,
+//         "password": passwordEditingController.value.text.trim() ,
+//         "phone_number": userModel.value.phoneNumber,
+//         "country_code": userModel.value.countryCode,
+//         "zone_id": "1", // You might want to make this dynamic
+//         "fcm_token": userModel.value.fcmToken,
+//         "app_identifier": userModel.value.appIdentifier,
+//       };
+//       print("signUp ${bodyJson} ");
+//       http.Response response = await http.post(
+//         Uri.parse( '${Constant.baseUrl}restaurant/signup',),
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Accept': 'application/json',
+//         },
+//         body: json.encode(bodyJson,),
+//       );
+//
+//       if (response.statusCode == 200 || response.statusCode == 201) {
+//         final responseData = jsonDecode(response.body);
+//         userModel.value.id = responseData['data']?['id']?.toString() ?? '';
+//         Constant.userModel = userModel.value;
+//         if (Constant.autoApproveRestaurant == true) {
+//           await handlePostSignupNavigation();
+//         } else {
+//           ShowToastDialog.showToast(
+//               "Thank you for sign up, your application is under approval so please wait till that approve.".tr
+//           );
+//           Get.offAll(const LoginScreen());
+//         }
+//       } else {
+//         final errorData = jsonDecode(response.body);
+//         ShowToastDialog.showToast(
+//             errorData['message']?.toString() ?? 'Signup failed. Please try again.'.tr
+//         );
+//       }
+//     } catch (e) {
+//       // Handle network or other errors
+//       ShowToastDialog.showToast(e.toString());
+//     } finally {
+//       ShowToastDialog.closeLoader();
+//     }
+//   }
 
-  signUp() async {
+  // this is java API signup
+  Future<void> signUp() async {
     ShowToastDialog.showLoader("Please wait");
+
     try {
-      userModel.value.firstName = firstNameEditingController.value.text.toString();
-      userModel.value.lastName = lastNameEditingController.value.text.toString();
-      userModel.value.email = emailEditingController.value.text.toString().toLowerCase();
-      userModel.value.phoneNumber = phoneNUmberEditingController.value.text.toString();
-      userModel.value.role = Constant.userRoleVendor;
-      userModel.value.fcmToken = await NotificationService.getToken();
-      userModel.value.active = Constant.autoApproveRestaurant == true ? true : false;
-      userModel.value.countryCode = countryCodeEditingController.value.text;
-      userModel.value.isDocumentVerify = Constant.isRestaurantVerification == true ? false : true;
-      userModel.value.createdAt = Timestamp.now();
-      userModel.value.appIdentifier = Platform.isAndroid ? 'android' : 'ios';
-      if (type.value == "email") {
-        userModel.value.provider = 'email';
-      }
-      final bodyJson = {
-        "type": "email",
-        "first_name": userModel.value.firstName,
-        "last_name": userModel.value.lastName,
-        "email": userModel.value.email,
-        "password": passwordEditingController.value.text.trim() ,
-        "phone_number": userModel.value.phoneNumber,
-        "country_code": userModel.value.countryCode,
-        "zone_id": "1", // You might want to make this dynamic
-        "fcm_token": userModel.value.fcmToken,
-        "app_identifier": userModel.value.appIdentifier,
-      };
-      print("signUp ${bodyJson} ");
-      http.Response response = await http.post(
-        Uri.parse( '${Constant.baseUrl}restaurant/signup',),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode(bodyJson,),
+      final request = MerchantRequestModel(
+        firstName: firstNameEditingController.value.text.trim(),
+        lastName: lastNameEditingController.value.text.trim(),
+        dob: dobController.value.text.trim(),
+        email: emailEditingController.value.text.trim(),
+        phone: phoneNUmberEditingController.value.text.trim(),
+        username: usernameController.value.text.trim(),
+        password: passwordEditingController.value.text.trim(),
+        outletType: outletTypeController.value.text.trim(),
+        uploadedBy: "MERCHANT",
+        pan: panController.value.text.trim(),
+        adhar: aadhaarController.value.text.trim(),
+        fssai: fssaiController.value.text.trim(),
+        gstNumber: gstController.value.text.trim(),
+        accountNumber: accountNumberController.value.text.trim(),
+        ifscCode: ifscController.value.text.trim(),
+        bankLocation: bankLocationController.value.text.trim(),
+        nameInBankAccount: accountHolderController.value.text.trim(),
+        // NEW — address fields
+        buildingNumber: buildingNumberController.value.text.trim(),
+        road: roadController.value.text.trim(),
+        landmark: landmarkController.value.text.trim(),
+        stateName: selectedState.value?.stateName ?? "",
+        cityName: selectedCity.value?.cityName ?? "",
+        areaName: selectedArea.value?.areaName ?? "",
+        latitude: latitudeController.value.text.trim(),
+        longitude: longitudeController.value.text.trim(),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
-        userModel.value.id = responseData['data']?['id']?.toString() ?? '';
-        Constant.userModel = userModel.value;
-        if (Constant.autoApproveRestaurant == true) {
-          await handlePostSignupNavigation();
-        } else {
-          ShowToastDialog.showToast(
-              "Thank you for sign up, your application is under approval so please wait till that approve.".tr
-          );
-          Get.offAll(const LoginScreen());
-        }
-      } else {
-        final errorData = jsonDecode(response.body);
+      final merchant =
+      await FireStoreUtils.createMerchant(request);
+
+      if (merchant != null) {
+        print("========== MERCHANT ID = ${merchant.merchantId} ==========");
         ShowToastDialog.showToast(
-            errorData['message']?.toString() ?? 'Signup failed. Please try again.'.tr
+          "Merchant registered successfully",
         );
+
+        Get.offAll(const LoginScreen());
+
+      } else {
+
+        ShowToastDialog.showToast(
+          "Merchant registration failed",
+        );
+
       }
     } catch (e) {
-      // Handle network or other errors
       ShowToastDialog.showToast(e.toString());
     } finally {
       ShowToastDialog.closeLoader();
     }
   }
-
 // Helper method for post-signup navigation
   handlePostSignupNavigation() async {
     // App is now 100% free - no subscription checks needed
     Get.offAll(const LoginScreen());
+  }
+  //THIS IS CREATE OUTLET METGHOD FOR SIGNUP OF OUTLET
+  Future<void> createOutlet() async {
+    ShowToastDialog.showLoader("Please wait");
+
+    try {
+      final merchantId =
+          int.tryParse(
+            Preferences.getString('merchantId'),
+          ) ??
+              0;
+
+      if (merchantId <= 0) {
+        ShowToastDialog.showToast(
+          "Merchant ID not found",
+        );
+        return;
+      }
+
+      if (outletNameController.value.text.trim().isEmpty) {
+        ShowToastDialog.showToast(
+          "Please enter outlet name",
+        );
+        return;
+      }
+
+      if (outletPhoneController.value.text.trim().isEmpty) {
+        ShowToastDialog.showToast(
+          "Please enter outlet phone",
+        );
+        return;
+      }
+
+      Map<String, dynamic> body = {
+        "outletName":
+        outletNameController.value.text.trim(),
+
+        "merchantId": merchantId,
+
+        "cuisineType":
+        cuisineTypeController.value.text.trim(),
+
+        "outletPhone":
+        outletPhoneController.value.text.trim(),
+
+        "buildingNumber":
+        buildingNumberController.value.text.trim(),
+
+        "road":
+        roadController.value.text.trim(),
+
+        "landmark":
+        landmarkController.value.text.trim(),
+
+        "cityId":
+        int.tryParse(
+          cityController.value.text.trim(),
+        ) ??
+            0,
+
+        "stateName":
+        stateNameController.value.text.trim(),
+
+        "areaName":
+        areaNameController.value.text.trim(),
+
+        "latitude":
+        latitudeController.value.text.trim(),
+
+        "longitude":
+        longitudeController.value.text.trim(),
+
+        "operatingDays": [
+          {
+            "dayOfWeekId": 1,
+            "isOpen": true,
+            "openingTime": "09:00",
+            "closingTime": "22:00",
+            "slotType": "FULL_DAY"
+          }
+        ],
+
+        "uploadedBy": "MERCHANT"
+      };
+
+      print("=== CREATE OUTLET REQUEST ===");
+      print(body);
+
+      OutletModel? outlet =
+      await FireStoreUtils.createOutlet(body);
+
+      if (outlet != null) {
+        ShowToastDialog.showToast(
+          "Outlet created successfully",
+        );
+
+        Get.back(result: true);
+      } else {
+        ShowToastDialog.showToast(
+          "Outlet creation failed",
+        );
+      }
+    } catch (e) {
+      print("CREATE OUTLET ERROR: $e");
+
+      ShowToastDialog.showToast(
+        e.toString(),
+      );
+    } finally {
+      ShowToastDialog.closeLoader();
+    }
   }
   // signUpWithEmailAndPassword() async {
   //   signUp();

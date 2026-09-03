@@ -31,7 +31,7 @@ class SubscriptionPurchaseService {
         'payment_type': paymentType,
         'zone': zoneId,
         // Send the exact plan ID from backend (what user actually bought)
-        'subscription_plan_id': plan.id,
+        'subscription_plan_id': plan.subscriptionPlanId,
         // Full snapshot of the plan details at purchase time
         'subscription_plan': jsonEncode(plan.toJson()),
       };

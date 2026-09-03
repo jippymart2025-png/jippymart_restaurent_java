@@ -203,6 +203,11 @@ class SelectedProductModel {
   double discountPrice;
   bool publish;
   bool isAvailable;
+  String? productName;
+  String? description;
+  String? categoryId;
+  bool? isVeg;
+
 
   List<AddonItem> addons;
 
@@ -217,6 +222,10 @@ class SelectedProductModel {
 
   SelectedProductModel({
     required this.masterProductId,
+    this.productName,
+    this.description,
+    this.categoryId,
+    this.isVeg,
     this.vendorProductId,
     required this.merchantPrice,
     required this.onlinePrice,
@@ -260,84 +269,6 @@ class SelectedProductModel {
   /// Only options with `isAvailable == true` are sent to backend.
   List<Map<String, dynamic>> get optionsJson =>
       options.where((o) => o.isAvailable).map((o) => o.toJson()).toList();
+
+  String? get imageLink => null;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Form-body builder
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Builds the form-encoded body for POST /api/foods/store.
-/// Returns a flat list of key-value pairs (some keys repeat for arrays).
-///
-/// Availability is sent as one JSON-encoded string per product:
-///   selected_products[0][available_timings] = '[{"day":"Monday",...}]'
-///
-/// Options are sent as one JSON-encoded string per product:
-///   selected_products[0][options] = '[{"id":"opt_xxx",...}]'
-List<MapEntry<String, String>> buildStoreFormBody(
-    List<SelectedProductModel> selected) {
-  final pairs = <MapEntry<String, String>>[];
-
-  for (var i = 0; i < selected.length; i++) {
-    final p = selected[i];
-    final pfx = 'selected_products[$i]';
-
-    // ── Core fields ──────────────────────────────────────────────────────────
-    pairs.add(MapEntry('${pfx}[master_product_id]', p.masterProductId));
-
-    if (p.vendorProductId?.isNotEmpty == true) {
-      pairs.add(MapEntry('${pfx}[vendor_product_id]', p.vendorProductId!));
-    }
-
-    pairs.add(MapEntry(
-        '${pfx}[merchant_price]', p.merchantPrice.toStringAsFixed(2)));
-    pairs.add(
-        MapEntry('${pfx}[online_price]', p.onlinePrice.toStringAsFixed(2)));
-    pairs.add(MapEntry(
-        '${pfx}[discount_price]', p.discountPrice.toStringAsFixed(2)));
-    pairs.add(MapEntry('${pfx}[publish]', p.publish ? '1' : '0'));
-    pairs.add(MapEntry('${pfx}[isAvailable]', p.isAvailable ? '1' : '0'));
-
-    // ── Add-ons (parallel arrays) ─────────────────────────────────────────
-    for (final a in p.addons) {
-      pairs.add(MapEntry('${pfx}[addons_title][]', a.title));
-      pairs.add(MapEntry('${pfx}[addons_price][]', a.price));
-    }
-
-    // ── Availability — one JSON-encoded string per product ───────────────
-    // Format: [{"day":"Monday","timeslot":[{"from":"11:00","to":"22:00"}]}]
-    if (p.availableDays.isNotEmpty) {
-      pairs.add(MapEntry(
-        '${pfx}[available_timings]',
-        jsonEncode(p.availabilityJson),
-      ));
-    }
-
-    // ── Options — one JSON-encoded string per product ─────────────────────
-    // Format: [{"id":"opt_xxx","title":"...","price":"329",...}]
-    if (p.options.isNotEmpty) {
-      pairs.add(MapEntry(
-        '${pfx}[options]',
-        jsonEncode(p.optionsJson),
-      ));
-    }
-  }
-
-  return pairs;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// URL-encode helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Encode to application/x-www-form-urlencoded string.
-String encodeFormBody(List<MapEntry<String, String>> pairs) {
-  return pairs
-      .map((e) =>
-  '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-      .join('&');
-}
-
-/// Convenience: go straight from selected list to encoded string.
-String encodeSelectedProducts(List<SelectedProductModel> selected) =>
-    encodeFormBody(buildStoreFormBody(selected));

@@ -109,6 +109,7 @@ dependencies:
   flutter_background_service: ^5.1.0
   http: ^1.6.0
   google_maps_webservice: ^0.0.20-nullsafety.5
+  flutter_secure_storage: ^10.3.1
 #  flutter_background_service_android: ^6.3.1
 
 
