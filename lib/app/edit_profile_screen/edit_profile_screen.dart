@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/edit_profile_controller.dart';
@@ -12,6 +14,9 @@ import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
+import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
+import '../add_restaurant_screen/locationselection.dart';
+import '../../constant/show_toast_dialog.dart';
 
 class EditProfileScreen extends StatelessWidget {
   const EditProfileScreen({super.key});
@@ -98,34 +103,374 @@ class EditProfileScreen extends StatelessWidget {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              TextFieldWidget(
-                                title: 'Outlet Name'.tr,
-                                controller: controller.outletNameController.value,
-                                hintText: 'Outlet Name'.tr,
-                              ),
-                              TextFieldWidget(
-                                title: 'Email'.tr,
-                                textInputType: TextInputType.emailAddress,
-                                controller: controller.emailController.value,
-                                hintText: 'Email'.tr,
-                              ),
-                              TextFieldWidget(
-                                title: 'Phone Number'.tr,
-                                controller: controller.outletPhoneController.value,
-                                hintText: 'Phone Number'.tr,
-                              ),
-                              TextFieldWidget(
-                                title: 'Cuisine Type'.tr,
-                                controller: controller.cuisineTypeController.value,
-                                hintText: 'Cuisine Type'.tr,
-                              ),
-                              TextFieldWidget(
-                                title: 'Delivery Radius (km)'.tr,
-                                controller: controller.radiusController.value,
-                                hintText: 'Radius'.tr,
-                                textInputType: TextInputType.number,
+                              // TextFieldWidget(
+                              //   title: 'Outlet Name'.tr,
+                              //   controller: controller.outletNameController.value,
+                              //   hintText: 'Outlet Name'.tr,
+                              // ),
+                              // TextFieldWidget(
+                              //   title: 'Email'.tr,
+                              //   textInputType: TextInputType.emailAddress,
+                              //   controller: controller.emailController.value,
+                              //   hintText: 'Email'.tr,
+                              // ),
+                              // TextFieldWidget(
+                              //   title: 'Phone Number'.tr,
+                              //   controller: controller.outletPhoneController.value,
+                              //   hintText: 'Phone Number'.tr,
+                              // ),
+                              // TextFieldWidget(
+                              //   title: 'Alternate Phone Number'.tr,
+                              //   controller: controller.alternatePhoneController.value,
+                              //   hintText: 'Alternate Phone Number'.tr,
+                              //   textInputType: TextInputType.phone,
+                              // ),
+                              // Obx(() {
+                              //   final selectedNames = controller.cuisineTypes
+                              //       .where((c) => controller.isCuisineSelected(c.cuisineTypeId))
+                              //       .map((c) => c.cuisineTypeName)
+                              //       .join(", ");
+                              //
+                              //   return InkWell(
+                              //     onTap: () => _showCuisinePicker(context, controller),
+                              //     child: TextFieldWidget(
+                              //       title: 'Cuisine Type'.tr,
+                              //       controller: TextEditingController(text: selectedNames),
+                              //       hintText: 'Select Cuisine Types'.tr,
+                              //       enable: false,
+                              //     ),
+                              //   );
+                              // }),
+                              // TextFieldWidget(
+                              //   title: 'FSSAI Number'.tr,
+                              //   controller: controller.fssaiNumberController.value,
+                              //   hintText: 'FSSAI Number'.tr,
+                              //   textInputType: TextInputType.number,
+                              // ),
+                              // TextFieldWidget(
+                              //   title: 'GST Number'.tr,
+                              //   controller: controller.gstNumberController.value,
+                              //   hintText: 'GST Number'.tr,
+                              // ),
+                              // TextFieldWidget(
+                              //   title: 'Delivery Radius (km)'.tr,
+                              //   controller: controller.radiusController.value,
+                              //   hintText: 'Radius'.tr,
+                              //   textInputType: TextInputType.number,
+                              // ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppThemeData.secondary300,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 12,
+                                        top: 10,
+                                        bottom: 4,
+                                      ),
+                                      child: Text(
+                                        'Outlet Information'.tr,
+                                        style: TextStyle(
+                                          color: AppThemeData.secondary300,
+                                          fontFamily: AppThemeData.semiBold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      child: Column(
+                                        children: [
+                                          TextFieldWidget(
+                                            title: 'Outlet Name'.tr,
+                                            controller: controller.outletNameController.value,
+                                            hintText: 'Outlet Name'.tr,
+                                          ),
+                                          TextFieldWidget(
+                                            title: 'Email'.tr,
+                                            textInputType: TextInputType.emailAddress,
+                                            controller: controller.emailController.value,
+                                            hintText: 'Email'.tr,
+                                          ),
+                                          TextFieldWidget(
+                                            title: 'Phone Number'.tr,
+                                            controller: controller.outletPhoneController.value,
+                                            hintText: 'Phone Number'.tr,
+                                          ),
+                                          TextFieldWidget(
+                                            title: 'Alternate Phone Number'.tr,
+                                            controller: controller.alternatePhoneController.value,
+                                            hintText: 'Alternate Phone Number'.tr,
+                                            textInputType: TextInputType.phone,
+                                          ),
+                                          TextFieldWidget(
+                                            title: 'FSSAI Number'.tr,
+                                            controller: controller.fssaiNumberController.value,
+                                            hintText: 'FSSAI Number'.tr,
+                                            textInputType: TextInputType.number,
+                                          ),
+                                          TextFieldWidget(
+                                            title: 'GST Number'.tr,
+                                            controller: controller.gstNumberController.value,
+                                            hintText: 'GST Number'.tr,
+                                          ),
+                                          Obx(() {
+                                            final selectedNames = controller.cuisineTypes
+                                                .where((c) => controller.isCuisineSelected(c.cuisineTypeId))
+                                                .map((c) => c.cuisineTypeName)
+                                                .join(", ");
+
+                                            return InkWell(
+                                              onTap: () => _showCuisinePicker(context, controller),
+                                              child: TextFieldWidget(
+                                                title: 'Cuisine Type'.tr,
+                                                controller: TextEditingController(text: selectedNames),
+                                                hintText: 'Select Cuisine Types'.tr,
+                                                enable: false,
+                                              ),
+                                            );
+                                          }),
+                                          TextFieldWidget(
+                                            title: 'Delivery Radius (km)'.tr,
+                                            controller: controller.radiusController.value,
+                                            hintText: 'Radius'.tr,
+                                            textInputType: TextInputType.number,
+                                          ),
+                                          const SizedBox(height: 8),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 16),
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppThemeData.secondary300,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Operating Hours'.tr,
+                                        style: TextStyle(
+                                          color: AppThemeData.secondary300,
+                                          fontFamily: AppThemeData.semiBold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+
+                                      Obx(() => CheckboxListTile(
+                                        value: controller.sameTimingForAllDays.value,
+                                        onChanged: (value) {
+                                          controller.sameTimingForAllDays.value = value!;
+                                        },
+                                        contentPadding: EdgeInsets.zero,
+                                        title: Text('Same timings for all days'.tr),
+                                        controlAffinity: ListTileControlAffinity.leading,
+                                      )),
+
+                                      const SizedBox(height: 10),
+
+                                      Obx(() {
+                                        if (controller.sameTimingForAllDays.value) {
+                                          return Column(
+                                            children: [
+                                              ListView.builder(
+                                                shrinkWrap: true,
+                                                physics: const NeverScrollableScrollPhysics(),
+                                                itemCount: controller.commonTimeSlots.length,
+                                                itemBuilder: (context, slotIndex) {
+                                                  final slot = controller.commonTimeSlots[slotIndex];
+
+                                                  return Card(
+                                                    margin: const EdgeInsets.only(bottom: 12),
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(12),
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          const SizedBox(height: 12),
+                                                          TextFormField(
+                                                            initialValue: slot["openingTime"],
+                                                            decoration: InputDecoration(
+                                                              labelText: 'Opening Time'.tr,
+                                                              hintText: "09:00",
+                                                            ),
+                                                            onChanged: (value) {
+                                                              controller.updateCommonOpeningTime(
+                                                                  slotIndex, value);
+                                                            },
+                                                          ),
+                                                          const SizedBox(height: 12),
+                                                          TextFormField(
+                                                            initialValue: slot["closingTime"],
+                                                            decoration: InputDecoration(
+                                                              labelText: 'Closing Time'.tr,
+                                                              hintText: "22:00",
+                                                            ),
+                                                            onChanged: (value) {
+                                                              controller.updateCommonClosingTime(
+                                                                  slotIndex, value);
+                                                            },
+                                                          ),
+                                                          Align(
+                                                            alignment: Alignment.centerRight,
+                                                            child: IconButton(
+                                                              onPressed: () {
+                                                                controller
+                                                                    .removeCommonTimeSlot(slotIndex);
+                                                              },
+                                                              icon: const Icon(Icons.delete),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                              const SizedBox(height: 8),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton.icon(
+                                                  onPressed: controller.addCommonTimeSlot,
+                                                  icon: const Icon(Icons.add),
+                                                  label: Text('Add Another Time Slot'.tr),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
+
+                                        return Column(
+                                          children: [
+                                            ListView.builder(
+                                              shrinkWrap: true,
+                                              physics: const NeverScrollableScrollPhysics(),
+                                              itemCount: controller.operatingDaysList.length,
+                                              itemBuilder: (context, dayIndex) {
+                                                final day = controller.operatingDaysList[dayIndex];
+                                                final slots = day["slots"] as List<dynamic>;
+
+                                                return Card(
+                                                  margin: const EdgeInsets.only(bottom: 12),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(12),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          day["dayName"],
+                                                          style: const TextStyle(
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 16,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        ...List.generate(slots.length, (slotIndex) {
+                                                          final slot = slots[slotIndex];
+                                                          return Column(
+                                                            children: [
+                                                              Row(
+                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                children: [
+                                                                  Text(
+                                                                    'Slot ${slotIndex + 1}'.tr,
+                                                                    style: const TextStyle(
+                                                                      fontWeight: FontWeight.w600,
+                                                                      fontSize: 13,
+                                                                    ),
+                                                                  ),
+                                                                  IconButton(
+                                                                    padding: EdgeInsets.zero,
+                                                                    constraints: const BoxConstraints(),
+                                                                    onPressed: () {
+                                                                      controller.removeTimeSlot(dayIndex, slotIndex);
+                                                                    },
+                                                                    icon: const Icon(Icons.delete, size: 20),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              const SizedBox(height: 8),
+                                                              TextFormField(
+                                                                initialValue: slot["openingTime"],
+                                                                decoration: InputDecoration(
+                                                                  labelText: 'Opening Time'.tr,
+                                                                  hintText: "09:00",
+                                                                ),
+                                                                onChanged: (value) {
+                                                                  controller.updateOpeningTime(dayIndex, slotIndex, value);
+                                                                },
+                                                              ),
+                                                              const SizedBox(height: 12),
+                                                              TextFormField(
+                                                                initialValue: slot["closingTime"],
+                                                                decoration: InputDecoration(
+                                                                  labelText: 'Closing Time'.tr,
+                                                                  hintText: "22:00",
+                                                                ),
+                                                                onChanged: (value) {
+                                                                  controller.updateClosingTime(dayIndex, slotIndex, value);
+                                                                },
+                                                              ),
+
+                                                            ],
+                                                          );
+                                                        }),
+                                                        SizedBox(
+                                                          width: double.infinity,
+                                                          child: TextButton.icon(
+                                                            onPressed: () {
+                                                              controller.addTimeSlot(dayIndex);
+                                                            },
+                                                            icon: const Icon(Icons.add),
+                                                            label: Text('Add Slot'.tr),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(height: 8),
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: ElevatedButton.icon(
+                                                onPressed: controller.operatingDaysList.length >= 7
+                                                    ? null
+                                                    : controller.addOperatingDay,
+                                                icon: const Icon(Icons.add),
+                                                label: Text(
+                                                  controller.operatingDaysList.length >= 7
+                                                      ? 'All 7 Days Added'.tr
+                                                      : '${'Add Day'.tr} (${controller.weekDays[controller.operatingDaysList.length]})',
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ),
+                              ),
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
@@ -181,8 +526,21 @@ class EditProfileScreen extends StatelessWidget {
                                             controller.landmarkController.value,
                                             hintText: 'Landmark'.tr,
                                           ),
+                                          InkWell(
+                                            onTap: () => _openLocationPickerForEdit(context, controller),
+                                            child: IgnorePointer(
+                                              child: TextField(
+                                                controller: controller.locationDisplayController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Outlet Location'.tr,
+                                                  hintText: 'Tap to select on map',
+                                                  suffixIcon: const Icon(Icons.location_on),
+                                                ),
+                                                maxLines: 2,
+                                              ),
+                                            ),
+                                          ),
 
-                                          const SizedBox(height: 8),
 
                                           // STATE DROPDOWN WILL COME HERE
 
@@ -322,12 +680,12 @@ class EditProfileScreen extends StatelessWidget {
                                           controller: controller.businessTypeController.value,
                                           hintText: 'Business Type'.tr,
                                         ),
-                                        TextFieldWidget(
-                                          title: 'Status'.tr,
-                                          controller: controller.statusController.value,
-                                          hintText: 'Status'.tr,
-                                          enable: false,
-                                        ),
+                                        // TextFieldWidget(
+                                        //   title: 'Status'.tr,
+                                        //   controller: controller.statusController.value,
+                                        //   hintText: 'Status'.tr,
+                                        //   enable: false,
+                                        // ),
                                       ],
                                     ),
                                   ),
@@ -472,6 +830,116 @@ class EditProfileScreen extends StatelessWidget {
             );
           },
         );
+      },
+    );
+  }
+  void _showCuisinePicker(
+      BuildContext context, EditProfileController controller) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Select Cuisine Types'.tr,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.5,
+                  ),
+                  child: Obx(() {
+                    if (controller.isCuisineLoading.value) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: controller.cuisineTypes.map((cuisine) {
+                          return Obx(() {
+                            final selected = controller
+                                .isCuisineSelected(cuisine.cuisineTypeId);
+
+                            return CheckboxListTile(
+                              value: selected,
+                              title: Text(cuisine.cuisineTypeName),
+                              controlAffinity:
+                              ListTileControlAffinity.leading,
+                              onChanged: (_) {
+                                controller
+                                    .toggleCuisine(cuisine.cuisineTypeId);
+                              },
+                            );
+                          });
+                        }).toList(),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done'.tr),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  void _openLocationPickerForEdit(
+      BuildContext context, EditProfileController controller) {
+    Constant.checkPermission(
+      context: context,
+      onTap: () async {
+        ShowToastDialog.showLoader("Getting location...".tr);
+        try {
+          await Geolocator.requestPermission();
+          final position = await Geolocator.getCurrentPosition();
+          ShowToastDialog.closeLoader();
+
+          final initialPos = Constant.selectedMapType == 'osm'
+              ? const LatLng(20.5937, 78.9629)
+              : LatLng(position.latitude, position.longitude);
+
+          final result = await Get.to(
+                () => MapPickerPage(initialPosition: initialPos),
+            fullscreenDialog: Constant.selectedMapType != 'osm',
+          );
+
+          if (result != null) {
+            final data = result as Map<String, dynamic>;
+            final LatLng selectedLatLng = data['location'] as LatLng;
+            final String selectedAddress = data['address'] as String? ?? '';
+
+            controller.latitudeController.text =
+                selectedLatLng.latitude.toString();
+            controller.longitudeController.text =
+                selectedLatLng.longitude.toString();
+            controller.locationDisplayController.text = selectedAddress;
+          }
+        } catch (e) {
+          ShowToastDialog.closeLoader();
+          ShowToastDialog.showToast(
+              "Failed to get location: ${e.toString()}".tr);
+        }
       },
     );
   }

@@ -17,6 +17,16 @@ class MerchantRequestModel {
   String? bankLocation;
   String? nameInBankAccount;
 
+  // NEW — address fields
+  String? buildingNumber;
+  String? road;
+  String? landmark;
+  String? stateName;
+  String? cityName;
+  String? areaName;
+  String? latitude;
+  String? longitude;
+
   MerchantRequestModel({
     this.firstName,
     this.lastName,
@@ -35,6 +45,15 @@ class MerchantRequestModel {
     this.ifscCode,
     this.bankLocation,
     this.nameInBankAccount,
+    // NEW
+    this.buildingNumber,
+    this.road,
+    this.landmark,
+    this.stateName,
+    this.cityName,
+    this.areaName,
+    this.latitude,
+    this.longitude,
   });
 
   Map<String, dynamic> toJson() {
@@ -56,6 +75,15 @@ class MerchantRequestModel {
       "ifscCode": ifscCode,
       "bankLocation": bankLocation,
       "nameInBankAccount": nameInBankAccount,
+      // NEW
+      "buildingNumber": buildingNumber,
+      "road": road,
+      "landmark": landmark,
+      "stateName": stateName,
+      "cityName": cityName,
+      "areaName": areaName,
+      "latitude": latitude,
+      "longitude": longitude,
     };
   }
 }

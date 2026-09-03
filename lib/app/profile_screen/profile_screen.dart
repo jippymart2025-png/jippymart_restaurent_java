@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:jippymart_restaurant/app/profile_screen/promotions/promotion_plan_types_screen.dart';
 import 'package:jippymart_restaurant/controller/login_controller.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,7 @@ import 'package:jippymart_restaurant/app/edit_profile_screen/edit_profile_screen
 import 'package:jippymart_restaurant/app/offer_screens/offer_screen.dart';
 import 'package:jippymart_restaurant/app/special_discount_screen/special_discount_screen.dart';
 
-import 'package:jippymart_restaurant/app/profile_screen/subscription_plans_screen.dart';
+import 'package:jippymart_restaurant/app/profile_screen/subscriptions/subscription_plans_screen.dart';
 import 'package:jippymart_restaurant/app/terms_and_condition/terms_and_condition_screen.dart';
 import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/app/withdraw_method_setup_screens/withdraw_method_setup_screen.dart';
@@ -164,24 +165,6 @@ class ProfileScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Subscription Management Section
-                          // Visibility(
-                          //   visible: false,
-                          //   child: Padding(
-                          //     padding: const EdgeInsets.only(bottom: 10),
-                          //     child: SubscriptionPlanWidget(
-                          //       onClick: () {
-                          //         Get.to(const SubscriptionPlanScreen(), arguments: {'isProfile': true})?.then((value) {
-                          //           if (value == true) {
-                          //             controller.getUserProfile();
-                          //           }
-                          //         });
-                          //       },
-                          //       userModel: controller.userModel.value,
-                          //     ),
-                          //   ),
-                          // ),
-                          // Add Story Section
                           Visibility(
                             visible: false,
                             child: cardDecoration(
@@ -394,32 +377,32 @@ class ProfileScreen extends StatelessWidget {
                           //   ),
                           // ),
 
-                          cardDecoration(
-                            themeChange,
-                            controller,
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: ShapeDecoration(
-                                color: themeChange.getThem()
-                                    ? AppThemeData.secondary600
-                                    : AppThemeData.driverApp50,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                  BorderRadius.circular(120),
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: SvgPicture.asset(
-                                    "assets/icons/ic_subscription.svg"),
-                              ),
-                            ),
-                            "Promotion Plans",
-                                () {
-                              Get.to(const SubscriptionPlansScreen());
-                            },
-                          ),
+                          // cardDecoration(
+                          //   themeChange,
+                          //   controller,
+                          //   Container(
+                          //     width: 44,
+                          //     height: 44,
+                          //     decoration: ShapeDecoration(
+                          //       color: themeChange.getThem()
+                          //           ? AppThemeData.secondary600
+                          //           : AppThemeData.driverApp50,
+                          //       shape: RoundedRectangleBorder(
+                          //         borderRadius:
+                          //         BorderRadius.circular(120),
+                          //       ),
+                          //     ),
+                          //     child: Padding(
+                          //       padding: const EdgeInsets.all(10),
+                          //       child: SvgPicture.asset(
+                          //           "assets/icons/ic_subscription.svg"),
+                          //     ),
+                          //   ),
+                          //   "Promotion Plans",
+                          //       () {
+                          //     Get.to(const SubscriptionPlansScreen());
+                          //   },
+                          // ),
                           Text(
                             "Outlet Information".tr,
                             style: TextStyle(
@@ -640,9 +623,34 @@ class ProfileScreen extends StatelessWidget {
                                                   "assets/icons/ic_gift_box.svg"),
                                             ),
                                           ),
-                                          "Offers",
+                                          "Promotion Plans",
                                               () {
-                                            Get.to(const ProductPromotionScreen());
+                                            Get.to(const PromotionPlanTypesScreen());
+                                          },
+                                        ),
+                                        cardDecoration(
+                                          themeChange,
+                                          controller,
+                                          Container(
+                                            width: 44,
+                                            height: 44,
+                                            decoration: ShapeDecoration(
+                                              color: themeChange.getThem()
+                                                  ? AppThemeData.secondary600
+                                                  : AppThemeData.driverApp50,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(120),
+                                              ),
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(10),
+                                              child: SvgPicture.asset(
+                                                  "assets/icons/ic_subscription.svg"),
+                                            ),
+                                          ),
+                                          "Subscription Plans",
+                                              () {
+                                            Get.to(const SubscriptionPlansScreen());
                                           },
                                         ),
 

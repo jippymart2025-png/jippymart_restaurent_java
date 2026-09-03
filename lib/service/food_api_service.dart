@@ -6,7 +6,8 @@ import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/models/master_product_model.dart';
 import 'package:jippymart_restaurant/models/selected_product_model.dart';
 
-import '../models/bulkstore_product_model.dart';
+import '../models/addproduct_from _masterproduct.dart';
+import '../utils/common.dart';
 import '../utils/fire_store_utils.dart';
 import '../utils/preferences.dart';
 
@@ -73,21 +74,19 @@ class FoodApiService {
         String? search,
       }) async {
     try {
+
       String url =
-          'http://187.127.156.147:8084/api/fm/master-products/category/$categoryId';
+          '${Constant.baseUrl}fm/master-products/category/$categoryId';
       if (search != null && search.trim().isNotEmpty) {
         url += '?keyword=${Uri.encodeComponent(search.trim())}';
       }
-
+     final headers = await getHeaders();
       print("Products URL => $url");
-      final token = Preferences.getString('authToken');
+      //final token = Preferences.getString('authToken');
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
 
       );
 
@@ -183,100 +182,185 @@ class FoodApiService {
 //   }
 // }
 
-  static Future<BulkStoreResponse> bulkStoreProducts(
-    List<SelectedProductModel> selected, {
-    required int outletCategoryId,
-  }) async {
+  // static Future<BulkStoreResponse> bulkStoreProducts(
+  //   List<SelectedProductModel> selected, {
+  //   required int outletCategoryId,
+  // }) async {
+  //   try {
+  //     final outletId = Preferences.getInt('outletId');
+  //     final List<BulkStoreProductItemModel> productRequests = selected.map((p) {return BulkStoreProductItemModel(
+  //         productName: p.productName ?? "",
+  //         description: p.description ?? "",
+  //         merchantPrice: (p.merchantPrice ?? 0).toDouble(),
+  //         isVeg: p.isVeg ?? false,
+  //         hasProductVariants: false,
+  //         variants: [],
+  //         masterProductId: int.tryParse(
+  //           p.masterProductId ?? "0",
+  //         ) ??
+  //             0,
+  //         categoryId: int.tryParse(
+  //           p.categoryId ?? "0",
+  //         ) ??
+  //             0,
+  //       );
+  //     }).toList();
+  //     final token = Preferences.getString('authToken');
+  //     final requestBody = AddProductsFromMasterRequest(
+  //       outletId: outletId,
+  //       categoryId: categoryId,
+  //       products: productRequests,
+  //     ).toJson();
+  //     print("REQUEST = ${jsonEncode(requestBody)}");
+  //     print(jsonEncode(requestBody));
+  //     final response = await http.post(
+  //       Uri.parse(
+  //           'http://187.127.156.147:8084/api/fm/products/from-master'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //       body: jsonEncode(requestBody),
+  //     );
+  //
+  //     print("STATUS CODE = ${response.statusCode}");
+  //     print("RESPONSE = ${response.body}");
+  //
+  //     final bodyStr =
+  //     response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+  //
+  //     Map<String, dynamic> json = {};
+  //
+  //     if (bodyStr.isNotEmpty) {
+  //       try {
+  //         json = jsonDecode(bodyStr) as Map<String, dynamic>;
+  //       } catch (e) {
+  //         print("JSON Decode Error: $e");
+  //       }
+  //     }
+  //
+  //     final httpSuccess =
+  //         response.statusCode >= 200 && response.statusCode < 300;
+  //
+  //     final savedCount = _parseCount(json['savedCount']);
+  //     final skippedCount = _parseCount(json['skippedCount']);
+  //     final apiMessage = json['message']?.toString();
+  //     final success = httpSuccess && savedCount > 0;
+  //
+  //     if (success) {
+  //       FireStoreUtils.invalidateOutletProductCache(outletId);
+  //       FireStoreUtils.invalidateVendorCategoryCache();
+  //     }
+  //
+  //     return BulkStoreResponse(
+  //       success: success,
+  //       message: success
+  //           ? 'Saved: $savedCount, Skipped: $skippedCount'
+  //           : (apiMessage?.isNotEmpty == true
+  //               ? apiMessage!
+  //               : 'Request failed (${response.statusCode})'),
+  //       imported: savedCount,
+  //       errors: null,
+  //       statusCode: response.statusCode,
+  //     );
+  //   } catch (e, st) {
+  //     print('FoodApiService.bulkStoreProducts error: $e');
+  //     print(st);
+  //
+  //     return BulkStoreResponse(
+  //       success: false,
+  //       message: e.toString(),
+  //       imported: 0,
+  //       errors: null,
+  //       statusCode: 0,
+  //     );
+  //   }
+  // }
+  static Future<AddProductsFromMasterResponse> addProductsFromMaster(
+      List<SelectedProductModel> selected, {
+        required int categoryId,
+      }) async {
     try {
       final outletId = Preferences.getInt('outletId');
-      final List<BulkStoreProductItemModel> productRequests = selected.map((p) {return BulkStoreProductItemModel(
+
+      final List<AddProductFromMasterItem> productRequests =
+      selected.map((p) {
+        return AddProductFromMasterItem(
+          masterProductId:
+          int.tryParse(p.masterProductId ?? "0") ?? 0,
           productName: p.productName ?? "",
           description: p.description ?? "",
-          merchantPrice: (p.merchantPrice ?? 0).toDouble(),
           isVeg: p.isVeg ?? false,
           hasProductVariants: false,
-          variants: [],
-          masterProductId: int.tryParse(
-            p.masterProductId ?? "0",
-          ) ??
-              0,
-          categoryId: int.tryParse(
-            p.categoryId ?? "0",
-          ) ??
-              0,
+          merchantPrice: (p.merchantPrice ?? 0).toDouble(),
+          //imageLink: p.imageLink ?? "",
+          csvTiming: "",
+          csvDayOfWeek: "",
+          timings: [],
+          variantGroups: [],
         );
       }).toList();
-      final token = Preferences.getString('authToken');
-      final requestBody = BulkStoreProductModel(
+
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
+      final requestBody = AddProductsFromMasterRequest(
         outletId: outletId,
-        outletCategoryId: outletCategoryId,
+        categoryId: categoryId,
         products: productRequests,
       ).toJson();
+
       print("REQUEST = ${jsonEncode(requestBody)}");
-      print(jsonEncode(requestBody));
+
       final response = await http.post(
         Uri.parse(
-            'http://187.127.156.147:8084/api/fm/products/from-master'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+          '${Constant.baseUrl}fm/products/from-master',
+        ),
+        headers: headers,
         body: jsonEncode(requestBody),
       );
 
       print("STATUS CODE = ${response.statusCode}");
       print("RESPONSE = ${response.body}");
 
-      final bodyStr =
-      response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+      final bodyStr = response.body
+          .replaceFirst(RegExp(r'^\uFEFF'), '')
+          .trim();
 
-      Map<String, dynamic> json = {};
-
-      if (bodyStr.isNotEmpty) {
-        try {
-          json = jsonDecode(bodyStr) as Map<String, dynamic>;
-        } catch (e) {
-          print("JSON Decode Error: $e");
-        }
+      if (bodyStr.isEmpty) {
+        throw Exception('Empty response from server');
       }
 
-      final httpSuccess =
-          response.statusCode >= 200 && response.statusCode < 300;
+      final Map<String, dynamic> json =
+      jsonDecode(bodyStr) as Map<String, dynamic>;
 
-      final savedCount = _parseCount(json['savedCount']);
-      final skippedCount = _parseCount(json['skippedCount']);
-      final apiMessage = json['message']?.toString();
-      final success = httpSuccess && savedCount > 0;
+      // Convert Java response JSON into your model.
+      final result =
+      AddProductsFromMasterResponse.fromJson(json);
 
-      if (success) {
+      // Clear cache if at least one product was saved.
+      if (result.savedCount > 0) {
         FireStoreUtils.invalidateOutletProductCache(outletId);
         FireStoreUtils.invalidateVendorCategoryCache();
       }
 
-      return BulkStoreResponse(
-        success: success,
-        message: success
-            ? 'Saved: $savedCount, Skipped: $skippedCount'
-            : (apiMessage?.isNotEmpty == true
-                ? apiMessage!
-                : 'Request failed (${response.statusCode})'),
-        imported: savedCount,
-        errors: null,
-        statusCode: response.statusCode,
-      );
+      // Return the complete response model.
+      return result;
     } catch (e, st) {
-      print('FoodApiService.bulkStoreProducts error: $e');
+      print(
+        'FoodApiService.addProductsFromMaster error: $e',
+      );
       print(st);
 
-      return BulkStoreResponse(
-        success: false,
-        message: e.toString(),
-        imported: 0,
-        errors: null,
-        statusCode: 0,
+      // Error fallback.
+      return AddProductsFromMasterResponse(
+        savedCount: 0,
+        skippedCount: 0,
+        savedNames: [],
+        skippedNames: [],
       );
     }
   }
+
 
   static int _parseCount(dynamic value) {
     if (value is int) return value;
@@ -288,6 +372,7 @@ class FoodApiService {
 
 
 }
+
 class MasterProductsResponse {
   final bool success;
   final String? message;

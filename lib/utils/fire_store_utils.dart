@@ -60,13 +60,18 @@ import 'package:video_compress/video_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/create_master_product_model.dart';
+import '../models/cuisine_type_model.dart';
 import '../models/merchant_response_model.dart';
 import '../models/merchant_request_model.dart';
 import '../models/outlet_details_model.dart';
 import '../models/outlet_fetch_result.dart';
 import '../models/outlet_model.dart';
 
-import 'package:jippymart_restaurant/models/bulkstore_product_model.dart';
+import 'package:jippymart_restaurant/models/addproduct_from _masterproduct.dart';
+
+import '../models/outlet_product_model.dart';
+import '../models/promotion_models.dart';
+import 'common.dart';
 final headers = {
   "Accept": "application/json",
   "Content-Type": "application/json",
@@ -267,24 +272,16 @@ class FireStoreUtils {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-
+      //final token = prefs.getString('authToken') ?? '';
+      final headers = await getHeaders();
       final url =
-          'http://187.127.156.147:8084/api/fm/merchants/getMerchantProfile?merchantId=$merchantId';
+          '${Constant.baseUrl}fm/merchants/getMerchantProfile?merchantId=$merchantId';
 
-      print("Request URL: $url");
-      print("Token Present: ${token.isNotEmpty}");
-      print("Token = $token");
-      print({
-        "Authorization": "Bearer $token",
-      });
+
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print("Status Code: ${response.statusCode}");
@@ -317,49 +314,44 @@ class FireStoreUtils {
   }
   //(end)
 
-  // this code  is for java method (start)
+
   static Future<bool> updateMerchantProfile(String merchantId, UserModel userModel) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
+      final token = prefs.getString('headers') ?? '';
+      final headers = await getHeaders();
+      final parsedMerchantId = int.tryParse(merchantId);
+      if (parsedMerchantId == null) {
+        log("updateMerchantProfile error: invalid merchantId '$merchantId'");
+        return false;
+      }
 
-    // ADD HERE 👇
-    print("===== UPDATE MERCHANT REQUEST =====");
-    print(json.encode({
-    'merchantId': merchantId,
-    'merchantName': userModel.merchantName,
-    'businessType': userModel.merchantBusinessType,
-    'merchantEmail': userModel.email,
-    'merchantPhone': userModel.phoneNumber,
-    'accountNumber': userModel.accountNumber,
-    'ifscCode': userModel.ifscCode,
-    'bankName': userModel.bankName,
-    'accountHolderName': userModel.accountHolderName,
-    }));
+      final Map<String, dynamic> body = {
+        'merchantId': parsedMerchantId,
+        'merchantName': userModel.merchantName,
+        'businessType': userModel.merchantBusinessType,
+        'status': userModel.status,
+        'merchantEmail': userModel.email,
+        'merchantPhone': userModel.phoneNumber,
+        'bankId': userModel.bankId,
+        'recipientId': userModel.recipientId,
+        'accountNumber': userModel.accountNumber,
+        'ifscCode': userModel.ifscCode,
+        'bankName': userModel.bankName,
+        'accountHolderName': userModel.accountHolderName,
+        'userType': 'MERCHANT',
+      };
+
+      print("===== UPDATE MERCHANT REQUEST =====");
+      print(json.encode(body));
 
       final response = await http.put(
-        Uri.parse('http://187.127.156.147:8084/api/fm/merchants/updateMerchantProfile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({
-          'merchantId': int.parse(merchantId),
-          'merchantName': userModel.merchantName,
-          'businessType': userModel.merchantBusinessType,
-          'merchantEmail': userModel.email,
-          'merchantPhone': userModel.phoneNumber,
-          'bankId': userModel.bankId,
-          'recipientId': userModel.recipientId,
-          'accountNumber': userModel.accountNumber,
-          'ifscCode': userModel.ifscCode,
-          'bankName': userModel.bankName,
-          'accountHolderName': userModel.accountHolderName,
-          'userType': 'MERCHANT'
-        }),
+        Uri.parse('${Constant.baseUrl}fm/merchants/updateMerchantProfile'),
+        headers: headers,
+        body: json.encode(body),
       );
-      if (response.statusCode == 200) {
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         log("updateMerchantProfile success: ${response.body}");
         return true;
       } else {
@@ -375,16 +367,18 @@ class FireStoreUtils {
 //  THIS IS JAVA API OF CREATE MERCHANT PROFILE   create merchant profile
   static Future<MerchantModel?> createMerchant(MerchantRequestModel request,) async {
     try {
-      final token = Preferences.getString('authToken');
+     // final token = Preferences.getString('authToken');
+     final headers = await getHeaders();
+//{
+     //    'Content-Type': 'application/json',
+     //    'Accept': 'application/json',
+     //    //'Authorization':'Bearer $token'
+     //  } ;
       final response = await http.post(
         Uri.parse(
-          'http://187.127.156.147:8084/api/fm/merchants/createMerchant',
+          '${Constant.baseUrl}fm/merchants/createMerchant',
         ),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization':'Bearer $token'
-        },
+        headers: headers,
         body: jsonEncode(
           request.toJson(),
         ),
@@ -414,9 +408,9 @@ class FireStoreUtils {
   // THIS IS THE CODE OF JAVA GETTING THE LIST OF OUTLETS BY USING THE MERCHANT ID
   static Future<List<OutletModel>> getMerchantOutlets(int merchantId,) async {
     try {
-      final token = Preferences.getString('authToken');
-      final url =
-          'http://187.127.156.147:8084/api/fm/outlets/merchant/$merchantId';
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/outlets/merchant/$merchantId';
 
       print("===== getMerchantOutlets API =====");
       print("URL: $url");
@@ -424,10 +418,7 @@ class FireStoreUtils {
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print("Status Code: ${response.statusCode}");
@@ -485,8 +476,9 @@ class FireStoreUtils {
   /// Fetches a single outlet by ID with safe parsing and structured result.
   static Future<OutletFetchResult> fetchOutletById(int outletId) async {
     try {
-      final token = Preferences.getString('authToken');
-      final url = 'http://187.127.156.147:8084/api/fm/outlets/getOutletById/$outletId';
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/outlets/getOutletById/$outletId';
 
       print("===== getOutletById API =====");
       print("URL: $url");
@@ -494,10 +486,7 @@ class FireStoreUtils {
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print("Status Code: ${response.statusCode}");
@@ -636,7 +625,7 @@ class FireStoreUtils {
               outletId: resolvedOutletId,
               merchantId: merchantId,
               outletName: outlet.outletName,
-              outletCategoryId: outlet.outletCategoryId,
+             // outletCategoryId: outlet.outletCategoryId,
             ),
       merchantId: merchantId,
       outletId: resolvedOutletId,
@@ -758,7 +747,7 @@ class FireStoreUtils {
   // Rate limiting: Track last request time and minimum delay between requests
   static DateTime? _lastUpdateDriverUserRequest;
   static const Duration _minDelayBetweenRequests = Duration(milliseconds: 200); // 200ms delay between requests
-  
+
   static Future<bool> updateDriverUser(UserModel userModel, {int maxRetries = 3}) async {
     // Rate limiting: Ensure minimum delay between requests
     if (_lastUpdateDriverUserRequest != null) {
@@ -768,7 +757,7 @@ class FireStoreUtils {
         await Future.delayed(delayNeeded);
       }
     }
-    
+
     int attempt = 0;
     while (attempt < maxRetries) {
       try {
@@ -785,7 +774,7 @@ class FireStoreUtils {
           },
           body: json.encode(userJson),
         );
-        
+
         if (response.statusCode == 200) {
           final responseData = json.decode(response.body);
           // Performance Optimization: Invalidate user profile cache after update
@@ -1649,7 +1638,7 @@ class FireStoreUtils {
 
   /// GET /api/fm/outlets/getOutletDetails — outlet-scoped inventory (Java API).
   /// Does not replace [getProduct]; use when an outlet is selected.
-  static Future<OutletProductsResult?> getOutletProducts({
+  static Future<OutletProductsResult?> getOutletDetailsWithProducts({
     int? outletId,
     bool forceRefresh = false,
   }) async {
@@ -1677,19 +1666,17 @@ class FireStoreUtils {
       //final loginType = Preferences.getString('loginType').trim().toUpperCase();
       //final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
       final userType = 'MERCHANT';
-      final token = Preferences.getString('authToken');
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final url =
-          'http://187.127.156.147:8084/api/fm/outlets/getOutletDetails'
+          '${Constant.baseUrl}fm/outlets/getOutletDetails'
           '?outletId=$resolvedOutletId&userType=$userType';
 
       print('getOutletProducts => $url');
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print('getOutletProducts status => ${response.statusCode}');
@@ -1779,109 +1766,195 @@ class FireStoreUtils {
   }
 
   /// Loads outlet menu as nested API model (used for edit/update outlet products).
-  static Future<OutletDetailsModel?> fetchOutletDetailsModel({
-    int? outletId,
-  }) async {
-    final verifiedOutletId =
-        await resolveOutletIdForMenu(preferredId: outletId);
-    if (verifiedOutletId == null || verifiedOutletId <= 0) {
+  // static Future<OutletDetailsModel?> fetchOutletDetailsModel({
+  //   int? outletId,
+  // }) async {
+  //   final verifiedOutletId =
+  //       await resolveOutletIdForMenu(preferredId: outletId);
+  //   if (verifiedOutletId == null || verifiedOutletId <= 0) {
+  //     return null;
+  //   }
+  //
+  //   try {
+  //     final loginType = Preferences.getString('loginType').trim().toUpperCase();
+  //     final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
+  //     final token = Preferences.getString('authToken');
+  //     final url =
+  //         'http://187.127.156.147:8084/api/fm/outlets/getOutletDetails'
+  //         '?outletId=$verifiedOutletId&userType=$userType';
+  //
+  //     final response = await http.get(
+  //       Uri.parse(url),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //     );
+  //
+  //     if (response.statusCode != 200) return null;
+  //
+  //     final decoded = json.decode(response.body);
+  //     if (decoded is! Map) return null;
+  //
+  //     final map = Map<String, dynamic>.from(decoded);
+  //     if (map['success'] == false) return null;
+  //
+  //     final dynamic rawData = map['data'] ?? map;
+  //     if (rawData is! Map) return null;
+  //
+  //     return OutletDetailsModel.fromJson(
+  //       Map<String, dynamic>.from(rawData),
+  //     );
+  //   } catch (e, st) {
+  //     print('fetchOutletDetailsModel error: $e $st');
+  //     return null;
+  //   }
+  // }
+
+  /// PUT /api/fm/outlets/editAndUpdateOutletProducts
+  // static Future<bool> editAndUpdateOutletProducts({
+  //   required OutletDetailsModel outletDetails,
+  // }) async {
+  //   final outletId = outletDetails.outletId ?? resolveActiveOutletId();
+  //   if (outletId <= 0) return false;
+  //
+  //   try {
+  //     final loginType = Preferences.getString('loginType').trim().toUpperCase();
+  //     final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
+  //     final token = Preferences.getString('authToken');
+  //     final url =
+  //         'http://187.127.156.147:8084/api/fm/outlets/editAndUpdateOutletProducts'
+  //         '?outletId=$outletId&userType=$userType';
+  //
+  //     final response = await http.put(
+  //       Uri.parse(url),
+  //       headers: {
+  //
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //       body: json.encode(outletDetails.toJson()),
+  //     );
+  //
+  //     print(
+  //       'editAndUpdateOutletProducts status=${response.statusCode} '
+  //       'body=${response.body}',
+  //     );
+  //
+  //     if (response.statusCode >= 200 && response.statusCode < 300) {
+  //       invalidateOutletProductCache(outletId);
+  //       return true;
+  //     }
+  //     return false;
+  //   } catch (e, st) {
+  //     print('editAndUpdateOutletProducts error: $e $st');
+  //     return false;
+  //   }
+  // }
+  static Future<List<PromotionOutletProductModel>?> getOutletProductsDetailsOnlyForPromotions({required int outletId}) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/products/outlet/$outletId';
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is List) {
+          return decoded
+              .map((item) => PromotionOutletProductModel.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+        }
+      }
+      log('getOutletProductsFlat failed: ${response.statusCode} — ${response.body}');
+      return null;
+    } catch (e) {
+      log('getOutletProductsFlat error: $e');
       return null;
     }
-
+  }
+  static Future<OutletSingleProductModel?> getOutletSingleProductDetails(int productId) async {
     try {
-      final loginType = Preferences.getString('loginType').trim().toUpperCase();
-      final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
-      final token = Preferences.getString('authToken');
-      final url =
-          'http://187.127.156.147:8084/api/fm/outlets/getOutletDetails'
-          '?outletId=$verifiedOutletId&userType=$userType';
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/products/$productId';
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      print('getOutletSingleProductDetails => $url');
+      final response = await http.get(Uri.parse(url), headers: headers);
+      print('getOutletSingleProductDetails status => ${response.statusCode}');
+      print('getOutletSingleProductDetails body => ${response.body}');
 
-      if (response.statusCode != 200) return null;
-
-      final decoded = json.decode(response.body);
-      if (decoded is! Map) return null;
-
-      final map = Map<String, dynamic>.from(decoded);
-      if (map['success'] == false) return null;
-
-      final dynamic rawData = map['data'] ?? map;
-      if (rawData is! Map) return null;
-
-      return OutletDetailsModel.fromJson(
-        Map<String, dynamic>.from(rawData),
-      );
-    } catch (e, st) {
-      print('fetchOutletDetailsModel error: $e $st');
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return OutletSingleProductModel.fromJson(decoded);
+        }
+      }
+      return null;
+    } catch (e) {
+      log('getOutletSingleProductDetails error: $e');
       return null;
     }
   }
 
-  /// PUT /api/fm/outlets/editAndUpdateOutletProducts
-  static Future<bool> editAndUpdateOutletProducts({
-    required OutletDetailsModel outletDetails,
+  static Future<bool> updateSingleOutletProductDetails({
+    required int productId,
+    required OutletSingleProductModel originalProduct,
+    required int categoryId,
+    required String productName,
+    required String description,
+    required bool isVeg,
+    required bool hasProductVariants,
+    required num merchantPrice,
+    required String imageLink,
+    int? outletId,
   }) async {
-    final outletId = outletDetails.outletId ?? resolveActiveOutletId();
-    if (outletId <= 0) return false;
-
     try {
-      final loginType = Preferences.getString('loginType').trim().toUpperCase();
-      final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
-      final token = Preferences.getString('authToken');
-      final url =
-          'http://187.127.156.147:8084/api/fm/outlets/editAndUpdateOutletProducts'
-          '?outletId=$outletId&userType=$userType';
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/products/updateCategoryAndProductDetails/$productId';
 
-      final response = await http.put(
-        Uri.parse(url),
-        headers: {
+      final body = json.encode(originalProduct.toUpdateJson(
+        productName: productName,
+        outletCategoryId: categoryId,
+        description: description,
+        isVeg: isVeg,
+        hasProductVariants: hasProductVariants,
+        merchantPrice: merchantPrice,
+        imageLink: imageLink,
+      ));
 
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(outletDetails.toJson()),
-      );
+      print('updateSingleOutletProductDetails => $url');
+      print('updateSingleOutletProductDetails body => $body');
 
-      print(
-        'editAndUpdateOutletProducts status=${response.statusCode} '
-        'body=${response.body}',
-      );
+      final response = await http.put(Uri.parse(url), headers: headers, body: body);
+      print('updateSingleOutletProductDetails status => ${response.statusCode}');
+      print('updateSingleOutletProductDetails resp => ${response.body}');
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         invalidateOutletProductCache(outletId);
         return true;
       }
       return false;
-    } catch (e, st) {
-      print('editAndUpdateOutletProducts error: $e $st');
+    } catch (e) {
+      log('updateSingleOutletProductDetails error: $e');
       return false;
     }
   }
-
   /// Updates one outlet product inside the nested outlet menu payload.
-  static Future<bool> updateOutletProductItem({
-    required int productId,
-    required OutletProductModel updatedProduct,
-    int? outletId,
-  }) async {
-    final details = await fetchOutletDetailsModel(outletId: outletId);
-    if (details == null) return false;
-    if (details.findProductById(productId) == null) return false;
-
-    final payload = details.copyWithUpdatedProduct(
-      productId: productId,
-      updatedProduct: updatedProduct,
-    );
-
-    return editAndUpdateOutletProducts(outletDetails: payload);
-  }
+  // static Future<bool> updateOutletProductItem({
+  //   required int productId,
+  //   required OutletProductModel updatedProduct,
+  //   int? outletId,
+  // }) async {
+  //   final details = await fetchOutletDetailsModel(outletId: outletId);
+  //   if (details == null) return false;
+  //   if (details.findProductById(productId) == null) return false;
+  //
+  //   final payload = details.copyWithUpdatedProduct(
+  //     productId: productId,
+  //     updatedProduct: updatedProduct,
+  //   );
+  //
+  //   return editAndUpdateOutletProducts(outletDetails: payload);
+  // }
 
   /// Call after any product write (set/update/delete) to force next getProduct() to hit the API.
   static void invalidateProductCache([String? vendorID]) {
@@ -1967,22 +2040,15 @@ class FireStoreUtils {
 
     return advertisementdata;
   }
-  static Future<CreateMasterProductResponse?>
-  createMasterProduct(
-      CreateMasterProductRequest request,
-      ) async {
+  static Future<CreateMasterProductResponse?> createMasterProduct(CreateMasterProductRequest request,) async {
     try {
-      final token =
-      Preferences.getString('authToken');
-
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final response = await http.post(
         Uri.parse(
-          'http://187.127.156.147:8084/api/fm/master-products/create',
+          '${Constant.baseUrl}fm/master-products/create',
         ),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
         body: jsonEncode(request.toJson()),
       );
 
@@ -2029,16 +2095,14 @@ class FireStoreUtils {
   /// Updates a master product via the Java API PUT endpoint.
   static Future<bool> updateMasterProduct(int masterProductId, Map<String, dynamic> payload) async {
     try {
-      final token = Preferences.getString('authToken');
-      final url = 'http://187.127.156.147:8084/api/fm/master-products/$masterProductId';
+      // final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/master-products/$masterProductId';
       log('updateMasterProduct PUT $url');
       log('updateMasterProduct payload: ${json.encode(payload)}');
       final response = await http.put(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization':'Bearer $token'
-        },
+        headers: headers,
 
         body: json.encode(payload),
       );
@@ -2424,105 +2488,7 @@ class FireStoreUtils {
     return vendorModel;
   }
 
-  // static Future<List<VendorCategoryModel>?> getVendorCategoryById() async {
-  //   if (_cachedVendorCategories != null &&
-  //       _vendorCategoriesCacheTime != null &&
-  //       DateTime.now().difference(_vendorCategoriesCacheTime!) < _vendorCategoriesCacheTTL) {
-  //     return _cachedVendorCategories!;
-  //   }
-  //
-  //   try {
-  //     final vendorID = Constant.userModel?.vendorID;
-  //     final query = vendorID != null && vendorID.isNotEmpty ? '?vendorID=$vendorID' : '';
-  //     final url = 'http://187.127.156.147:8084/api/fm/categories';
-  //     print("getVendorCategoryById $url");
-  //     final response = await http.get(
-  //       Uri.parse(url),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final body = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
-  //       if (body.isEmpty) return null;
-  //       if (!body.startsWith('[') && !body.startsWith('{')) {
-  //         log('getVendorCategoryById: response is not JSON (got text). Use vendor categories endpoint that returns JSON.');
-  //         return null;
-  //       }
-  //
-  //       dynamic decoded;
-  //       try {
-  //         decoded = json.decode(body);
-  //       } catch (_) {
-  //         log('getVendorCategoryById: response is not valid JSON (e.g. server returned CSV/text).');
-  //         return null;
-  //       }
-  //       List<dynamic>? rawList;
-  //
-  //       if (decoded is List) {
-  //         rawList = decoded;
-  //       } else if (decoded is Map) {
-  //         final jsonResponse = Map<String, dynamic>.from(decoded);
-  //         final success = jsonResponse['success'];
-  //         final isSuccess = success == true || success == 1 || success == 'true';
-  //         final data = jsonResponse['data'] ?? jsonResponse['categories'] ?? jsonResponse['vendor_categories'] ?? jsonResponse['result'];
-  //
-  //         if (!isSuccess && data == null) {
-  //           throw Exception('API returned unsuccessful response: ${jsonResponse['message']}');
-  //         }
-  //         if (data is List) {
-  //           rawList = data;
-  //         } else if (data is Map) {
-  //           final map = Map<String, dynamic>.from(data as Map);
-  //           final list = map['categories'] ?? map['vendor_categories'] ?? map['data'] ?? map['list'];
-  //           if (list is List) {
-  //             rawList = list;
-  //           } else if (map.containsKey('id') || map.containsKey('title') || map.containsKey('name')) {
-  //             final categories = [VendorCategoryModel.fromJson(map)];
-  //             _cachedVendorCategories = categories;
-  //             _vendorCategoriesCacheTime = DateTime.now();
-  //             return categories;
-  //           } else {
-  //             rawList = map.values.where((e) => e is Map).toList();
-  //           }
-  //         } else if (data != null) {
-  //           rawList = null;
-  //         }
-  //       }
-  //
-  //       if (rawList != null && rawList.isNotEmpty) {
-  //         final categories = <VendorCategoryModel>[];
-  //         for (final e in rawList) {
-  //           if (e is! Map) continue;
-  //           try {
-  //             categories.add(VendorCategoryModel.fromJson(Map<String, dynamic>.from(e)));
-  //           } catch (_) {
-  //             continue;
-  //           }
-  //         }
-  //         if (categories.isNotEmpty) {
-  //           _cachedVendorCategories = categories;
-  //           _vendorCategoriesCacheTime = DateTime.now();
-  //           log('getVendorCategoryById: loaded ${categories.length} categories, first title: "${categories.first.title}"');
-  //           return categories;
-  //         }
-  //       }
-  //       log('getVendorCategoryById: no categories parsed. decoded type: ${decoded.runtimeType}');
-  //       return null;
-  //     } else {
-  //       throw Exception('Failed to load categories: ${response.statusCode}');
-  //     }
-  //   } catch (e, _) {
-  //     if (e is FormatException) {
-  //       log('getVendorCategoryById: response not valid JSON or category field invalid (e.g. review_attributes CSV).');
-  //     } else {
-  //       print('Error fetching vendor categories getVendorCategoryById: $e');
-  //     }
-  //     return null;
-  //   }
-  // }
-  //
+
 
   static Future<List<VendorCategoryModel>?> getMerchantCategoryById() async {
     if (_cachedVendorCategories != null &&
@@ -2533,19 +2499,14 @@ class FireStoreUtils {
     }
 
     try {
-      const String url =
-          "http://187.127.156.147:8084/api/fm/getHomeOrAllCategories?filter=ALL";
+      String url = '${Constant.baseUrl}fm/getHomeOrAllCategories?filter=ALL';
 
       print("getVendorCategoryById => $url");
-      final token =
-      Preferences.getString('authToken');
-
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print("Status Code => ${response.statusCode}");
@@ -2595,16 +2556,13 @@ class FireStoreUtils {
     required int createdBy,
   }) async {
     try {
-      final token = Preferences.getString('authToken');
-
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final response = await http.post(
         Uri.parse(
-          'http://187.127.156.147:8084/api/fm/createCategory',
+          '${Constant.baseUrl}fm/createCategory',
         ),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
         body: jsonEncode({
           "categoryName": categoryName,
           "categoryType": categoryType,
@@ -3225,160 +3183,6 @@ class FireStoreUtils {
     return isAdded;
   }
 
-
-  // static Future<bool> uploadDriverDocument(Documents documents) async {
-  //   String userId = await FireStoreUtils.getCurrentUid(); // FIXED
-  //   bool isAdded = false;
-  //
-  //   print("------------ Document Upload Debug Log ------------");
-  //   print("User ID      : $userId");
-  //   print("documentId   : ${documents.documentId}");
-  //   print("status       : ${documents.status}");
-  //   print("type         : restaurant");
-  //   print("frontImage   : ${documents.frontImage}");
-  //   print("backImage    : ${documents.backImage}");
-  //   print("--------------------------------------------------");
-  //
-  //   try {
-  //     var request = http.MultipartRequest(
-  //       'POST',
-  //       Uri.parse('${Constant.baseUrl}documents/driver/upload'),
-  //     );
-  //
-  //     request.fields['userId'] = userId;
-  //     request.fields['documentId'] = documents.documentId ?? '';
-  //     request.fields['status'] = documents.status ?? '';
-  //     request.fields['type'] = 'restaurant';
-  //
-  //     // ⛔ Prevent URL upload — Only upload Local Files
-  //     if (documents.frontImage != null && documents.frontImage!.isNotEmpty) {
-  //       if (documents.frontImage!.startsWith("http")) {
-  //         print("⚠ frontImage is URL → Skipping upload");
-  //       } else {
-  //         request.files.add(await http.MultipartFile.fromPath(
-  //           'frontImage',
-  //           documents.frontImage!,
-  //         ));
-  //       }
-  //     }
-  //
-  //     if (documents.backImage != null && documents.backImage!.isNotEmpty) {
-  //       if (documents.backImage!.startsWith("http")) {
-  //         print("⚠ backImage is URL → Skipping upload");
-  //       } else {
-  //         request.files.add(await http.MultipartFile.fromPath(
-  //           'backImage',
-  //           documents.backImage!,
-  //         ));
-  //       }
-  //     }
-  //
-  //     var response = await request.send();
-  //     print("📤 uploadDriverDocument Status: ${response.statusCode}");
-  //
-  //     isAdded = response.statusCode == 200;
-  //
-  //   } catch (e) {
-  //     print("❌ Error uploading document: $e");
-  //   }
-  //
-  //   return isAdded;
-  // }
-
-  // static Future<bool> uploadDriverDocument(Documents documents) async {
-  //   String userId = await FireStoreUtils.getCurrentUid();
-  //   bool isAdded = false;
-  //
-  //   print("------------ Document Upload Debug Log ------------");
-  //   print("User ID      : $userId");
-  //   print("documentId   : ${documents.documentId}");
-  //   print("status       : ${documents.status}");
-  //   print("type         : restaurant");
-  //   print("frontImage   : ${documents.frontImage}");
-  //   print("backImage    : ${documents.backImage}");
-  //   print("--------------------------------------------------");
-  //
-  //   try {
-  //     var request = http.MultipartRequest(
-  //       'POST',
-  //       Uri.parse('${Constant.baseUrl}documents/driver/upload'),
-  //     );
-  //
-  //     request.fields['userId'] = userId;
-  //     request.fields['documentId'] = documents.documentId ?? '';
-  //     request.fields['status'] = documents.status ?? '';
-  //     request.fields['type'] = 'restaurant';
-  //
-  //     if (documents.frontImage != null && documents.frontImage!.isNotEmpty) {
-  //       request.files.add(await http.MultipartFile.fromPath('frontImage', documents.frontImage!));
-  //     }
-  //
-  //     if (documents.backImage != null && documents.backImage!.isNotEmpty) {
-  //       request.files.add(await http.MultipartFile.fromPath('backImage', documents.backImage!));
-  //     }
-  //
-  //     var response = await request.send();
-  //     print('uploadDriverDocument Response: ${response.statusCode}');
-  //
-  //     isAdded = response.statusCode == 200;
-  //   } catch (e) {
-  //     ShowToastDialog.closeLoader();
-  //     print('Error uploading document: $e');
-  //   }
-  //
-  //   return isAdded;
-  // }
-
-  // static Future<bool> uploadDriverDocument(Documents documents) async {
-  //   String userId = await FireStoreUtils.getCurrentUid();
-  //   bool isAdded = false;
-  //
-  //   try {
-  //     // Create multipart request
-  //     var request = http.MultipartRequest(
-  //       'POST',
-  //       Uri.parse('${Constant.baseUrl}documents/driver/upload'),
-  //     );
-  //     // Add fields
-  //     request.fields['userId'] = userId;
-  //     request.fields['documentId'] = documents.documentId ?? '';
-  //     request.fields['status'] = documents.status ?? '';
-  //     request.fields['type'] = 'restaurant';
-  //     if (documents.frontImage != null && documents.frontImage!.isNotEmpty) {
-  //       // Assuming frontImage is a file path or you have a way to get the file
-  //       var frontImageFile = await http.MultipartFile.fromPath(
-  //         'frontImage',
-  //         documents.frontImage!,
-  //       );
-  //       request.files.add(frontImageFile);
-  //     }
-  //
-  //     if (documents.backImage != null && documents.backImage!.isNotEmpty) {
-  //       // Assuming backImage is a file path
-  //       var backImageFile = await http.MultipartFile.fromPath(
-  //         'backImage',
-  //         documents.backImage!,
-  //       );
-  //       request.files.add(backImageFile);
-  //     }
-  //     // Send the request
-  //     var response = await request.send();
-  //     print('uploadDriverDocument: ${response.statusCode}');
-  //     if (response.statusCode == 200) {
-  //       isAdded = true;
-  //     } else {
-  //       isAdded = false;
-  //       print('Upload failed with status: ${response.statusCode}');
-  //     }
-  //   } catch (error) {
-  //     isAdded = false;
-  //     print('Error uploading document: $error');
-  //   }
-  //   return isAdded;
-  // }
-
-
-
   static Future<DeliveryCharge?> getDelivery() async {
     try {
       final response = await http.get(
@@ -3448,19 +3252,13 @@ class FireStoreUtils {
   static Future<OutletModel?> createOutlet(Map<String, dynamic> body) async {
 
     try {
-      final token = Preferences.getString('authToken');
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final response = await http.post(
         Uri.parse(
-          'http://187.127.156.147:8084/api/fm/outlets/createOutlet',
+          '${Constant.baseUrl}fm/outlets/createOutlet',
         ),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-
-          // temporary token
-          'Authorization':
-          'Bearer $token',
-        },
+        headers: headers,
         body: jsonEncode(body),
       );
 
@@ -3497,16 +3295,13 @@ class FireStoreUtils {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-
-      final url = 'http://187.127.156.147:8084/api/fm/outlets/getOutletById/$outletId';
+      //final token = prefs.getString('authToken') ?? '';
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/outlets/getOutletById/$outletId';
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       print("getOutletProfile Status: ${response.statusCode}");
@@ -3531,21 +3326,17 @@ class FireStoreUtils {
   static Future<bool> updateOutletProfile(int outletId, Map<String, dynamic> body) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-
+      //final token = prefs.getString('authToken') ?? '';
+     final headers = await getHeaders();
       final url =
-          'http://187.127.156.147:8084/api/fm/outlets/updateOutletDetailsByMerchant/$outletId';
+          '${Constant.baseUrl}fm/outlets/updateOutletDetailsByMerchant/$outletId';
 
       print("===== UPDATE OUTLET REQUEST =====");
       print(json.encode(body));
 
       final response = await http.put(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
         body: json.encode(body),
       );
 
@@ -3565,6 +3356,41 @@ class FireStoreUtils {
     }
   }
 //ENDED
+  // GET CUISINE TYPES STARTED
+  static Future<List<CuisineTypeModel>> getCuisineTypes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      //final token = prefs.getString('authToken') ?? '';
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/cuisine-types';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      print("getCuisineTypes Status: ${response.statusCode}");
+      print("getCuisineTypes Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final data = jsonData['data'];
+
+        if (data is List) {
+          return data
+              .map((e) => CuisineTypeModel.fromJson(
+              Map<String, dynamic>.from(e as Map)))
+              .toList();
+        }
+      }
+
+      return [];
+    } catch (e) {
+      print("getCuisineTypes Error: $e");
+      return [];
+    }
+  }
+// END OF THIS API
 
 // Helper method to convert VendorModel to JSON with proper GeoPoint handling
 // Helper method to convert VendorModel to JSON with proper GeoPoint handling
@@ -4450,6 +4276,60 @@ class FireStoreUtils {
   }
 
   /// POST /api/fm/outlet-unavailability — mark product/category/outlet unavailable.
+  // static Future<bool> postOutletItemUnavailability({
+  //   required String type,
+  //   required int unavailabilityId,
+  //   String reason = 'Temporarily unavailable',
+  //   DateTime? fromDate,
+  //   DateTime? toDate,
+  // }) async {
+  //   try {
+  //     final now = DateTime.now();
+  //     final from = fromDate ?? now;
+  //     final to = toDate ?? DateTime(2099, 12, 31, 23, 59, 59);
+  //     final token = Preferences.getString('authToken');
+  //
+  //     final body = {
+  //       'type': type.toUpperCase(),
+  //       'unavailabilityId': unavailabilityId,
+  //       'unavailabilityFromDate': from.toIso8601String().split('.').first,
+  //       'unavailabilityToDate': to.toIso8601String().split('.').first,
+  //       'reason': reason,
+  //     };
+  //
+  //     final response = await http.post(
+  //       Uri.parse(
+  //         'http://187.127.156.147:8084/api/fm/outlet-unavailability',
+  //       ),
+  //       headers: {
+  //         'Accept': 'application/json',
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //       body: jsonEncode(body),
+  //     );
+  //
+  //     print('postOutletItemUnavailability => ${jsonEncode(body)}');
+  //     print('postOutletItemUnavailability status => ${response.statusCode}');
+  //     print('postOutletItemUnavailability body => ${response.body}');
+  //
+  //     if (response.statusCode != 200 && response.statusCode != 201) {
+  //       return false;
+  //     }
+  //
+  //     final decoded = jsonDecode(response.body);
+  //     if (decoded is Map && decoded['success'] == false) {
+  //       return false;
+  //     }
+  //
+  //     return true;
+  //   } catch (e, stackTrace) {
+  //     print('postOutletItemUnavailability error: $e');
+  //     print(stackTrace);
+  //     return false;
+  //   }
+  // }
+
   static Future<bool> postOutletItemUnavailability({
     required String type,
     required int unavailabilityId,
@@ -4459,47 +4339,95 @@ class FireStoreUtils {
   }) async {
     try {
       final now = DateTime.now();
-      final from = fromDate ?? now;
-      final to = toDate ?? DateTime(2099, 12, 31, 23, 59, 59);
-      final token = Preferences.getString('authToken');
 
+      // Keep at least 1 minute buffer before API call.
+      final minimumAllowedTime = now.add(
+        const Duration(minutes: 1),
+      );
+
+      // If selected start time is current/past,
+      // automatically move it into the future.
+      final selectedFrom = fromDate ?? minimumAllowedTime;
+
+      final from = selectedFrom.isBefore(minimumAllowedTime)
+          ? minimumAllowedTime
+          : selectedFrom;
+
+      // Default end date.
+      var to = toDate ??
+          DateTime(
+            2099,
+            12,
+            31,
+            23,
+            59,
+            59,
+          );
+
+      // End date must always be after start date.
+      if (!to.isAfter(from)) {
+        to = from.add(
+          const Duration(hours: 1),
+        );
+      }
+
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final body = {
         'type': type.toUpperCase(),
         'unavailabilityId': unavailabilityId,
-        'unavailabilityFromDate': from.toIso8601String().split('.').first,
-        'unavailabilityToDate': to.toIso8601String().split('.').first,
+
+        // Removes milliseconds because backend expects:
+        // yyyy-MM-ddTHH:mm:ss
+        'unavailabilityFromDate':
+        from.toIso8601String().split('.').first,
+
+        'unavailabilityToDate':
+        to.toIso8601String().split('.').first,
+
         'reason': reason,
       };
 
+      debugPrint('==========================================');
+      debugPrint('POST OUTLET ITEM UNAVAILABILITY');
+      debugPrint('Current time     : $now');
+      debugPrint('Original from    : $fromDate');
+      debugPrint('Final from       : $from');
+      debugPrint('Original to      : $toDate');
+      debugPrint('Final to         : $to');
+      debugPrint('Request body     : ${jsonEncode(body)}');
+      debugPrint('==========================================');
+
       final response = await http.post(
         Uri.parse(
-          'http://187.127.156.147:8084/api/fm/outlet-unavailability',
+          '${Constant.baseUrl}fm/outlet-unavailability',
         ),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
         body: jsonEncode(body),
       );
 
-      print('postOutletItemUnavailability => ${jsonEncode(body)}');
-      print('postOutletItemUnavailability status => ${response.statusCode}');
-      print('postOutletItemUnavailability body => ${response.body}');
+      debugPrint(
+        'postOutletItemUnavailability status => ${response.statusCode}',
+      );
+
+      debugPrint(
+        'postOutletItemUnavailability body => ${response.body}',
+      );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         return false;
       }
 
       final decoded = jsonDecode(response.body);
+
       if (decoded is Map && decoded['success'] == false) {
         return false;
       }
 
       return true;
     } catch (e, stackTrace) {
-      print('postOutletItemUnavailability error: $e');
-      print(stackTrace);
+      debugPrint('postOutletItemUnavailability error: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
@@ -4511,7 +4439,8 @@ class FireStoreUtils {
     String reason = 'Restored availability',
   }) async {
     try {
-      final token = Preferences.getString('authToken');
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
       final body = {
         'type': type.toUpperCase(),
         'unavailabilityId': unavailabilityId,
@@ -4520,13 +4449,9 @@ class FireStoreUtils {
 
       final response = await http.patch(
         Uri.parse(
-          'http://187.127.156.147:8084/api/fm/outlet-unavailability/restore',
+          '${Constant.baseUrl}fm/outlet-unavailability/restore',
         ),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+         headers: headers,
         body: jsonEncode(body),
       );
 
@@ -4550,4 +4475,200 @@ class FireStoreUtils {
       return false;
     }
   }
+// ── Promotion APIs ──────────────────────────────────────────────────────────
+
+
+
+  // GET /api/fm/promotion-plans/outlets/{outletId}/counts
+  static Future<PromotionCountsModel> getPromotionCounts(int outletId) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/promotion-plans/outlets/$outletId/counts';
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded['data'] != null) {
+          return PromotionCountsModel.fromJson(decoded['data']);
+        }
+      }
+      return PromotionCountsModel();
+    } catch (e) {
+      log('getPromotionCounts error: $e');
+      return PromotionCountsModel();
+    }
+  }
+
+  // GET /api/fm/promotion-plans/outlets/{outletId}?status={status}&page={page}&size={size}
+  static Future<List<PromotionPlanModel>> getPromotionPlansByOutlet({
+    required int outletId,
+    required String status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    try {
+      final headers = await getHeaders();
+      final url =
+          '${Constant.baseUrl}fm/promotion-plans/outlets/$outletId?status=$status&page=$page&size=$size&sortBy=promotionPlanId&direction=DESC';
+
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded['data'] != null && decoded['data']['content'] != null) {
+          final List<dynamic> list = decoded['data']['content'];
+          return list.map((e) => PromotionPlanModel.fromJson(e)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      log('getPromotionPlansByOutlet error: $e');
+      return [];
+    }
+  }
+
+  // GET /api/fm/promotion-plan-types
+  // GET /api/fm/promotion-plan-types
+  static Future<List<PromotionPlanTypeModel>> getPromotionPlanTypes() async {
+    try {
+      final headers = await getHeaders();
+      final baseUrl = Constant.baseUrl.endsWith('/')
+          ? Constant.baseUrl
+          : '${Constant.baseUrl}/';
+      final url = '${baseUrl}fm/promotion-plan-types';
+
+      debugPrint('===== GET PROMOTION PLAN TYPES =====');
+      debugPrint('Request URL: $url');
+      debugPrint('Headers: $headers');
+
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final dynamic decoded = json.decode(response.body);
+
+        List<dynamic> rawList = [];
+        if (decoded is List) {
+          rawList = decoded;
+        } else if (decoded is Map && decoded['data'] is List) {
+          rawList = decoded['data'];
+        }
+
+        final list = rawList.map((e) {
+          if (e is Map<String, dynamic>) {
+            return PromotionPlanTypeModel.fromJson(e);
+          }
+          return PromotionPlanTypeModel.fromJson(Map<String, dynamic>.from(e as Map));
+        }).toList();
+
+        debugPrint('Parsed Plan Types: ${list.length}');
+        return list;
+      } else {
+        log('getPromotionPlanTypes failed: ${response.statusCode} - ${response.body}');
+        return [];
+      }
+    } catch (e, stackTrace) {
+      log('getPromotionPlanTypes error: $e');
+      log(stackTrace.toString());
+      return [];
+    }
+  }
+  static Map<String, dynamic>? _tryDecode(String body) {
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // POST /api/fm/promotion-plans
+
+  // POST /api/fm/promotion-plans
+  static Future<PromotionApiResult> createPromotionPlan(PromotionPlanModel model) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/promotion-plans';
+      final body = json.encode(model.toCreateUpdateJson());
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+
+      final decoded = _tryDecode(response.body);
+      final apiMessage = decoded != null ? decoded['message']?.toString() : null;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return PromotionApiResult(success: true, message: apiMessage ?? 'Plan created successfully');
+      }
+      return PromotionApiResult(success: false, message: apiMessage ?? 'Failed to create promotion plan');
+    } catch (e) {
+      log('createPromotionPlan error: $e');
+      return PromotionApiResult(success: false, message: 'Something went wrong. Please try again.');
+    }
+  }
+  // DELETE /api/fm/promotion-plans/{promotionPlanId}
+  static Future<bool> deletePromotionPlan(int promotionPlanId) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/promotion-plans/$promotionPlanId';
+      final response = await http.delete(Uri.parse(url), headers: headers);
+      return response.statusCode == 200;
+    } catch (e) {
+      log('deletePromotionPlan error: $e');
+      return false;
+    }
+  }
+
+  static Future<PromotionPlanModel?> getPromotionPlanDetails(int promotionPlanId) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/promotion-plans/$promotionPlanId';
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        // Note: this endpoint returns the plan object directly,
+        // NOT wrapped in a "data" key like the list/counts endpoints.
+        return PromotionPlanModel.fromJson(decoded);
+      }
+      log('getPromotionPlanDetails failed: ${response.statusCode} — ${response.body}');
+      return null;
+    } catch (e) {
+      log('getPromotionPlanDetails error: $e');
+      return null;
+    }
+  }
+  static Future<PromotionApiResult> updatePromotionPlan(int promotionPlanId, PromotionPlanModel model) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/promotion-plans/$promotionPlanId';
+      final body = json.encode(model.toCreateUpdateJson());
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+
+      final decoded = _tryDecode(response.body);
+      final apiMessage = decoded != null ? decoded['message']?.toString() : null;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return PromotionApiResult(success: true, message: apiMessage ?? 'Plan updated successfully');
+      }
+      return PromotionApiResult(success: false, message: apiMessage ?? 'Failed to update promotion plan');
+    } catch (e) {
+      log('updatePromotionPlan error: $e');
+      return PromotionApiResult(success: false, message: 'Something went wrong. Please try again.');
+    }
+  }
+
+
+
 }

@@ -1,29 +1,21 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:crypto/crypto.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
-import 'package:jippymart_restaurant/app/auth_screen/signup_screen.dart';
-import 'package:jippymart_restaurant/app/dash_board_screens/app_not_access_screen.dart';
+
 import 'package:jippymart_restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:jippymart_restaurant/app/landing_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
-import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/service/audio_player_service.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/notification/notification_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-//import 'package:jippymart_restaurant/utils/send_notification.dart';
+
 import 'package:http/http.dart' as http;
 
-import '../app/on_boarding_screen.dart' show OnBoardingScreen;
-import '../models/vendor_model.dart';
+
+import '../utils/common.dart';
 import '../utils/preferences.dart' show Preferences;
-import 'package:jippymart_restaurant/app/Home_screen/outlet_home_screen.dart';
 
 import 'dash_board_controller.dart';
 import 'merchant_outlet_controller.dart';
@@ -36,7 +28,7 @@ class LoginController extends GetxController {
     try {
       if (Preferences.getBoolean(Preferences.isFinishOnBoardingKey) == false) {
         Get.offAll(
-              () => const OnBoardingScreen(),
+              () => const LandingScreen(),
           transition: Transition.fadeIn,
           duration: const Duration(milliseconds: 1200),
         );
@@ -132,138 +124,103 @@ class LoginController extends GetxController {
       TextEditingController().obs;
 
   RxBool passwordVisible = true.obs;
-  // @override
-  // void onInit() {
-  //   super.onInit();
-  // }
 
-  //THIS IS THE PHP CODE OF LOGIN API
-  // static Future<Map<String, dynamic>> loginWithEmailAndPasswordApi(
-  //     String email, String password) async {
-  //   try {
-  //     final body = {
-  //       'email': email,
-  //       'password': password,
-  //     };
-  //     print(" loginWithEmailAndPasswordApi ${body}");
-  //     final response = await http.post(
-  //       Uri.parse('${Constant.baseUrl}restaurant/login'),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: json.encode(body),
-  //     );
-  //     if (response.statusCode == 200) {
-  //       return json.decode(response.body);
-  //     } else {
-  //       throw Exception('Failed to login: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Login failed: $e');
-  //   }
-  // }
-  //END PHPCODE
+
+
 
   // THIS IS JAVA CODE OF LOGINAPI
-  static Future<Map<String, dynamic>> loginWithEmailAndPasswordApi(
+  // static Future<Map<String, dynamic>> loginWithUserNameAndPasswordApi(
+  //     String username,
+  //     String password,
+  //     ) async {
+  //   final response = await http.post(
+  //     Uri.parse(
+  //       '${Constant.baseUrl}fm/auth/login',
+  //     ),
+  //     headers: await getHeaders(),
+  //     body: jsonEncode({
+  //       "username": username,
+  //       "password": password,
+  //     }),
+  //   );
+  //   print("LOGIN STATUS CODE =====> ${response.statusCode}");
+  //   print("LOGIN RESPONSE =====>");
+  //   print(response.body);
+  //
+  //   if (response.statusCode == 200) {
+  //     return jsonDecode(response.body);
+  //   }
+  //
+  //
+  //   throw Exception("Login failed");
+  // }
+  static Future<Map<String, dynamic>> loginWithUserNameAndPasswordApi(
       String username,
       String password,
       ) async {
     final response = await http.post(
       Uri.parse(
-        'http://187.127.156.147:8084/api/fm/auth/login',
+        '${Constant.baseUrl}fm/auth/login',
       ),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: await getHeaders(),
       body: jsonEncode({
         "username": username,
         "password": password,
       }),
     );
-    print("LOGIN RESPONSE =====>");
-    print(response.body);
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+    print("LOGIN STATUS CODE =====> ${response.statusCode}");
+    print("LOGIN RESPONSE =====> ${response.body}");
+
+    try {
+      final responseData = jsonDecode(response.body);
+
+      // Login success
+      if (response.statusCode == 200) {
+        return responseData;
+      }
+
+      // Login failed - return backend message
+      return {
+        "success": false,
+        "statusCode": response.statusCode,
+        "message": responseData["message"] ??
+            responseData["error"] ??
+            "Login failed",
+      };
+    } catch (e) {
+      return {
+        "success": false,
+        "statusCode": response.statusCode,
+        "message": "invalid credentials.",
+      };
     }
-
-
-    throw Exception("Login failed");
   }
 
-  // END
-
-  // THIS IS THE PHP METHOD OR LOGIN START
-//   loginWithEmailAndPassword() async {
-//     ShowToastDialog.showLoader("Please wait.".tr);
-//     try {
-//       final response = await loginWithEmailAndPasswordApi(
-//         emailEditingController.value.text.toLowerCase().trim(),
-//         passwordEditingController.value.text.trim(),
-//       );
-//       if (response['success'] == true) {
-//         final userData = response['data'];
-//         print("=== FULL LOGIN RESPONSE: $userData ===");
-//
-// // ADD — adjust key name based on what login returns
-//
-//         // Validate that we have a firebase_id before proceeding
-//         if (userData['firebase_id'] == null || userData['firebase_id'].toString().isEmpty) {
-//           print("⚠️ Login error: firebase_id is missing or empty");
-//           ShowToastDialog.showToast("Login failed: Invalid user data".tr);
-//           ShowToastDialog.closeLoader();
-//           return;
-//         }
-//         await _saveUserDataToSharedPreferences(userData);
-//         UserModel? userModel = await _convertApiResponseToUserModel(userData);
-//         if (userModel != null) {
-//           if (userModel.role == Constant.userRoleVendor) {
-//             if (userModel.active == true) {
-//               // ADD THIS LINE ↓
-//               Preferences.setString('merchantId', userModel.merchantId ?? '');
-//               // Update FCM token after every login and call profile update API
-//               userModel.fcmToken = await NotificationService.getToken();
-//               await FireStoreUtils.updateUser(userModel);
-//               proceedToMainApp();
-//             } else {
-//               await clearUserData();
-//               ShowToastDialog.showToast(
-//                   "This user is disable please contact to administrator".tr);
-//             }
-//           } else {
-//             await clearUserData();
-//           }
-//         } else {
-//           print("⚠️ Login error: Failed to convert user data to UserModel");
-//           await clearUserData();
-//           ShowToastDialog.showToast("Login failed: Invalid user data".tr);
-//         }
-//       } else {
-//         ShowToastDialog.showToast(response['message'] ?? "Login failed".tr);
-//       }
-//     } catch (e, stackTrace) {
-//       print("Login error: $e");
-//       print("Stack trace: $stackTrace");
-//       ShowToastDialog.showToast("Login failed. Please try again.".tr);
-//     }
-//     ShowToastDialog.closeLoader();
-//   }
-  // END OF PHP METHOD
 
 // THIS IS THE JAVA CODE OF LOGIN METHOD START
-  loginWithEmailAndPassword() async {
+  loginWithUserNameAndPassword() async {
     ShowToastDialog.showLoader("Please wait.".tr);
 
     try {
       final response =
-      await loginWithEmailAndPasswordApi(
+      await loginWithUserNameAndPasswordApi(
         emailEditingController.value.text.trim(),
         passwordEditingController.value.text.trim(),
       );
 
       print("=== LOGIN RESPONSE ===");
       print(response);
+      print("=== LOGIN RESPONSE ===");
+      print(response);
+
+// Check API login failure
+      if (response['success'] == false) {
+        ShowToastDialog.showToast(
+          response['message'] ?? "Login failed".tr,
+        );
+        return;
+      }
 
       final String? token = response['jwt'];
       final int userId = response['userId'] ?? 0;
@@ -379,40 +336,7 @@ class LoginController extends GetxController {
       ShowToastDialog.closeLoader();
     }
   }
-// this is excute whenTHE LOGIN RESPONSE I HAVING THE USERID AND MERCHANT ID
-      // final String userType =
-      //     response['userType'] ?? '';
-      //
-      // if (userType == "MERCHANT") {
-      //
-      //   Get.offAll(
-      //         () => const DashBoardScreen(),
-      //     transition: Transition.fadeIn,
-      //     duration: const Duration(milliseconds: 500),
-      //   );
-      //
-      // } else if (userType == "OUTLET") {
-      //
-      //   Get.offAll(
-      //         () => const OutletHomeScreen(),
-      //     transition: Transition.fadeIn,
-      //     duration: const Duration(milliseconds: 500),
-      //   );
-      //
-      // } else {
-      //
-      //   ShowToastDialog.showToast(
-      //     "Unknown user type",
-      //   );
-      //
-      // }
-      // Get.offAll(
-      //       () => const DashBoardScreen(),
-      //   transition: Transition.fadeIn,
-      //   duration: const Duration(milliseconds: 500),
-      // );
 
-  // END OF JAVA METHOD
 
   int? _parseLoginInt(dynamic value) {
     if (value == null) return null;
@@ -478,11 +402,6 @@ class LoginController extends GetxController {
       print("selectedOutletName after save = ${Preferences.getString('selectedOutletName')}");
       await Preferences.setString('loginType', 'OUTLET');
       await Preferences.setString('merchantId', merchantId.toString());
-      // ADD THIS
-      // await Preferences.setString(
-      //   'outletName',
-      //   result.outletName ?? '',
-      // );
 
       debugPrint(
         '[OutletSession] Session context — '
@@ -535,86 +454,86 @@ class LoginController extends GetxController {
     return false;
   }
 
-// Helper method to save user data to SharedPreferences
-  Future<void> _saveUserDataToSharedPreferences(Map<String, dynamic> userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('firebase_id', userData['firebase_id'] ?? '');
-    await prefs.setString('email', userData['email'] ?? '');
-    await prefs.setString('fcm_token', userData['fcmToken'] ?? '');
-    await prefs.setString('first_name', userData['firstName'] ?? '');
-    await prefs.setString('last_name', userData['lastName'] ?? '');
-    await prefs.setString('phone_number', userData['phoneNumber'] ?? '');
-    await prefs.setString('country_code', userData['countryCode'] ?? '');
-    await prefs.setString('role', userData['role'] ?? '');
-    await prefs.setString('vendorID', userData['vendorID'] ?? '');
-    await prefs.setBool('is_active', _parseBoolValue(userData['active'] ?? userData['active']));
-    await prefs.setString('user_id', userData['id'].toString());
-    await prefs.setString('profile_picture', userData['profilePictureURL'] ?? '');
-    await prefs.setString('merchantId', userData['merchantId']?.toString() ?? '');
-
-    // Do NOT persist zone here – vendor data is not available yet.
-    await prefs.setBool('is_document_verify', _parseBoolValue(userData['isDocumentVerify']));
-    await prefs.setBool('is_logged_in', true);
-    await prefs.setBool('is_logged_in', true);
-    await prefs.setString('authToken',
-        userData['token'] ??
-            userData['accessToken'] ??
-            userData['jwtToken'] ?? '');
-  }
-
-// Helper method to convert API response to UserModel
-  Future<UserModel?> _convertApiResponseToUserModel(Map<String, dynamic> userData) async {
-    try {
-      Timestamp? _parseTimestamp(dynamic value) {
-        if (value == null) return null;
-        if (value is Timestamp) return value;
-        if (value is String) {// Handle the case where the string might be wrapped in extra quotes
-          String dateString = value.replaceAll('"', '');
-          try {
-            DateTime dateTime = DateTime.parse(dateString);
-            return Timestamp.fromDate(dateTime);
-          } catch (e) {
-            print('Error parsing date: $value - $e');
-            return null;
-          }
-        }
-        if (value is int) {
-          return Timestamp.fromMillisecondsSinceEpoch(value);
-        }
-        return null;
-      }
-      // Convert the API response to your UserModel
-      // You'll need to adjust this based on your actual UserModel structure
-      return UserModel(
-        id: userData['id']?.toString() ?? userData['firebase_id'],
-        firebaseId: userData['firebase_id'],
-        firstName: userData['firstName'],
-        lastName: userData['lastName'],
-        email: userData['email'],
-        phoneNumber: userData['phoneNumber'],
-        countryCode: userData['countryCode'],
-        role: userData['role'],
-        active: _parseBoolValue(userData['active'] ?? userData['active']),
-        profilePictureURL: userData['profilePictureURL'],
-        fcmToken: userData['fcmToken'],
-        zoneId: userData['zoneId'],
-        vendorID: userData['vendorID']?.toString() ?? userData['vendorID'],
-        isDocumentVerify: _parseBoolValue(userData['isDocumentVerify']),
-        subscriptionPlanId: userData['subscriptionPlanId'],
-        subscriptionExpiryDate:_parseTimestamp(userData['subscriptionExpiryDate'],),
-        // ADD THIS LINE ↓
-        merchantId: userData['merchantId']?.toString() ?? '',
-        // userData['subscriptionExpiryDate'] != null
-        //     ? Timestamp.fromDate(DateTime.parse(userData['subscriptionExpiryDate']))
-        //     : null,
-        // Add other fields as needed
-      );
-
-    } catch (e) {
-      print("Error converting to UserModel: $e");
-      return null;
-    }
-  }
+// // Helper method to save user data to SharedPreferences
+//   Future<void> _saveUserDataToSharedPreferences(Map<String, dynamic> userData) async {
+//     final prefs = await SharedPreferences.getInstance();
+//     await prefs.setString('firebase_id', userData['firebase_id'] ?? '');
+//     await prefs.setString('email', userData['email'] ?? '');
+//     await prefs.setString('fcm_token', userData['fcmToken'] ?? '');
+//     await prefs.setString('first_name', userData['firstName'] ?? '');
+//     await prefs.setString('last_name', userData['lastName'] ?? '');
+//     await prefs.setString('phone_number', userData['phoneNumber'] ?? '');
+//     await prefs.setString('country_code', userData['countryCode'] ?? '');
+//     await prefs.setString('role', userData['role'] ?? '');
+//     await prefs.setString('vendorID', userData['vendorID'] ?? '');
+//     await prefs.setBool('is_active', _parseBoolValue(userData['active'] ?? userData['active']));
+//     await prefs.setString('user_id', userData['id'].toString());
+//     await prefs.setString('profile_picture', userData['profilePictureURL'] ?? '');
+//     await prefs.setString('merchantId', userData['merchantId']?.toString() ?? '');
+//
+//     // Do NOT persist zone here – vendor data is not available yet.
+//     await prefs.setBool('is_document_verify', _parseBoolValue(userData['isDocumentVerify']));
+//     await prefs.setBool('is_logged_in', true);
+//     await prefs.setBool('is_logged_in', true);
+//     await prefs.setString('authToken',
+//         userData['token'] ??
+//             userData['accessToken'] ??
+//             userData['jwtToken'] ?? '');
+//   }
+//
+// // Helper method to convert API response to UserModel
+//   Future<UserModel?> _convertApiResponseToUserModel(Map<String, dynamic> userData) async {
+//     try {
+//       Timestamp? _parseTimestamp(dynamic value) {
+//         if (value == null) return null;
+//         if (value is Timestamp) return value;
+//         if (value is String) {// Handle the case where the string might be wrapped in extra quotes
+//           String dateString = value.replaceAll('"', '');
+//           try {
+//             DateTime dateTime = DateTime.parse(dateString);
+//             return Timestamp.fromDate(dateTime);
+//           } catch (e) {
+//             print('Error parsing date: $value - $e');
+//             return null;
+//           }
+//         }
+//         if (value is int) {
+//           return Timestamp.fromMillisecondsSinceEpoch(value);
+//         }
+//         return null;
+//       }
+//       // Convert the API response to your UserModel
+//       // You'll need to adjust this based on your actual UserModel structure
+//       return UserModel(
+//         id: userData['id']?.toString() ?? userData['firebase_id'],
+//         firebaseId: userData['firebase_id'],
+//         firstName: userData['firstName'],
+//         lastName: userData['lastName'],
+//         email: userData['email'],
+//         phoneNumber: userData['phoneNumber'],
+//         countryCode: userData['countryCode'],
+//         role: userData['role'],
+//         active: _parseBoolValue(userData['active'] ?? userData['active']),
+//         profilePictureURL: userData['profilePictureURL'],
+//         fcmToken: userData['fcmToken'],
+//         zoneId: userData['zoneId'],
+//         vendorID: userData['vendorID']?.toString() ?? userData['vendorID'],
+//         isDocumentVerify: _parseBoolValue(userData['isDocumentVerify']),
+//         subscriptionPlanId: userData['subscriptionPlanId'],
+//         subscriptionExpiryDate:_parseTimestamp(userData['subscriptionExpiryDate'],),
+//         // ADD THIS LINE ↓
+//         merchantId: userData['merchantId']?.toString() ?? '',
+//         // userData['subscriptionExpiryDate'] != null
+//         //     ? Timestamp.fromDate(DateTime.parse(userData['subscriptionExpiryDate']))
+//         //     : null,
+//         // Add other fields as needed
+//       );
+//
+//     } catch (e) {
+//       print("Error converting to UserModel: $e");
+//       return null;
+//     }
+//   }
   // void logoutFunction()async{
   //   await AudioPlayerService
   //       .playSound(false);

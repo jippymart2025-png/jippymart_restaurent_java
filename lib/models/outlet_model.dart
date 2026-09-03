@@ -4,9 +4,10 @@ class OutletModel {
   int? outletId;
   String? outletName;
   int? merchantId;
-  int? outletCategoryId;
-  String? cuisineType;
+ // int? outletCategoryId;
+  List<int>? cuisineTypeIds;
   String? outletPhone;
+  String? alternateOutletPhone;
   String? isActive;
   String? outletLoginId;
   String? outletPassword;
@@ -24,7 +25,12 @@ class OutletModel {
   int? stateId;
   int? cityId;
   int? areaId;
-
+  final String? cuisineTypeNames;
+  final bool? isVegOutlet;
+  final String? stateName;
+  final String? cityName;
+  final String? areaName;
+  List<Map<String, dynamic>>? operatingDays;
   // Bank
   String? accountNumber;
   String? ifscCode;
@@ -32,16 +38,19 @@ class OutletModel {
   String? accountHolderName;
   final String? fssaiNumber;
   final String? gstNumber;
+  final bool? isGstApplied;
 
   OutletModel({
     this.outletId,
     this.outletName,
     this.merchantId,
-    this.outletCategoryId,
-    this.cuisineType,
+    //this.outletCategoryId,
+    this.cuisineTypeIds,
     this.outletPhone,
+    this.alternateOutletPhone,
     this.fssaiNumber,
     this.gstNumber,
+    this.isGstApplied,
     this.isActive,
     this.outletLoginId,
     this.outletPassword,
@@ -59,7 +68,12 @@ class OutletModel {
     this.stateId,
     this.cityId,
     this.areaId,
-
+    this.cuisineTypeNames,
+    this.isVegOutlet,
+    this.stateName,
+    this.cityName,
+    this.areaName,
+    this.operatingDays,
 // Bank
     this.accountNumber,
     this.ifscCode,
@@ -78,11 +92,15 @@ class OutletModel {
         outletId: parseOutletIdFromMap(sanitized),
         outletName: sanitized['outletName']?.toString(),
         merchantId: parseIntSafe(sanitized['merchantId']),
-        outletCategoryId: parseIntSafe(sanitized['outletCategoryId']),
-        cuisineType: sanitized['cuisineType']?.toString(),
+        //outletCategoryId: parseIntSafe(sanitized['outletCategoryId']),
+        cuisineTypeIds: _parseCuisineTypeIds(sanitized['cuisineType']),
         outletPhone: sanitized['outletPhone']?.toString(),
+        alternateOutletPhone: sanitized['alternateOutletPhone']?.toString(),
         fssaiNumber: json['fssaiNumber'],
         gstNumber: json['gstNumber'],
+        isGstApplied: json['isGstApplied'] is bool ? json['isGstApplied'] as bool : null,
+        isVegOutlet: parseBoolSafe(sanitized['isVegOutlet']),
+        //isVegOutlet: sanitized['isVegOutlet'] is bool ? sanitized['isVegOutlet'] as bool : null,
         // Address
         buildingNumber: sanitized['buildingNumber']?.toString(),
         road: sanitized['road']?.toString(),
@@ -90,6 +108,7 @@ class OutletModel {
         stateId: parseIntSafe(sanitized['stateId']),
         cityId: parseIntSafe(sanitized['cityId']),
         areaId: parseIntSafe(sanitized['areaId']),
+        operatingDays: _parseOperatingDays(sanitized['operatingDays']),
         // Bank
         accountNumber: sanitized['accountNumber']?.toString(),
         ifscCode: sanitized['ifscCode']?.toString(),
@@ -117,6 +136,29 @@ class OutletModel {
         outletName: json['outletName']?.toString(),
       );
     }
+  }
+
+  // ADDED — safely parses cuisineType as List<int>, handles null/malformed input
+  static List<int>? _parseCuisineTypeIds(dynamic value) {
+    if (value == null) return null;
+    if (value is List) {
+      return value
+          .map((e) => parseIntSafe(e))
+          .whereType<int>()
+          .toList();
+    }
+    return null;
+  }
+  // ADDED — parses flat operatingDays list from GET response
+  static List<Map<String, dynamic>>? _parseOperatingDays(dynamic value) {
+    if (value == null) return null;
+    if (value is List) {
+      return value
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return null;
   }
 // ADDED — mirrors parseIntSafe
   static double? parseDoubleSafe(dynamic value) {
@@ -148,6 +190,13 @@ class OutletModel {
     return map.containsKey('envelope') ||
         map.containsKey('coordinates') ||
         map.containsKey('type');
+  }
+// ADDED — safely parses bool from bool/String, mirrors parseIntSafe
+  static bool? parseBoolSafe(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    return null;
   }
 
   static int? parseIntSafe(dynamic value) {

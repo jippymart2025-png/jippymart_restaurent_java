@@ -269,4 +269,6 @@ class SelectedProductModel {
   /// Only options with `isAvailable == true` are sent to backend.
   List<Map<String, dynamic>> get optionsJson =>
       options.where((o) => o.isAvailable).map((o) => o.toJson()).toList();
+
+  String? get imageLink => null;
 }

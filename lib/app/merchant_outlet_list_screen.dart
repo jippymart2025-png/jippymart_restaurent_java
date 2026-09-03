@@ -11,6 +11,7 @@ import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../utils/preferences.dart';
+import 'auth_screen/outlet_otp_verification_screen.dart';
 import 'dash_board_screens/dash_board_screen.dart';
 
 /// Merchant-only outlet list. Never used for outlet login sessions.
@@ -39,11 +40,26 @@ class MerchantOutletListScreen extends StatelessWidget {
                 title: Text('My Outlets'.tr),
               )
             : null,
-        floatingActionButton: state == MerchantSessionState.hasOutlets
+        floatingActionButton: state == MerchantSessionState.hasOutlets ||
+            state == MerchantSessionState.empty
             ? FloatingActionButton(
                 onPressed: () => _openAddOutlet(controller),
-                child: const Icon(Icons.add),
-              )
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.add),
+              SizedBox(width: 15),
+              Text(
+                'ADD Outlet',
+                maxLines: 2,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        )
             : null,
         body: _buildBody(themeChange, controller, state),
       );
@@ -89,7 +105,7 @@ class MerchantOutletListScreen extends StatelessWidget {
                 ),
                 child: ListTile(
                   title: Text(outlet.outletName ?? ''),
-                  subtitle: Text(outlet.cuisineType ?? ''),
+                  //subtitle: Text(outlet.cuisineType ?? ''),
                   trailing: const Icon(
                     Icons.arrow_forward_ios,
                     size: 18,
@@ -126,13 +142,16 @@ class MerchantOutletListScreen extends StatelessWidget {
     }
   }
   }
+Future<void> _openAddOutlet(MerchantOutletController controller) async {
+  final verified = await Get.to(() => const OutletOtpVerificationScreen());
+  if (verified != true) return;
 
-  Future<void> _openAddOutlet(MerchantOutletController controller) async {
-    final created = await Get.to(() =>  AddOutletScreen());
-    if (created == true) {
-      await controller.refreshOutletsOnly();
-    }
+  final created = await Get.to(() => AddOutletScreen());
+  if (created == true) {
+    await controller.refreshOutletsOnly();
   }
+}
+
 
 
 

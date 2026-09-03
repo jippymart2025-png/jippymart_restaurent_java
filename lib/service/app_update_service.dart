@@ -14,6 +14,8 @@ import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
+import '../app/landing_screen.dart';
+
 class AppUpdateService {
   static bool _hasCheckedForUpdate = false;
 
@@ -506,7 +508,7 @@ class AppUpdateService {
     // Use the same logic as SplashController to determine where to go
     if (Preferences.getBoolean(Preferences.isFinishOnBoardingKey) == false) {
       Get.offAll(
-        () => const OnBoardingScreen(),
+        () => const LandingScreen(),
         transition: Transition.fadeIn,
         duration: const Duration(milliseconds: 1200),
       );

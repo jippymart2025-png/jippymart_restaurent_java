@@ -102,22 +102,6 @@ class VendorCategoryModel {
 
     return null;
   }
-  // Map<String, dynamic> toJson() {
-  //   final Map<String, dynamic> data = <String, dynamic>{};
-  //   data['review_attributes'] = reviewAttributes;
-  //   data['photo'] = photo;
-  //   data['description'] = description;
-  //   data['id'] = id;
-  //   data['title'] = title;
-  //   data['isActive'] = isActive;
-  //   return data;
-  // }
-  // Map<String, dynamic> toJson() {
-  //   return {
-  //     "categoryId": id,
-  //     "categoryName": title,
-  //   };
-  // }
 
 
 }

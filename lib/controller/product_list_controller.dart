@@ -392,7 +392,7 @@ class ProductListController extends GetxController {
       _log(
         'getProduct outlet mode outletId=$resolvedOutletId force=$forceRefresh',
       );
-      final outletResult = await FireStoreUtils.getOutletProducts(
+      final outletResult = await FireStoreUtils.getOutletDetailsWithProducts(
         outletId: resolvedOutletId,
         forceRefresh: forceRefresh,
       );
@@ -561,7 +561,16 @@ class ProductListController extends GetxController {
       InventoryUnavailabilityKind.product,
     );
     if (dates == null) return;
+    final now = DateTime.now();
+    final minimumAllowedTime = now.add(const Duration(minutes: 1));
 
+    final safeFromDate = dates.from.isBefore(minimumAllowedTime)
+        ? minimumAllowedTime
+        : dates.from;
+
+    final safeToDate = dates.to.isAfter(safeFromDate)
+        ? dates.to
+        : safeFromDate.add(const Duration(hours: 1));
     final success = await FireStoreUtils.postOutletItemUnavailability(
       type: 'PRODUCT',
       unavailabilityId: productIdInt,

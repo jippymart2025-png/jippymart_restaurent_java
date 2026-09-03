@@ -147,11 +147,11 @@ class LoginScreen extends StatelessWidget {
                       textColor: AppThemeData.grey50,
                       onPress: () async {
                         if (controller.emailEditingController.value.text.trim().isEmpty) {
-                          ShowToastDialog.showToast("Please enter valid email".tr);
+                          ShowToastDialog.showToast("Please enter valid username".tr);
                         } else if (controller.passwordEditingController.value.text.trim().isEmpty) {
                           ShowToastDialog.showToast("Please enter valid password".tr);
                         } else {
-                          controller.loginWithEmailAndPassword();
+                          controller.loginWithUserNameAndPassword();
                         }
                       },
                     ),

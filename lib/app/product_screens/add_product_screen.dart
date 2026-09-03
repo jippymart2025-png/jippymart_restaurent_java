@@ -1,37 +1,79 @@
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:jippymart_restaurant/app/product_screens/add_from_catalog_screen.dart';
+// import 'package:jippymart_restaurant/app/product_screens/edit_product_screen.dart';
+// import 'package:jippymart_restaurant/models/product_model.dart';
+// import 'package:jippymart_restaurant/themes/app_them_data.dart';
+// import 'package:jippymart_restaurant/utils/const/color_const.dart';
+//
+// /// Add Product: catalog flow when adding; edit form when [product] is not null (tap product in list to edit).
+// class AddProductScreen extends StatelessWidget {
+//   final ProductModel? product;
+//
+//   const AddProductScreen({super.key, this.product});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     // Use constructor product first, then route/Get arguments
+//     ProductModel? productToEdit = product;
+//     if (productToEdit == null) {
+//       final args = ModalRoute.of(context)?.settings.arguments ?? Get.arguments;
+//       if (args != null && args is Map) {
+//         final p = args['productModel'] ?? args['product'];
+//         if (p != null) {
+//           productToEdit = p is ProductModel ? p : (p is Map ? ProductModel.fromJson(Map<String, dynamic>.from(p)) : null);
+//         }
+//       }
+//     }
+//
+//     if (productToEdit != null) {
+//       return EditProductScreen(product: productToEdit);
+//     }
+//
+//     // When adding a new product, go through the new
+//     // 2-step catalog flow (category → products).
+//     return const AddFromCatalogScreen();
+//   }
+// }
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/app/product_screens/add_from_catalog_screen.dart';
 import 'package:jippymart_restaurant/app/product_screens/edit_product_screen.dart';
 import 'package:jippymart_restaurant/models/product_model.dart';
-import 'package:jippymart_restaurant/themes/app_them_data.dart';
-import 'package:jippymart_restaurant/utils/const/color_const.dart';
 
-/// Add Product: catalog flow when adding; edit form when [product] is not null (tap product in list to edit).
 class AddProductScreen extends StatelessWidget {
   final ProductModel? product;
+  final int? productId;
 
-  const AddProductScreen({super.key, this.product});
+  const AddProductScreen({super.key, this.product, this.productId});
 
   @override
   Widget build(BuildContext context) {
-    // Use constructor product first, then route/Get arguments
-    ProductModel? productToEdit = product;
-    if (productToEdit == null) {
+    int? resolvedProductId = productId ?? int.tryParse(product?.id ?? '');
+
+    if (resolvedProductId == null || resolvedProductId <= 0) {
       final args = ModalRoute.of(context)?.settings.arguments ?? Get.arguments;
-      if (args != null && args is Map) {
-        final p = args['productModel'] ?? args['product'];
-        if (p != null) {
-          productToEdit = p is ProductModel ? p : (p is Map ? ProductModel.fromJson(Map<String, dynamic>.from(p)) : null);
+      if (args != null) {
+        if (args is int) {
+          resolvedProductId = args;
+        } else if (args is Map) {
+          final pId = args['productId'] ?? args['id'];
+          if (pId != null) {
+            resolvedProductId = int.tryParse(pId.toString());
+          } else {
+            final p = args['productModel'] ?? args['product'];
+            if (p is ProductModel) {
+              resolvedProductId = int.tryParse(p.id ?? '');
+            }
+          }
         }
       }
     }
 
-    if (productToEdit != null) {
-      return EditProductScreen(product: productToEdit);
+    if (resolvedProductId != null && resolvedProductId > 0) {
+      return EditProductScreen(productId: resolvedProductId);
     }
 
-    // When adding a new product, go through the new
-    // 2-step catalog flow (category → products).
     return const AddFromCatalogScreen();
   }
 }

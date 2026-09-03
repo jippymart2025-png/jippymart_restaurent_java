@@ -129,7 +129,7 @@ class OutletDetailsModel {
   }
 }
 
-class OutletCategoryModel {
+ class OutletCategoryModel {
   final int? categoryId;
   final int? outletCategoryId;
   final String? categoryName;

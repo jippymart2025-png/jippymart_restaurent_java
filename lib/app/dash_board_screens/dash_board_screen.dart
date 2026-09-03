@@ -695,6 +695,16 @@ class _StatusBanner extends StatelessWidget {
       }
 
       final outletId = DashBoardController.resolveActiveOutletId();
+      print('========== OPEN OUTLET ==========');
+      print('outletId = $outletId');
+      print('loginType = ${Preferences.getString('loginType')}');
+      print(
+        'Preferences outletId = ${Preferences.getInt('outletId')}',
+      );
+      print(
+        'Preferences selectedOutletId = ${Preferences.getInt('selectedOutletId')}',
+      );
+      print('=================================');
       if (outletId <= 0) {
         ShowToastDialog.showToast('No outlet selected'.tr);
         return;

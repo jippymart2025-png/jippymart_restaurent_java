@@ -2393,13 +2393,14 @@ class AddFromCatalogScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: isDark ? AppThemeData.grey900 : const Color(0xFFF5F6FA),
       appBar: AppBar(
+        toolbarHeight: 40,
         backgroundColor: ColorConst.orange,
         elevation: 0,
         title: Text(
           'Add from Catalog'.tr,
           style: const TextStyle(
             color: AppThemeData.grey50,
-            fontSize: 18,
+            fontSize: 15,
             fontFamily: AppThemeData.semiBold,
           ),
         ),
@@ -2413,8 +2414,8 @@ class AddFromCatalogScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(30),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal:15,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
@@ -2656,25 +2657,6 @@ class _CategorySelectionStep extends StatelessWidget {
       init: AddFromCatalogController(),
       builder: (c) {
         if (c.isLoading.value) return Constant.loader();
-
-        if (c.categoryList.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'No categories found.'.tr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark
-                      ? AppThemeData.grey300
-                      : AppThemeData.grey600,
-                ),
-              ),
-            ),
-          );
-        }
-
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -2689,7 +2671,7 @@ class _CategorySelectionStep extends StatelessWidget {
                       isDark ? AppThemeData.grey100 : AppThemeData.grey900,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'We’ll show products from the category you pick.'
                     .tr,
@@ -2700,12 +2682,89 @@ class _CategorySelectionStep extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+// CATEGORY SEARCH
+              TextField(
+                controller: c.categorySearchController,
+                onChanged: c.setCategorySearch,
+                decoration: InputDecoration(
+                  hintText: 'Search categories...'.tr,
+
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 20,
+                  ),
+                  suffixIcon: c.categorySearchText.value.isNotEmpty
+                      ? IconButton(
+                    icon: const Icon(
+                      Icons.clear,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      c.categorySearchController.clear();
+                      c.setCategorySearch('');
+                    },
+                  )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? AppThemeData.grey800
+                      : Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               Expanded(
-                child: ListView.separated(
-                  itemCount: c.categoryList.length,
+                child: c.filteredCategories.isEmpty &&
+                    c.categorySearchText.value.isNotEmpty
+                    ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 48,
+                        color: isDark
+                            ? AppThemeData.grey400
+                            : AppThemeData.grey500,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'No categories found'.tr,
+                        style: TextStyle(
+                          fontFamily: AppThemeData.semiBold,
+                          fontSize: 15,
+                          color: isDark
+                              ? AppThemeData.grey200
+                              : AppThemeData.grey800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Try searching with a different name.'.tr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppThemeData.grey400
+                              : AppThemeData.grey600,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+               : ListView.separated(
+                 // itemCount: c.categoryList.length,
+                  itemCount: c.filteredCategories.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) {
-                    final cat = c.categoryList[i];
+                    //final cat = c.categoryList[i];
+                    final cat = c.filteredCategories[i];
                     return InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
@@ -2985,34 +3044,49 @@ class _FilterPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: TextFieldWidget(
-                  title: 'Search'.tr,
-                  hintText: 'Product name...'.tr,
-                  onchange: ctrl.setSearch,
+          Obx(
+                () => TextField(
+              controller: ctrl.productSearchController,
+              onChanged: ctrl.setSearch,
+
+              decoration: InputDecoration(
+                hintText: 'Search products...'.tr,
+
+                prefixIcon: const Icon(
+                  Icons.search,
+                  size: 20,
+                ),
+
+                suffixIcon: ctrl.searchQuery.value.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(
+                    Icons.clear,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    ctrl.productSearchController.clear();
+                    ctrl.setSearch('');
+                  },
+                )
+                    : null,
+
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+
+                filled: true,
+
+                fillColor: isDark
+                    ? AppThemeData.grey700
+                    : const Color(0xFFF5F6FA),
+
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: ctrl.searchProducts,
-                child: Container(
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: ColorConst.orange,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.search_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -4049,14 +4123,30 @@ class _BottomBar extends StatelessWidget {
                     } else {
                       final msg = ctrl.lastStoreResponse?.message ??
                           'Save failed.'.tr;
-                      final errors = ctrl.lastStoreResponse?.errors;
-                      String display = msg;
-                      if (errors != null && errors.isNotEmpty) {
-                        final first = errors.entries.first;
-                        display = first.value is List
-                            ? (first.value as List).join(' ')
-                            : first.value.toString();
+                      final response = ctrl.lastStoreResponse;
+
+                      String display;
+
+                      if (response == null) {
+                        display = 'Save failed.'.tr;
+                      } else if (response.savedCount > 0 && response.skippedCount == 0) {
+                        display = 'Saved ${response.savedCount} product(s) successfully.';
+                      } else if (response.savedCount > 0 && response.skippedCount > 0) {
+                        display =
+                        'Saved ${response.savedCount} product(s), '
+                            'skipped ${response.skippedCount} product(s).';
+
+                        if (response.skippedNames.isNotEmpty) {
+                          display += '\nSkipped: ${response.skippedNames.join(', ')}';
+                        }
+                      } else {
+                        display = 'No products were saved.';
+
+                        if (response.skippedNames.isNotEmpty) {
+                          display += '\nSkipped: ${response.skippedNames.join(', ')}';
+                        }
                       }
+
                       ShowToastDialog.showToast(display);
                     }
                   },

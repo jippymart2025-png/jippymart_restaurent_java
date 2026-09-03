@@ -10,6 +10,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
+import '../../constant/constant.dart';
+import '../../models/location_model.dart';
+import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
+ // ADD THIS
+import '../add_restaurant_screen/locationselection.dart';
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
@@ -56,7 +64,7 @@ class SignupScreen extends StatelessWidget {
                     const SizedBox(
                       height: 32,
                     ),
-                    merchantForm(controller, themeChange),
+                    merchantForm(controller, themeChange,context),
                     // Obx(
                     //       () => Column(
                     //     crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +231,10 @@ class SignupScreen extends StatelessWidget {
                             //     controller.conformPasswordEditingController.value.text.trim()) {
                             //   ShowToastDialog.showToast("Password and confirm password don't match".tr);
                             // }
-                          }else {
+                          } else if (controller.gstController.value.text.trim().isNotEmpty &&
+                              !isValidGSTIN(controller.gstController.value.text.trim())) {
+                            ShowToastDialog.showToast("Please enter a valid 15-character GSTIN".tr);
+                          } else {
                             controller.signUpWithEmailAndPassword();
                           }
                         }
@@ -236,9 +247,43 @@ class SignupScreen extends StatelessWidget {
           );
         });
   }
+  void _openLocationPicker(BuildContext context, SignupController controller) {
+    Constant.checkPermission(
+      context: context,
+      onTap: () async {
+        ShowToastDialog.showLoader("Getting location...".tr);
+        try {
+          await Geolocator.requestPermission();
+          final position = await Geolocator.getCurrentPosition();
+          ShowToastDialog.closeLoader();
+          final initialPos = Constant.selectedMapType == 'osm'
+              ? const LatLng(20.5937, 78.9629)
+              : LatLng(position.latitude, position.longitude);
+          final result = await Get.to(
+                () => MapPickerPage(initialPosition: initialPos),
+            fullscreenDialog: Constant.selectedMapType != 'osm',
+          );
+          if (result != null) {
+            final data = result as Map<String, dynamic>;
+            final LatLng selectedLatLng = data['location'] as LatLng;
+            final String selectedAddress = data['address'] as String? ?? '';
+            controller.latitudeController.value.text = selectedLatLng.latitude.toString();
+            controller.longitudeController.value.text = selectedLatLng.longitude.toString();
+            controller.locationDisplayController.text = selectedAddress;
+          }
+        } catch (e) {
+          ShowToastDialog.closeLoader();
+          ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
+        }
+      },
+    );
+  }
+  // call site, inside build():
+  //merchantForm(controller, themeChange, context),
   Widget merchantForm(
       SignupController controller,
       DarkThemeProvider themeChange,
+      BuildContext context,
       ) {
     return Column(
       children: [
@@ -378,12 +423,14 @@ class SignupScreen extends StatelessWidget {
                   controller.type.value == "mobileNumber"))
                 Column(
                   children: [
-
-                    TextFieldWidget(
+                    Obx(() => TextFieldWidget(
                       title: 'Password'.tr,
                       controller: controller.passwordEditingController.value,
                       hintText: 'Enter Password'.tr,
+
+                      // true = password hidden
                       obscureText: controller.passwordVisible.value,
+
                       prefix: Padding(
                         padding: const EdgeInsets.all(12),
                         child: SvgPicture.asset(
@@ -396,6 +443,7 @@ class SignupScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+
                       suffix: Padding(
                         padding: const EdgeInsets.all(12),
                         child: InkWell(
@@ -403,18 +451,10 @@ class SignupScreen extends StatelessWidget {
                             controller.passwordVisible.value =
                             !controller.passwordVisible.value;
                           },
-                          child: controller.passwordVisible.value
-                              ? SvgPicture.asset(
-                            "assets/icons/ic_password_show.svg",
-                            colorFilter: ColorFilter.mode(
-                              themeChange.getThem()
-                                  ? AppThemeData.grey300
-                                  : AppThemeData.grey600,
-                              BlendMode.srcIn,
-                            ),
-                          )
-                              : SvgPicture.asset(
-                            "assets/icons/ic_password_close.svg",
+                          child: SvgPicture.asset(
+                            controller.passwordVisible.value
+                                ? "assets/icons/ic_password_close.svg"
+                                : "assets/icons/ic_password_show.svg",
                             colorFilter: ColorFilter.mode(
                               themeChange.getThem()
                                   ? AppThemeData.grey300
@@ -424,7 +464,8 @@ class SignupScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ),
+                    ))
+
 
                    // TextFieldWidget(
                    //    title: 'Confirm Password'.tr,
@@ -526,7 +567,101 @@ class SignupScreen extends StatelessWidget {
             ],
           ),
         ),
-
+        buildSection(
+          title: "Address Information",
+          child: Column(
+            children: [
+              TextFieldWidget(
+                title: 'Building Number',
+                controller: controller.buildingNumberController.value,
+                hintText: '12/345',
+              ),
+              TextFieldWidget(
+                title: 'Road',
+                controller: controller.roadController.value,
+                hintText: 'Road Name',
+              ),
+              TextFieldWidget(
+                title: 'Landmark',
+                controller: controller.landmarkController.value,
+                hintText: 'Enter Landmark',
+              ),
+              const SizedBox(height: 12),
+              Obx(() {
+                return DropdownButtonFormField<StateModel>(
+                  value: controller.selectedState.value,
+                  decoration: const InputDecoration(
+                    labelText: "State",
+                    hintText: "Select State",
+                  ),
+                  isExpanded: true,
+                  items: controller.states.map((state) {
+                    return DropdownMenuItem<StateModel>(
+                      value: state,
+                      child: Text(state.stateName),
+                    );
+                  }).toList(),
+                  onChanged: (value) async {
+                    await controller.onStateSelected(value);
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+              Obx(() {
+                return DropdownButtonFormField<CityModel>(
+                  value: controller.selectedCity.value,
+                  decoration: const InputDecoration(
+                    labelText: "City",
+                    hintText: "Select City",
+                  ),
+                  isExpanded: true,
+                  items: controller.cities.map((city) {
+                    return DropdownMenuItem<CityModel>(
+                      value: city,
+                      child: Text(city.cityName),
+                    );
+                  }).toList(),
+                  onChanged: (value) async {
+                    await controller.onCitySelected(value);
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+              Obx(() {
+                return DropdownButtonFormField<AreaModel>(
+                  value: controller.selectedArea.value,
+                  decoration: const InputDecoration(
+                    labelText: "Area",
+                    hintText: "Select Area",
+                  ),
+                  isExpanded: true,
+                  items: controller.areas.map((area) {
+                    return DropdownMenuItem<AreaModel>(
+                      value: area,
+                      child: Text(area.areaName),
+                    );
+                  }).toList(),
+                  onChanged: controller.onAreaSelected,
+                );
+              }),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () => _openLocationPicker(context, controller),
+                child: IgnorePointer(
+                  child: TextField(
+                    controller: controller.locationDisplayController,
+                    decoration: const InputDecoration(
+                      labelText: "Outlet Location",
+                      hintText: "Tap to select on map",
+                      suffixIcon: Icon(Icons.location_on),
+                    ),
+                    maxLines: 2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         buildSection(
           title: "Bank Information",
           child: Column(
@@ -717,5 +852,10 @@ class SignupScreen extends StatelessWidget {
     );
     return emailRegExp.hasMatch(email);
   }
-
+  bool isValidGSTIN(String gstin) {
+    final RegExp gstinRegExp = RegExp(
+      r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$',
+    );
+    return gstinRegExp.hasMatch(gstin.trim().toUpperCase());
+  }
 }

@@ -277,9 +277,9 @@ class MerchantOutletController extends GetxController {
     }
 
     await Preferences.setInt('outletId', resolvedOutletId);
-    await Preferences.setInt('outletCategoryId',
-      result.outlet?.outletCategoryId ?? 0,
-    );
+   // // await Preferences.setInt('outletCategoryId'
+   //    //result.outlet?.outletCategoryId ?? 0,
+   //  );
     await Preferences.setInt('selectedOutletId', resolvedOutletId);
     await Preferences.setString('selectedOutletName', outlet.outletName ?? '');
 

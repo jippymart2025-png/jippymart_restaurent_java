@@ -14,7 +14,9 @@ import 'package:get/get.dart';
 import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/merchant_request_model.dart';
 
+import '../models/location_model.dart';
 import '../models/outlet_model.dart';
+import '../service/location_api_service.dart';
 import '../utils/fire_store_utils.dart';
 import '../utils/preferences.dart';
 class SignupController extends GetxController {
@@ -103,6 +105,15 @@ class SignupController extends GetxController {
 
   Rx<TextEditingController> longitudeController =
       TextEditingController().obs;
+  RxList<StateModel> states = <StateModel>[].obs;
+  RxList<CityModel> cities = <CityModel>[].obs;
+  RxList<AreaModel> areas = <AreaModel>[].obs;
+
+  Rx<StateModel?> selectedState = Rx<StateModel?>(null);
+  Rx<CityModel?> selectedCity = Rx<CityModel?>(null);
+  Rx<AreaModel?> selectedArea = Rx<AreaModel?>(null);
+  final locationDisplayController = TextEditingController();
+
   //
 
 
@@ -114,14 +125,47 @@ class SignupController extends GetxController {
     getArgument();
     // Set default country code to India
     countryCodeEditingController.value.text = '+91';
+    loadStates(); // NEW
     super.onInit();
   }
+  Future<void> loadStates() async {
+    try {
+      print("Loading states...");
+      states.value = await LocationApiService.fetchStates();
+      print("States loaded: ${states.length}");
+    } catch (e) {
+      print("Error loading states: $e");
+    }
+  }
+  Future<void> onStateSelected(StateModel? state) async {
+    selectedState.value = state;
+    selectedCity.value = null;
+    selectedArea.value = null;
+    cities.clear();
+    areas.clear();
+    if (state == null) return;
+    cities.value = await LocationApiService.fetchCities(state.stateId);
+  }
 
+  Future<void> onCitySelected(CityModel? city) async {
+    selectedCity.value = city;
+    selectedArea.value = null;
+    areas.clear();
+    if (city == null) return;
+    areas.value = await LocationApiService.fetchAreas(city.cityId);
+  }
+
+  void onAreaSelected(AreaModel? area) {
+    selectedArea.value = area;
+  }
   getArgument() {
     dynamic argumentData = Get.arguments;
     if (argumentData != null) {
       type.value = argumentData['type'];
-      userModel.value = argumentData['userModel'];
+      // Only overwrite userModel if one was actually passed
+      if (argumentData['userModel'] != null) {
+        userModel.value = argumentData['userModel'];
+      }
       if (type.value == "mobileNumber") {
         phoneNUmberEditingController.value.text =
             userModel.value.phoneNumber.toString();
@@ -131,6 +175,9 @@ class SignupController extends GetxController {
         emailEditingController.value.text = userModel.value.email ?? "";
         firstNameEditingController.value.text = userModel.value.firstName ?? "";
         lastNameEditingController.value.text = userModel.value.lastName ?? "";
+      }else if (type.value == "emailVerified") {
+        emailEditingController.value.text = argumentData['email'] ?? "";
+        phoneNUmberEditingController.value.text = argumentData['mobile'] ?? "";
       }
     }
   }
@@ -225,24 +272,18 @@ class SignupController extends GetxController {
         accountNumber: accountNumberController.value.text.trim(),
         ifscCode: ifscController.value.text.trim(),
         bankLocation: bankLocationController.value.text.trim(),
-        nameInBankAccount:
-        accountHolderController.value.text.trim(),
+        nameInBankAccount: accountHolderController.value.text.trim(),
+        // NEW — address fields
+        buildingNumber: buildingNumberController.value.text.trim(),
+        road: roadController.value.text.trim(),
+        landmark: landmarkController.value.text.trim(),
+        stateName: selectedState.value?.stateName ?? "",
+        cityName: selectedCity.value?.cityName ?? "",
+        areaName: selectedArea.value?.areaName ?? "",
+        latitude: latitudeController.value.text.trim(),
+        longitude: longitudeController.value.text.trim(),
       );
-      //
-      // final success =
-      // await FireStoreUtils.createMerchant(request);
-      //
-      // if (success != null) {
-      //   ShowToastDialog.showToast(
-      //     "Merchant registered successfully",
-      //   );
-      //
-      //   Get.offAll(const LoginScreen());
-      // } else {
-      //   ShowToastDialog.showToast(
-      //     "Merchant registration failed",
-      //   );
-      // }
+
       final merchant =
       await FireStoreUtils.createMerchant(request);
 

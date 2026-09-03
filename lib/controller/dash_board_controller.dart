@@ -200,9 +200,10 @@ import 'package:jippymart_restaurant/controller/product_list_controller.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
-
+import 'package:jippymart_restaurant/app/profile_screen/promotions/promotion_plans_screen.dart';
 import '../app/merchant_outlet_list_screen.dart';
-import '../app/profile_screen/subscription_plans_screen.dart';
+import '../app/profile_screen/promotions/promotion_plan_types_screen.dart';
+import '../app/profile_screen/subscriptions/subscription_plans_screen.dart';
 import '../utils/const/image_const.dart';
 import 'merchant_outlet_controller.dart';
 import 'sales_report_controller.dart';
@@ -293,15 +294,7 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) _checkUpdate();
   }
 
-  // ── Pages ──────────────────────────────────────────────────────────────────
-  // void _buildPageList() {
-  //   pageList.value = const [
-  //     HomeScreen(),
-  //     ProductListScreen(),
-  //     SalesReportScreen(),
-  //     ProfileScreen(),
-  //   ];
-  // }
+
   void _buildPageList({int? outletIdOverride}) {
     final loginType = Preferences.getString('loginType');
     final outletId = outletIdOverride ?? activeOutletId.value;
@@ -322,7 +315,9 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
       pageList.value = [
         HomeScreen(),
         const ProductListScreen(),
-        const SubscriptionPlansScreen(showBackButton: false),
+        //const SubscriptionPlansScreen(showBackButton: false),
+        //const PromotionPlansScreen(showBackButton: false),
+        const PromotionPlanTypesScreen(),
         const SalesReportScreen(),
         const ProfileScreen(),
       ];
@@ -337,7 +332,9 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
       pageList.value = [
         MerchantOutletListScreen(),
         const MerchantSelectOutletPromptScreen(),
-        const SubscriptionPlansScreen(showBackButton: false),
+        //const SubscriptionPlansScreen(showBackButton: false),
+       // const PromotionPlansScreen(showBackButton: false),
+        const PromotionPlanTypesScreen(),
         const SalesReportScreen(),
         const ProfileScreen(),
       ];
@@ -348,7 +345,9 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     pageList.value = [
       HomeScreen(),
       const ProductListScreen(),
-      const SubscriptionPlansScreen(showBackButton: false),
+     // const SubscriptionPlansScreen(showBackButton: false),
+      //const PromotionPlansScreen(showBackButton: false),
+      const PromotionPlanTypesScreen(),
       const SalesReportScreen(),
       const ProfileScreen(),
     ];
@@ -581,109 +580,36 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
 
   /// Pushes an open/closed status change to Firestore.
   /// Returns `true` on success, `false` on any failure.
-  // Future<bool> updateRestStatus(bool open) async {
-  //   if (isUpdatingStatus.value) return false;
-  //
-  //   final vendorId = Constant.userModel?.vendorID;
-  //   if (vendorId == null || vendorId.isEmpty) {
-  //     _log('updateRestStatus: no vendorId');
-  //     return false;
-  //   }
-  //
-  //   isUpdatingStatus.value = true;
-  //   try {
-  //     // Always fetch latest before writing to avoid overwriting concurrent changes.
-  //     final latest =
-  //     await FireStoreUtils.getVendorById(vendorId, forceRefresh: true);
-  //     if (latest == null) return false;
-  //
-  //     latest
-  //       ..id ??= vendorId
-  //       ..isOpen = open
-  //       ..reststatus = open;
-  //
-  //     final saved = await FireStoreUtils.updateVendor(latest);
-  //     if (saved == null) return false;
-  //
-  //     await Preferences.setBoolean(Preferences.vendorIsOpenKey, open);
-  //     vendorModel
-  //       ..value = saved
-  //       ..refresh();
-  //     return true;
-  //   } catch (e) {
-  //     _log('updateRestStatus error: $e');
-  //     return false;
-  //   } finally {
-  //     isUpdatingStatus.value = false;
-  //   }
-  // }
-  // Future<bool> updateRestStatus(bool open) async {
-  //   if (isUpdatingStatus.value) return false;
-  //
-  //   final vendorId = Constant.userModel?.vendorID;
-  //   if (vendorId == null || vendorId.isEmpty) {
-  //     print("No vendorId");
-  //     return false;
-  //   }
-  //
-  //   isUpdatingStatus.value = true;
-  //
-  //   try {
-  //     final latest = await FireStoreUtils.getVendorById(
-  //       vendorId,
-  //       forceRefresh: true,
-  //     );
-  //
-  //     print("Latest Vendor = $latest");
-  //
-  //     if (latest == null) {
-  //       print("Latest vendor is null");
-  //       return false;
-  //     }
-  //
-  //     latest.isOpen = open;
-  //     latest.reststatus = open;
-  //
-  //     print("Before updateVendor");
-  //
-  //     final saved = await FireStoreUtils.updateVendor(latest);
-  //
-  //     print("Saved Vendor = $saved");
-  //
-  //     if (saved == null) {
-  //       print("updateVendor returned null");
-  //       return false;
-  //     }
-  //
-  //     await Preferences.setBoolean(
-  //       Preferences.vendorIsOpenKey,
-  //       open,
-  //     );
-  //
-  //     vendorModel.value = saved;
-  //     vendorModel.refresh();
-  //
-  //     return true;
-  //   } catch (e) {
-  //     print("updateRestStatus Error = $e");
-  //     return false;
-  //   } finally {
-  //     isUpdatingStatus.value = false;
-  //   }
-  // }
+
   /// Active outlet id for open/close APIs — from dashboard session or preferences.
-  static int resolveActiveOutletId() {
-    if (Get.isRegistered<DashBoardController>()) {
-      final sessionId = Get.find<DashBoardController>().activeOutletId.value;
-      if (sessionId > 0) return sessionId;
-    }
-
-    final outletId = Preferences.getInt('outletId');
-    if (outletId > 0) return outletId;
-
-    return Preferences.getInt('selectedOutletId');
-  }
-
+  // static int resolveActiveOutletId() {
+  //   if (Get.isRegistered<DashBoardController>()) {
+  //     final sessionId = Get.find<DashBoardController>().activeOutletId.value;
+  //     if (sessionId > 0) return sessionId;
+  //   }
+  //
+  //   final outletId = Preferences.getInt('outletId');
+  //   if (outletId > 0) return outletId;
+  //
+  //   return Preferences.getInt('selectedOutletId');
+  // }
+  //
+  // static Future<bool> updateOutletUnavailability({
+  //   required String type,
+  //   required int unavailabilityId,
+  //   required DateTime fromDate,
+  //   required DateTime toDate,
+  //   required String reason,
+  // }) async {
+  //   // OUTLET close — POST /api/fm/outlet-unavailability (type=OUTLET, id=outletId)
+  //   return FireStoreUtils.postOutletItemUnavailability(
+  //     type: type,
+  //     unavailabilityId: unavailabilityId,
+  //     reason: reason,
+  //     fromDate: fromDate,
+  //     toDate: toDate,
+  //   );
+  // }
   static Future<bool> updateOutletUnavailability({
     required String type,
     required int unavailabilityId,
@@ -691,7 +617,25 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     required DateTime toDate,
     required String reason,
   }) async {
-    // OUTLET close — POST /api/fm/outlet-unavailability (type=OUTLET, id=outletId)
+    final now = DateTime.now();
+    final minimumAllowedTime = now.add(const Duration(minutes: 1));
+
+    if (fromDate.isBefore(minimumAllowedTime)) {
+      fromDate = minimumAllowedTime;
+    }
+
+    if (!toDate.isAfter(fromDate)) {
+      toDate = fromDate.add(const Duration(hours: 1));
+    }
+
+    debugPrint('==============================');
+    debugPrint('OUTLET UNAVAILABILITY REQUEST');
+    debugPrint('Now       : ${DateTime.now()}');
+    debugPrint('From Date : $fromDate');
+    debugPrint('To Date   : $toDate');
+    debugPrint('Outlet ID : $unavailabilityId');
+    debugPrint('==============================');
+
     return FireStoreUtils.postOutletItemUnavailability(
       type: type,
       unavailabilityId: unavailabilityId,
@@ -699,6 +643,20 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
       fromDate: fromDate,
       toDate: toDate,
     );
+  }
+  static int resolveActiveOutletId() {
+    if (Get.isRegistered<DashBoardController>()) {
+      final sessionId =
+          Get.find<DashBoardController>().activeOutletId.value;
+
+      if (sessionId > 0) return sessionId;
+    }
+
+    final outletId = Preferences.getInt('outletId');
+
+    if (outletId > 0) return outletId;
+
+    return Preferences.getInt('selectedOutletId');
   }
   // ── Navigation ─────────────────────────────────────────────────────────────
 
