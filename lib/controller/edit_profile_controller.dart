@@ -545,8 +545,30 @@ class EditProfileController extends GetxController {
       if (image == null) return;
       Get.back();
       profileImage.value = image.path;
+
+      if (isOutletMode.value) {
+        await _uploadProfileImage(File(image.path));
+      }
     } on PlatformException catch (e) {
       ShowToastDialog.showToast("${"failed_to_pick".tr} : \n $e");
+    }
+  }
+
+  Future<void> _uploadProfileImage(File image) async {
+    ShowToastDialog.showLoader("Uploading image...".tr);
+    try {
+      final url = await FireStoreUtils.uploadOutletImage(
+        outletId: _activeOutletId,
+        image: image,
+      );
+      if (url != null && url.isNotEmpty) {
+        profileImage.value = url;
+        ShowToastDialog.showToast("Image uploaded successfully".tr);
+      } else {
+        ShowToastDialog.showToast("Failed to upload image".tr);
+      }
+    } finally {
+      ShowToastDialog.closeLoader();
     }
   }
 }

@@ -417,6 +417,8 @@ class HomeController extends GetxController {
 
   final Rx<UserModel> userModel = UserModel().obs;
   final Rx<VendorModel> vendermodel = VendorModel().obs;
+  Rx<OutletModel> outletModel = OutletModel().obs;
+
 
   final RxList<OrderModel> allOrderList = <OrderModel>[].obs;
   final RxList<OrderModel> newOrderList = <OrderModel>[].obs;
@@ -536,8 +538,30 @@ class HomeController extends GetxController {
     selectedOutletId.value =
         outletId;
 
+    await refreshOutletProfile(outletId);
+
     await getOrder();
 
+  }
+
+  /// Reloads the active outlet's profile (incl. outletPicUrl) into [outletModel].
+  Future<void> refreshOutletProfile([int? outletId]) async {
+    final id = outletId ?? _activeOutletId;
+    if (id <= 0) return;
+    try {
+      final outlet = await FireStoreUtils.getOutletProfile(id);
+      if (outlet != null) {
+        outletModel.value = outlet;
+      }
+    } catch (e) {
+      debugPrint('refreshOutletProfile error: $e');
+    }
+  }
+
+  int get _activeOutletId {
+    final outletId = Preferences.getInt('outletId');
+    if (outletId > 0) return outletId;
+    return Preferences.getInt('selectedOutletId');
   }
   // ── Orders ────────────────────────────────────────────────────────────────
   // Future<void> getOrder({bool silent = false}) async {

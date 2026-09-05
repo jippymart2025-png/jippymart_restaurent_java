@@ -3603,19 +3603,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ── AppBar ────────────────────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar(
       DarkThemeProvider themeChange, HomeController ctrl) {
+    debugPrint(
+      'OUTLET PIC URL: ${controller.outletModel.value.outletPicUrl}',
+    );
     return AppBar(
+
       backgroundColor: ColorConst.orange,
       centerTitle: false,
       title: Row(
         children: [
-          ClipOval(
-            child: NetworkImageWidget(
-              imageUrl: ctrl.vendermodel.value.photo.toString(),
-              height: 42,
-              width: 42,
-              fit: BoxFit.cover,
-            ),
-          ),
+
+          Obx(() {
+            final picUrl = controller.outletModel.value.outletPicUrl ?? '';
+            return ClipOval(
+              child: picUrl.isNotEmpty
+                  ? NetworkImageWidget(
+                      imageUrl: picUrl,
+                      height: 42,
+                      width: 42,
+                      fit: BoxFit.cover,
+                    )
+                  : Image.asset(
+                      Constant.userPlaceHolder,
+                      height: 42,
+                      width: 42,
+                      fit: BoxFit.cover,
+                    ),
+            );
+          }),
+
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

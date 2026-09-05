@@ -24,6 +24,7 @@ import 'package:jippymart_restaurant/app/working_hours_screen/working_hours_scre
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
+import 'package:jippymart_restaurant/controller/home_controller.dart';
 import 'package:jippymart_restaurant/controller/profile_controller.dart';
 
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
@@ -79,27 +80,47 @@ class ProfileScreen extends StatelessWidget {
                             child: Row(
                               children: [
                                 ClipOval(
-                                  child: controller.userModel.value.profilePictureURL != null &&
-                                      controller.userModel.value.profilePictureURL.toString().isNotEmpty
-                                      ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(60),
-                                    child: NetworkImageWidget(
-                                      imageUrl: controller.userModel.value.profilePictureURL.toString(),
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                      : ClipRRect(
-                                    borderRadius: BorderRadius.circular(60),
-                                    child: Image.asset(
-                                      Constant.userPlaceHolder,
-                                      height: 80,
-                                      width: 80,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-
+                                  child: controller.isOutletContext.value
+                                      ? (controller.outletModel.value.outletPicUrl != null &&
+                                          controller.outletModel.value.outletPicUrl.toString().isNotEmpty)
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(60),
+                                              child: NetworkImageWidget(
+                                                imageUrl: controller.outletModel.value.outletPicUrl.toString(),
+                                                width: 80,
+                                                height: 80,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : ClipRRect(
+                                              borderRadius: BorderRadius.circular(60),
+                                              child: Image.asset(
+                                                Constant.userPlaceHolder,
+                                                height: 80,
+                                                width: 80,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                      : controller.userModel.value.profilePictureURL != null &&
+                                          controller.userModel.value.profilePictureURL.toString().isNotEmpty
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(60),
+                                              child: NetworkImageWidget(
+                                                imageUrl: controller.userModel.value.profilePictureURL.toString(),
+                                                width: 80,
+                                                height: 80,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : ClipRRect(
+                                              borderRadius: BorderRadius.circular(60),
+                                              child: Image.asset(
+                                                Constant.userPlaceHolder,
+                                                height: 80,
+                                                width: 80,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
                                 ),
                                 const SizedBox(
                                   width: 20,
@@ -151,6 +172,11 @@ class ProfileScreen extends StatelessWidget {
                                             (value) {
                                               if (value == true) {
                                                 controller.getUserProfile();
+                                                if (Get
+                                                    .isRegistered<HomeController>()) {
+                                                  Get.find<HomeController>()
+                                                      .refreshOutletProfile();
+                                                }
                                               }
                                             },
                                           );

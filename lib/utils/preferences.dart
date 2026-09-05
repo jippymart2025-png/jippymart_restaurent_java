@@ -5,6 +5,7 @@ class Preferences {
   static const isFinishOnBoardingKey = "isFinishOnBoardingKey";
   static const foodDeliveryType = "foodDeliveryType";
   static const themKey = "themKey";
+  static const profilePictureKey = "profile_picture";
 
   static const payFastSettings = "payFastSettings";
   static const mercadoPago = "MercadoPago";

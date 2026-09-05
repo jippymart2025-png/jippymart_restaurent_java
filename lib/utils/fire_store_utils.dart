@@ -56,6 +56,7 @@ import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/create_master_product_model.dart';
 import '../models/cuisine_type_model.dart';
@@ -3568,6 +3569,64 @@ class FireStoreUtils {
     } catch (e) {
       log("updateOutletProfile error: $e");
       return false;
+    }
+  }
+//ENDED
+// UPLOAD OUTLET IMAGE STARTED
+  /// POST /api/fm/outlets/{outletId}/image — uploads the outlet image to the
+  /// Java backend via multipart/form-data. Returns the uploaded image URL on
+  /// success, otherwise null.
+  static Future<String?> uploadOutletImage({
+    required int outletId,
+    required File image,
+  }) async {
+    try {
+      if (outletId <= 0 || !image.existsSync()) {
+        debugPrint("uploadOutletImage: invalid outletId or image file");
+        return null;
+      }
+
+      final token = await getAuthToken();
+      final url = '${Constant.baseUrl}fm/outlets/$outletId/image';
+
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers['Accept'] = 'application/json';
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = token;
+      }
+
+      final mimeType = lookupMimeType(image.path) ?? 'image/jpeg';
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          image.path,
+          filename: image.path.split('/').last,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      debugPrint("uploadOutletImage URL: $url");
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      debugPrint("uploadOutletImage Status: ${response.statusCode}");
+      debugPrint("uploadOutletImage Body: ${response.body}");
+
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        final jsonData = jsonDecode(response.body);
+        if (jsonData is Map<String, dynamic> &&
+            jsonData['success'] == true &&
+            jsonData['data'] != null) {
+          final url = jsonData['data'].toString();
+          if (url.isNotEmpty) return url;
+        }
+      }
+      return null;
+    } catch (e, st) {
+      debugPrint("uploadOutletImage Error: $e");
+      print(st);
+      return null;
     }
   }
 //ENDED
