@@ -67,7 +67,7 @@ class FoodApiService {
   //   }
   // }
 
-  static Future<MasterProductsResponse?> getMasterProductsByCategory(
+  static Future<MasterProductsResponse?> getMasterProductsByCategoryId(
       String categoryId, {
         int page = 1,
         int perPage = 10,
@@ -276,7 +276,7 @@ class FoodApiService {
   //     );
   //   }
   // }
-  static Future<AddProductsFromMasterResponse> addProductsFromMaster(
+  static Future<AddProductsFromMasterResponse> addProductsToOutletFromMaster(
       List<SelectedProductModel> selected, {
         required int categoryId,
       }) async {
@@ -288,28 +288,61 @@ class FoodApiService {
         return AddProductFromMasterItem(
           masterProductId:
           int.tryParse(p.masterProductId ?? "0") ?? 0,
-          productName: p.productName ?? "",
-          description: p.description ?? "",
-          isVeg: p.isVeg ?? false,
-          hasProductVariants: false,
-          merchantPrice: (p.merchantPrice ?? 0).toDouble(),
-          //imageLink: p.imageLink ?? "",
-          csvTiming: "",
-          csvDayOfWeek: "",
-          timings: [],
+
+          productName:
+          p.productName ?? "",
+
+          description:
+          p.description ?? "",
+
+          isVeg:
+          p.isVeg ?? false,
+
+          hasProductVariants:
+          p.hasProductVariants ?? false,
+
+          merchantPrice:
+          (p.merchantPrice ?? 0).toDouble(),
+
+          csvTiming: p.availableDays.map((day) {
+            final slots = p.availableTimings[day] ?? [];
+
+            return slots.map((slot) {
+              return "${slot.from}-${slot.to}";
+            }).join(",");
+          }).join(","),
+
+          csvDayOfWeek: p.availableDays.join(","),
+
+          timings: p.availableDays.expand((day) {
+            final timeSlots = p.availableTimings[day] ?? [];
+
+            return timeSlots.map((slot) {
+              return ProductTimingRequest(
+                productAvailableTimingId:slot.productAvailableTimingId ,
+                dayOfWeekId: _dayNameToId(day),
+                startTime: slot.from,
+                endTime: slot.to,
+              );
+            });
+          }).toList() ,
+
           variantGroups: [],
         );
       }).toList();
 
-      //final token = Preferences.getString('authToken');
       final headers = await getHeaders();
+
       final requestBody = AddProductsFromMasterRequest(
         outletId: outletId,
         categoryId: categoryId,
         products: productRequests,
       ).toJson();
 
-      print("REQUEST = ${jsonEncode(requestBody)}");
+      print("========================================");
+      print("ADD PRODUCTS FROM MASTER REQUEST");
+      print("========================================");
+      print(jsonEncode(requestBody));
 
       final response = await http.post(
         Uri.parse(
@@ -319,12 +352,14 @@ class FoodApiService {
         body: jsonEncode(requestBody),
       );
 
+      print("========================================");
+      print("ADD PRODUCTS FROM MASTER RESPONSE");
+      print("========================================");
       print("STATUS CODE = ${response.statusCode}");
       print("RESPONSE = ${response.body}");
 
-      final bodyStr = response.body
-          .replaceFirst(RegExp(r'^\uFEFF'), '')
-          .trim();
+      final bodyStr =
+      response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
 
       if (bodyStr.isEmpty) {
         throw Exception('Empty response from server');
@@ -333,25 +368,22 @@ class FoodApiService {
       final Map<String, dynamic> json =
       jsonDecode(bodyStr) as Map<String, dynamic>;
 
-      // Convert Java response JSON into your model.
       final result =
       AddProductsFromMasterResponse.fromJson(json);
 
-      // Clear cache if at least one product was saved.
       if (result.savedCount > 0) {
         FireStoreUtils.invalidateOutletProductCache(outletId);
         FireStoreUtils.invalidateVendorCategoryCache();
       }
 
-      // Return the complete response model.
       return result;
     } catch (e, st) {
       print(
         'FoodApiService.addProductsFromMaster error: $e',
       );
+
       print(st);
 
-      // Error fallback.
       return AddProductsFromMasterResponse(
         savedCount: 0,
         skippedCount: 0,
@@ -362,6 +394,7 @@ class FoodApiService {
   }
 
 
+
   static int _parseCount(dynamic value) {
     if (value is int) return value;
     if (value is num) return value.toInt();
@@ -369,7 +402,26 @@ class FoodApiService {
   }
 
 
-
+  static int _dayNameToId(String day) {
+    switch (day.toLowerCase()) {
+      case 'monday':
+        return 1;
+      case 'tuesday':
+        return 2;
+      case 'wednesday':
+        return 3;
+      case 'thursday':
+        return 4;
+      case 'friday':
+        return 5;
+      case 'saturday':
+        return 6;
+      case 'sunday':
+        return 7;
+      default:
+        return 0;
+    }
+  }
 
 }
 

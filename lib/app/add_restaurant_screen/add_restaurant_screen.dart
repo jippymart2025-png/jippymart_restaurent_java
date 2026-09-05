@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:google_maps_place_picker_mb/google_maps_place_picker.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -24,8 +23,6 @@ import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
-import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'locationselection.dart';
 

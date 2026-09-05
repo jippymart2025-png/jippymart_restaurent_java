@@ -508,24 +508,36 @@ class WorkingHours {
 }
 
 class Timeslot {
+  int? productAvailableTimingId;
   String? to;
   String? from;
 
-  Timeslot({this.to, this.from});
+  Timeslot({
+    this.productAvailableTimingId,
+    this.to,
+    this.from,
+  });
 
   Timeslot.fromJson(Map<String, dynamic> json) {
+    productAvailableTimingId =
+    json['productAvailableTimingId'] is int
+        ? json['productAvailableTimingId']
+        : int.tryParse(
+      json['productAvailableTimingId']?.toString() ?? '',
+    );
+
     to = json['to'];
     from = json['from'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['to'] = to;
-    data['from'] = from;
-    return data;
+    return {
+      'productAvailableTimingId': productAvailableTimingId,
+      'to': to,
+      'from': from,
+    };
   }
 }
-
 class G {
   String? geohash;
   GeoPoint? geopoint;

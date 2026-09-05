@@ -3837,17 +3837,14 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/subscription_payment_controller.dart';
 import 'package:jippymart_restaurant/controller/subscription_plans_controller.dart';
 import 'package:jippymart_restaurant/models/subscription_plan_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
-import 'package:jippymart_restaurant/utils/network_image_widget.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import '../../../controller/dash_board_controller.dart';
 import '../../../models/location_model.dart';

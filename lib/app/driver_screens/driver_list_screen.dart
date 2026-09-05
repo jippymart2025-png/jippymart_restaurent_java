@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/app/add_restaurant_screen/add_restaurant_screen.dart';
-import 'package:jippymart_restaurant/app/driver_screens/add_driver_screen.dart';
 import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/driver_list_controller.dart';

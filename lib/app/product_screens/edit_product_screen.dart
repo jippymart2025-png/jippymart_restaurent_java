@@ -908,6 +908,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jippymart_restaurant/app/product_screens/variant_builder_sheet_screen.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import '../../controller/dash_board_controller.dart';
@@ -1164,6 +1165,25 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   },
                 ),
               ],
+            ),
+            const SizedBox(height: 30),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.tune_rounded),
+              label: Text(_hasOptions ? 'Manage Variants' : 'Add Variants'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () async {
+                final changed = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => VariantBuilderSheetScreen(productId: widget.productId,
+                      originalProduct: _originalProduct!, ),
+                  ),
+                );
+                if (changed == true) {
+                  await _fetchProductDetails();
+                }
+              },
             ),
             const SizedBox(height: 30),
             ElevatedButton(

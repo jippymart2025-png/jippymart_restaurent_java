@@ -21,9 +21,9 @@ class MerchantRequestModel {
   String? buildingNumber;
   String? road;
   String? landmark;
-  String? stateName;
-  String? cityName;
-  String? areaName;
+  int? stateId;
+  int? cityId;
+  int? areaId;
   String? latitude;
   String? longitude;
 
@@ -49,9 +49,9 @@ class MerchantRequestModel {
     this.buildingNumber,
     this.road,
     this.landmark,
-    this.stateName,
-    this.cityName,
-    this.areaName,
+    this.stateId,
+    this.cityId,
+    this.areaId,
     this.latitude,
     this.longitude,
   });
@@ -79,9 +79,9 @@ class MerchantRequestModel {
       "buildingNumber": buildingNumber,
       "road": road,
       "landmark": landmark,
-      "stateName": stateName,
-      "cityName": cityName,
-      "areaName": areaName,
+      "stateId": stateId,
+      "cityId": cityId,
+      "areaId": areaId,
       "latitude": latitude,
       "longitude": longitude,
     };

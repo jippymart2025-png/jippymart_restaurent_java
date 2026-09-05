@@ -71,6 +71,7 @@ import 'package:jippymart_restaurant/models/addproduct_from _masterproduct.dart'
 
 import '../models/outlet_product_model.dart';
 import '../models/promotion_models.dart';
+import '../models/variant_group_model.dart';
 import 'common.dart';
 final headers = {
   "Accept": "application/json",
@@ -122,7 +123,11 @@ class FireStoreUtils {
     _cachedVendorCategories = null;
     _vendorCategoriesCacheTime = null;
   }
+  static List<VariantGroupModel>? _cachedVariantGroups;
+  static DateTime? _variantGroupsCacheTime;
 
+  static const Duration _variantGroupsCacheTTL =
+  Duration(minutes: 30);
   static DateTime? _settingsCacheTime;
   static const Duration _settingsCacheTTL = Duration(minutes: 30);
 
@@ -148,14 +153,14 @@ class FireStoreUtils {
     _invalidateVendorCache();
   }
 
-  static void _invalidateSettingsCache() {
-    _settingsCacheTime = null;
-  }
-
-  static void _invalidateDeliveryChargeCache() {
-    _cachedDeliveryCharge = null;
-    _deliveryChargeCacheTime = null;
-  }
+  // static void _invalidateSettingsCache() {
+  //   _settingsCacheTime = null;
+  // }
+  //
+  // static void _invalidateDeliveryChargeCache() {
+  //   _cachedDeliveryCharge = null;
+  //   _deliveryChargeCacheTime = null;
+  // }
 
   static Future<String> getCurrentUid() async {
     final firebaseId = await getFirebaseId() ?? '';
@@ -1894,7 +1899,6 @@ class FireStoreUtils {
       return null;
     }
   }
-
   static Future<bool> updateSingleOutletProductDetails({
     required int productId,
     required OutletSingleProductModel originalProduct,
@@ -1906,38 +1910,54 @@ class FireStoreUtils {
     required num merchantPrice,
     required String imageLink,
     int? outletId,
+    List<ProductVariantGroupModel>? variantGroupsOverride,
   }) async {
     try {
       final headers = await getHeaders();
-      final url = '${Constant.baseUrl}fm/products/updateCategoryAndProductDetails/$productId';
+      final url =
+          '${Constant.baseUrl}fm/products/updateCategoryAndProductDetails/$productId';
 
-      final body = json.encode(originalProduct.toUpdateJson(
-        productName: productName,
-        outletCategoryId: categoryId,
-        description: description,
-        isVeg: isVeg,
-        hasProductVariants: hasProductVariants,
-        merchantPrice: merchantPrice,
-        imageLink: imageLink,
-      ));
+      final body = json.encode(
+        originalProduct.toUpdateJson(
+          productName: productName,
+          outletCategoryId: categoryId,
+          description: description,
+          isVeg: isVeg,
+          hasProductVariants: hasProductVariants,
+          merchantPrice: merchantPrice,
+          imageLink: imageLink,
+          variantGroupsOverride: variantGroupsOverride,
+        ),
+      );
 
       print('updateSingleOutletProductDetails => $url');
       print('updateSingleOutletProductDetails body => $body');
 
-      final response = await http.put(Uri.parse(url), headers: headers, body: body);
-      print('updateSingleOutletProductDetails status => ${response.statusCode}');
-      print('updateSingleOutletProductDetails resp => ${response.body}');
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+
+      print(
+        'updateSingleOutletProductDetails status => ${response.statusCode}',
+      );
+      print(
+        'updateSingleOutletProductDetails resp => ${response.body}',
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         invalidateOutletProductCache(outletId);
         return true;
       }
+
       return false;
     } catch (e) {
       log('updateSingleOutletProductDetails error: $e');
       return false;
     }
   }
+
   /// Updates one outlet product inside the nested outlet menu payload.
   // static Future<bool> updateOutletProductItem({
   //   required int productId,
@@ -2040,6 +2060,206 @@ class FireStoreUtils {
 
     return advertisementdata;
   }
+  /// GET /api/fm/product-variant-groups — cached, same TTL pattern as categories.
+  static Future<List<VariantGroupModel>?> getProductVariantGroups() async {
+    if (_cachedVariantGroups != null &&
+        _variantGroupsCacheTime != null &&
+        DateTime.now().difference(_variantGroupsCacheTime!) < _variantGroupsCacheTTL) {
+      return _cachedVariantGroups!;
+    }
+
+    try {
+      final url = '${Constant.baseUrl}fm/product-variant-groups';
+      final headers = await getHeaders();
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      print("getProductVariantGroups => $url");
+      print("Status Code => ${response.statusCode}");
+      print("Response => ${response.body}");
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to load variant groups: ${response.statusCode}");
+      }
+
+      final List<dynamic> data = jsonDecode(response.body);
+      final groups = data
+          .map((e) => VariantGroupModel.fromJson(Map<String, dynamic>.from(e)))
+          .where((g) => g.isActive)
+          .toList();
+
+      _cachedVariantGroups = groups;
+      _variantGroupsCacheTime = DateTime.now();
+      return groups;
+    } catch (e) {
+      print("Error fetching variant groups: $e");
+      return null;
+    }
+  }
+
+  /// GET /api/fm/product-variant-groups/{groupId}/values — not cached long-term
+  /// since values can be added mid-session; caller (controller) should cache
+  /// per groupId for the lifetime of the sheet only.
+  static Future<List<VariantGroupValueModel>?> getVariantGroupValues(int groupId) async {
+    try {
+      final url = '${Constant.baseUrl}fm/product-variant-groups/$groupId/values';
+      final headers = await getHeaders();
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      print("getVariantGroupValues => $url");
+      print("Status Code => ${response.statusCode}");
+      print("Response => ${response.body}");
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to load values: ${response.statusCode}");
+      }
+
+      final List<dynamic> data = jsonDecode(response.body);
+      return data
+          .map((e) => VariantGroupValueModel.fromJson(Map<String, dynamic>.from(e)))
+          .where((v) => v.isActive)
+          .toList();
+    } catch (e) {
+      print("Error fetching group values: $e");
+      return null;
+    }
+  }
+
+  /// POST /api/fm/product-variant-groups/{groupId}/values — called when the
+  /// merchant types a value name that isn't in the dropdown yet.
+  static Future<VariantGroupValueModel?> createVariantGroupValue({
+    required int groupId,
+    required String variantName,
+  }) async {
+    try {
+      final url = '${Constant.baseUrl}fm/product-variant-groups/$groupId/values';
+      final headers = await getHeaders();
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode({'variantName': variantName}),
+      );
+
+      print("createVariantGroupValue => $url : $variantName");
+      print("Status Code => ${response.statusCode}");
+      print("Response => ${response.body}");
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to create value: ${response.statusCode}");
+      }
+
+      return VariantGroupValueModel.fromJson(jsonDecode(response.body));
+    } catch (e) {
+      print("Error creating group value: $e");
+      return null;
+    }
+  }
+  /// GET /api/fm/products/{productId}/variant-options
+  /// Loads whatever variants already exist on this outlet product.
+  /// The endpoint only returns groupName (a string), never the group's id,
+  /// so we resolve the real groupId by matching against the master group list.
+  static Future<List<StagedVariantGroup>?> getProductVariantOptions(
+      int productId, {
+        List<VariantGroupModel>? knownGroups,
+      }) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/products/$productId/variant-options';
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      print('getProductVariantOptions => $url');
+      print('Status Code => ${response.statusCode}');
+      print('Response => ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load variant options: ${response.statusCode}');
+      }
+
+      final List<dynamic> data = jsonDecode(response.body);
+      if (data.isEmpty) return [];
+
+      final groups = knownGroups ?? await getProductVariantGroups() ?? [];
+      final groupsByName = {for (final g in groups) g.groupName: g};
+
+      final Map<String, List<StagedVariantOption>> grouped = {};
+      for (final raw in data) {
+        final json = Map<String, dynamic>.from(raw);
+        final groupName = json['groupName'] as String? ?? 'Unknown';
+        grouped.putIfAbsent(groupName, () => []).add(
+          StagedVariantOption(
+            productVariantOptionsId: json['productVariantOptionsId'] ?? 0,
+            productVariantGroupValuesId: json['productVariantGroupValuesId'] ?? 0,
+            variantName: json['variantName'] ?? '',
+            priceType: json['priceType'] ?? 'MAIN',
+            variantPrice: (json['variantPrice'] as num?)?.toDouble() ?? 0,
+          ),
+        );
+      }
+
+      return grouped.entries.map((e) {
+        final matched = groupsByName[e.key];
+        // groupId falls back to 0 only if the group was renamed/deleted
+        // server-side since this option was saved — an edge case worth
+        // logging if it ever actually happens.
+        return StagedVariantGroup(
+          groupId: matched?.id ?? 0,
+          groupName: e.key,
+          options: e.value,
+        );
+      }).toList();
+    } catch (e) {
+      print('Error fetching product variant options: $e');
+      return null;
+    }
+  }
+
+  /// POST /api/fm/products/{productId}/variant-options — adds ONE new option row.
+  static Future<bool> addProductVariantOption({
+    required int productId,
+    required int productVariantGroupValuesId,
+    required String priceType,
+    required double variantPrice,
+  }) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/products/$productId/variant-options';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode({
+          'productVariantGroupValuesId': productVariantGroupValuesId,
+          'priceType': priceType,
+          'variantPrice': variantPrice,
+        }),
+      );
+      print('addProductVariantOption => $url');
+      print('Status Code => ${response.statusCode}');
+      print('Response => ${response.body}');
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('Error adding variant option: $e');
+      return false;
+    }
+  }
+
+  /// DELETE /api/fm/products/{productId}/variant-options/{optionId}
+  static Future<bool> deleteProductVariantOption({
+    required int productId,
+    required int optionId,
+  }) async {
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/products/$productId/variant-options/$optionId';
+      final response = await http.delete(Uri.parse(url), headers: headers);
+      print('deleteProductVariantOption => $url');
+      print('Status Code => ${response.statusCode}');
+      print('Response => ${response.body}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error deleting variant option: $e');
+      return false;
+    }
+  }
+
   static Future<CreateMasterProductResponse?> createMasterProduct(CreateMasterProductRequest request,) async {
     try {
       //final token = Preferences.getString('authToken');
@@ -2490,7 +2710,7 @@ class FireStoreUtils {
 
 
 
-  static Future<List<VendorCategoryModel>?> getMerchantCategoryById() async {
+  static Future<List<VendorCategoryModel>?> getAllMasterCategories() async {
     if (_cachedVendorCategories != null &&
         _vendorCategoriesCacheTime != null &&
         DateTime.now().difference(_vendorCategoriesCacheTime!) <

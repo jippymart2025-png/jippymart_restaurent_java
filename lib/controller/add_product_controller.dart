@@ -155,7 +155,7 @@ class AddProductController extends GetxController {
       });
     }
 
-    await FireStoreUtils.getMerchantCategoryById().then((value) {
+    await FireStoreUtils.getAllMasterCategories().then((value) {
       if (value != null) {
         vendorCategoryList.value = value;
       }
@@ -261,10 +261,16 @@ class AddProductController extends GetxController {
             if (slotsRaw is List) {
               for (final s in slotsRaw) {
                 if (s is Map) {
+                  final productAvailableTimingId =
+                      int.tryParse(
+                        s['productAvailableTimingId']?.toString() ?? '',
+                      ) ?? 0;
+
                   final from = s['from']?.toString() ?? '';
                   final to = s['to']?.toString() ?? '';
                   if (from.isNotEmpty && to.isNotEmpty) {
-                    slots.add(TimeRangeItem(from: from, to: to));
+                    slots.add(TimeRangeItem(
+                        productAvailableTimingId: productAvailableTimingId,from: from, to: to));
                   }
                 }
               }

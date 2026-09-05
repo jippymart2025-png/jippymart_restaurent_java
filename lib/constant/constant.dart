@@ -34,7 +34,7 @@ class Constant {
   static String baseUrl = "http://187.127.156.147:8084/api/";
   static String userRoleDriver = 'driver';
   static String userRoleCustomer = 'customer';
-  static String userRoleVendor = 'vendor';
+  static String userRoleMerchant = 'MERCHANT';
   static UserModel? userModel;
   static const globalUrl = "https://jippymart.in/";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";

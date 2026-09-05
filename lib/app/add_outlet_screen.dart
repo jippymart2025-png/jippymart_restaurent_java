@@ -704,23 +704,86 @@ class AddOutletScreen extends StatelessWidget {
     );
   }
 
+  // void _openLocationPickerForOutlet(
+  //     BuildContext context, AddOutletController controller) {
+  //   Constant.checkPermission(
+  //     context: context,
+  //     onTap: () async {
+  //       ShowToastDialog.showLoader("Getting location...".tr);
+  //       try {
+  //         await Geolocator.requestPermission();
+  //         final position = await Geolocator.getCurrentPosition();
+  //         ShowToastDialog.closeLoader();
+  //
+  //         final initialPos = Constant.selectedMapType == 'osm'
+  //             ? const LatLng(20.5937, 78.9629)
+  //             : LatLng(position.latitude, position.longitude);
+  //
+  //         final result = await Get.to(
+  //               () => MapPickerPage(initialPosition: initialPos),
+  //           fullscreenDialog: Constant.selectedMapType != 'osm',
+  //         );
+  //
+  //         if (result != null) {
+  //           final data = result as Map<String, dynamic>;
+  //           final LatLng selectedLatLng = data['location'] as LatLng;
+  //           final String selectedAddress = data['address'] as String? ?? '';
+  //           controller.latitudeController.text =
+  //               selectedLatLng.latitude.toString();
+  //           controller.longitudeController.text =
+  //               selectedLatLng.longitude.toString();
+  //           controller.locationDisplayController.text = selectedAddress;
+  //         }
+  //       } catch (e) {
+  //         ShowToastDialog.closeLoader();
+  //         ShowToastDialog.showToast(
+  //             "Failed to get location: ${e.toString()}".tr);
+  //       }
+  //     },
+  //   );
+  // }
   void _openLocationPickerForOutlet(
       BuildContext context, AddOutletController controller) {
     Constant.checkPermission(
       context: context,
       onTap: () async {
-        ShowToastDialog.showLoader("Getting location...".tr);
         try {
-          await Geolocator.requestPermission();
+          // 1. Check if location services are enabled on the device
+          bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) {
+            ShowToastDialog.showToast("Please enable location services".tr);
+            return;
+          }
+
+          // 2. Check current permission status
+          LocationPermission permission = await Geolocator.checkPermission();
+
+          if (permission == LocationPermission.denied) {
+            // 3. Ask for permission if not granted yet
+            permission = await Geolocator.requestPermission();
+            if (permission == LocationPermission.denied) {
+              ShowToastDialog.showToast("Location permission denied".tr);
+              return;
+            }
+          }
+
+          if (permission == LocationPermission.deniedForever) {
+            ShowToastDialog.showToast(
+              "Location permission permanently denied, please enable it from app settings".tr,
+            );
+            return;
+          }
+
+          // 4. Permission granted — fetch current location
+          ShowToastDialog.showLoader("Getting location...".tr);
           final position = await Geolocator.getCurrentPosition();
           ShowToastDialog.closeLoader();
 
-          final initialPos = Constant.selectedMapType == 'osm'
-              ? const LatLng(20.5937, 78.9629)
-              : LatLng(position.latitude, position.longitude);
+          // Always use the real GPS position (MapPickerPage only renders GoogleMap)
+          final initialPosition = LatLng(position.latitude, position.longitude);
 
           final result = await Get.to(
-                () => MapPickerPage(initialPosition: initialPos),
+                () => MapPickerPage(initialPosition: initialPosition),
             fullscreenDialog: Constant.selectedMapType != 'osm',
           );
 
@@ -728,16 +791,13 @@ class AddOutletScreen extends StatelessWidget {
             final data = result as Map<String, dynamic>;
             final LatLng selectedLatLng = data['location'] as LatLng;
             final String selectedAddress = data['address'] as String? ?? '';
-            controller.latitudeController.text =
-                selectedLatLng.latitude.toString();
-            controller.longitudeController.text =
-                selectedLatLng.longitude.toString();
+            controller.latitudeController.text = selectedLatLng.latitude.toString();
+            controller.longitudeController.text = selectedLatLng.longitude.toString();
             controller.locationDisplayController.text = selectedAddress;
           }
         } catch (e) {
           ShowToastDialog.closeLoader();
-          ShowToastDialog.showToast(
-              "Failed to get location: ${e.toString()}".tr);
+          ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
         }
       },
     );
@@ -1003,7 +1063,7 @@ class AddOutletScreen extends StatelessWidget {
                   child: IgnorePointer(
                     child: TextField(
                       controller: controller.locationDisplayController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.text,
                       decoration: const InputDecoration(
                         labelText: "Outlet Location",
                         hintText: "Tap to select on map",

@@ -4773,8 +4773,8 @@ class _AcceptedOrderActions extends StatelessWidget {
       final driver =
       await FireStoreUtils.getUserById(orderModel.driverID ?? '');
       if (driver != null) {
-        driver.orderRequestData?.remove(orderModel.id);
-        driver.inProgressOrderID?.remove(orderModel.id);
+        // driver.orderRequestData?.remove(orderModel.id);
+        // driver.inProgressOrderID?.remove(orderModel.id);
         await FireStoreUtils.updateDriverUser(driver);
         if (driver.fcmToken?.isNotEmpty == true) {
           SendNotification.sendFcmMessage(
@@ -5330,7 +5330,7 @@ class _EstimatedTimeDialog extends StatelessWidget {
             }
           }
           if (existing.contains(orderId)) return;
-          driver.orderRequestData = [...existing, orderId];
+          // driver.orderRequestData = [...existing, orderId];
 
           final updated = await FireStoreUtils.updateDriverUser(driver);
           if (!updated) return;
@@ -5580,7 +5580,7 @@ class _DeliveryManDialog extends StatelessWidget {
       ..driver = driver
       ..status = Constant.orderInTransit;
 
-    driver.inProgressOrderID?.add(orderModel.id);
+    // driver.inProgressOrderID?.add(orderModel.id);
 
     await FireStoreUtils.updateOrder(orderModel);
     await Future.wait([

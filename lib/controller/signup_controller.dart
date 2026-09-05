@@ -277,9 +277,9 @@ class SignupController extends GetxController {
         buildingNumber: buildingNumberController.value.text.trim(),
         road: roadController.value.text.trim(),
         landmark: landmarkController.value.text.trim(),
-        stateName: selectedState.value?.stateName ?? "",
-        cityName: selectedCity.value?.cityName ?? "",
-        areaName: selectedArea.value?.areaName ?? "",
+        stateId: selectedState.value?.stateId,
+        cityId: selectedCity.value?.cityId,
+        areaId: selectedArea.value?.areaId,
         latitude: latitudeController.value.text.trim(),
         longitude: longitudeController.value.text.trim(),
       );

@@ -7,7 +7,6 @@ import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
-import '../../models/vendor_model.dart';
 
 class ProductPromotionScreen extends StatefulWidget {
   const ProductPromotionScreen({super.key});

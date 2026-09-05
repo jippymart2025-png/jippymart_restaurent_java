@@ -754,7 +754,6 @@ import 'package:jippymart_restaurant/config/app_config.dart';
 
 import '../../models/product_model.dart';
 import '../../utils/fire_store_utils.dart';
-import '../../utils/preferences.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductToggles — identical look, removed redundant IgnorePointer wrapper

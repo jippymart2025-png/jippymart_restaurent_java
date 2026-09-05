@@ -14,7 +14,6 @@ import 'package:jippymart_restaurant/app/change%20langauge/change_language_scree
 import 'package:jippymart_restaurant/app/dine_in_screen/dine_in_create_screen.dart';
 import 'package:jippymart_restaurant/app/driver_screens/driver_list_screen.dart';
 import 'package:jippymart_restaurant/app/edit_profile_screen/edit_profile_screen.dart';
-import 'package:jippymart_restaurant/app/offer_screens/offer_screen.dart';
 import 'package:jippymart_restaurant/app/special_discount_screen/special_discount_screen.dart';
 
 import 'package:jippymart_restaurant/app/profile_screen/subscriptions/subscription_plans_screen.dart';
@@ -27,7 +26,6 @@ import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/controller/profile_controller.dart';
 
-import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/custom_dialog_box.dart';
 import 'package:jippymart_restaurant/themes/responsive.dart';
@@ -40,7 +38,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../utils/const/image_const.dart';
-import '../offer_screens/product_promotion_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -167,7 +164,8 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           Visibility(
                             visible: false,
-                            child: cardDecoration(
+                            child:
+                            cardDecoration(
                               themeChange,
                               controller,
                               Container(
@@ -437,45 +435,46 @@ class ProfileScreen extends StatelessWidget {
                                       ? const SizedBox()
                                       : Constant.storyEnable == false
                                           ? const SizedBox()
-                                          : cardDecoration(
-                                              themeChange,
-                                              controller,
-                                              Container(
-                                                width: 44,
-                                                height: 44,
-                                                decoration: ShapeDecoration(
-                                                  color: themeChange.getThem()
-                                                      ? AppThemeData
-                                                          .secondary600
-                                                      : AppThemeData
-                                                          .secondary50,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            120),
-                                                  ),
-                                                ),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
-                                                  child: SvgPicture.asset(
-                                                      "assets/icons/ic_building_two.svg",
-                                                      colorFilter: ColorFilter.mode(
-                                                          AppThemeData.secondary300,
-                                                          BlendMode.srcIn),
-                                                    ),
-                                                  ),
-                                                ),
-                                                "Outlet Information's",
-                                                () {
-                                                  Get.to(const AddRestaurantScreen())
-                                                      ?.then((v) {
-                                                    if (v == true) {
-                                                      controller.getUserProfile();
-                                                    }
-                                                  });
-                                                },
-                                              ),
+                                          :
+                                  // cardDecoration(
+                                  //             themeChange,
+                                  //             controller,
+                                  //             Container(
+                                  //               width: 44,
+                                  //               height: 44,
+                                  //               decoration: ShapeDecoration(
+                                  //                 color: themeChange.getThem()
+                                  //                     ? AppThemeData
+                                  //                         .secondary600
+                                  //                     : AppThemeData
+                                  //                         .secondary50,
+                                  //                 shape: RoundedRectangleBorder(
+                                  //                   borderRadius:
+                                  //                       BorderRadius.circular(
+                                  //                           120),
+                                  //                 ),
+                                  //               ),
+                                  //               child: Padding(
+                                  //                 padding:
+                                  //                     const EdgeInsets.all(10),
+                                  //                 child: SvgPicture.asset(
+                                  //                     "assets/icons/ic_building_two.svg",
+                                  //                     colorFilter: ColorFilter.mode(
+                                  //                         AppThemeData.secondary300,
+                                  //                         BlendMode.srcIn),
+                                  //                   ),
+                                  //                 ),
+                                  //               ),
+                                  //               "Outlet Information's",
+                                  //               () {
+                                  //                 Get.to(const AddRestaurantScreen())
+                                  //                     ?.then((v) {
+                                  //                   if (v == true) {
+                                  //                     controller.getUserProfile();
+                                  //                   }
+                                  //                 });
+                                  //               },
+                                  //             ),
                                   cardDecoration(
                                     themeChange,
                                     controller,
@@ -509,32 +508,32 @@ class ProfileScreen extends StatelessWidget {
                                           : 1;
                                     },
                                   ),
-                                  cardDecoration(
-                                    themeChange,
-                                    controller,
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: ShapeDecoration(
-                                        color: themeChange.getThem()
-                                            ? AppThemeData.secondary600
-                                            : AppThemeData.secondary50,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(120),
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(10),
-                                        child: SvgPicture.asset(
-                                            "assets/icons/ic_alarm-clock.svg"),
-                                      ),
-                                    ),
-                                    "Working Hours",
-                                    () {
-                                      Get.to(const WorkingHoursScreen());
-                                    },
-                                  ),
+                                  // cardDecoration(
+                                  //   themeChange,
+                                  //   controller,
+                                  //   Container(
+                                  //     width: 44,
+                                  //     height: 44,
+                                  //     decoration: ShapeDecoration(
+                                  //       color: themeChange.getThem()
+                                  //           ? AppThemeData.secondary600
+                                  //           : AppThemeData.secondary50,
+                                  //       shape: RoundedRectangleBorder(
+                                  //         borderRadius:
+                                  //             BorderRadius.circular(120),
+                                  //       ),
+                                  //     ),
+                                  //     child: Padding(
+                                  //       padding: const EdgeInsets.all(10),
+                                  //       child: SvgPicture.asset(
+                                  //           "assets/icons/ic_alarm-clock.svg"),
+                                  //     ),
+                                  //   ),
+                                  //   "Working Hours",
+                                  //   () {
+                                  //     Get.to(const WorkingHoursScreen());
+                                  //   },
+                                  // ),
                                   cardDecoration(
                                     themeChange,
                                     controller,

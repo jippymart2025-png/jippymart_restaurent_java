@@ -51,11 +51,8 @@ class SalesReportController extends GetxController {
     dashboard.value = null;
 
     final DashboardModel? result;
-    if (usesJavaSalesApi) {
-      result = await _fetchJavaReport(forceRefresh: forceRefresh);
-    } else {
-      result = await _fetchPhpReport(forceRefresh: forceRefresh);
-    }
+      result = await _fetchReport(forceRefresh: forceRefresh);
+
 
     loading.value = false;
 
@@ -68,7 +65,7 @@ class SalesReportController extends GetxController {
     }
   }
 
-  Future<DashboardModel?> _fetchJavaReport({required bool forceRefresh}) async {
+  Future<DashboardModel?> _fetchReport({required bool forceRefresh}) async {
     final merchantId = _resolveMerchantId();
     if (merchantId <= 0) {
       errorMessage.value = 'Merchant not found. Please log in again.';
@@ -99,27 +96,6 @@ class SalesReportController extends GetxController {
           );
   }
 
-  Future<DashboardModel?> _fetchPhpReport({required bool forceRefresh}) async {
-    final vendorId = Constant.userModel?.vendorID?.toString() ?? '';
-    if (vendorId.isEmpty) {
-      errorMessage.value = 'Vendor not found. Please log in again.';
-      return null;
-    }
-
-    if (reportType.value == ReportType.settledEarnings) {
-      return DashboardApiService.getSettledReport(
-        vendorId: vendorId,
-        filter: selectedFilter.value,
-        forceRefresh: forceRefresh,
-      );
-    }
-
-    return DashboardApiService.getDashboard(
-      vendorId: vendorId,
-      filter: selectedFilter.value,
-      forceRefresh: forceRefresh,
-    );
-  }
 
   void _resolveScope() {
     final loginType = Preferences.getString('loginType');

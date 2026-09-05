@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:latlong2/latlong.dart' as latlong;
-import 'package:geolocator/geolocator.dart';
 
 import '../../themes/app_them_data.dart';
 import '../../themes/round_button_fill.dart';

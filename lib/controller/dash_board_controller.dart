@@ -275,38 +275,38 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
   /// Bottom navigation items.
   List<BottomNavItem> getNavItems() {
     if (Constant.isDineInEnable) {
-      return  [
-        BottomNavItem(
-          id: BottomNavId.home,
-          icon: ImageConst.homeIcon,
-          label: 'Home',
-        ),
-        BottomNavItem(
-          id: BottomNavId.dineIn,
-          icon: 'assets/icons/ic_dinein.svg',
-          label: 'Dine In',
-        ),
-        BottomNavItem(
-          id: BottomNavId.inventory,
-          icon: ImageConst.products,
-          label: 'Inventory',
-        ),
-        BottomNavItem(
-          id: BottomNavId.subscription,
-          icon: ImageConst.subscription,
-          label: 'Promotions',
-        ),
-        BottomNavItem(
-          id: BottomNavId.sales,
-          icon: ImageConst.report,
-          label: 'Report',
-        ),
-        BottomNavItem(
-          id: BottomNavId.profile,
-          icon: ImageConst.profile,
-          label: 'Profile',
-        ),
-      ];
+      // return  [
+      //   BottomNavItem(
+      //     id: BottomNavId.home,
+      //     icon: ImageConst.homeIcon,
+      //     label: 'Home',
+      //   ),
+      //   BottomNavItem(
+      //     id: BottomNavId.dineIn,
+      //     icon: 'assets/icons/ic_dinein.svg',
+      //     label: 'Dine In',
+      //   ),
+      //   BottomNavItem(
+      //     id: BottomNavId.inventory,
+      //     icon: ImageConst.products,
+      //     label: 'Inventory',
+      //   ),
+      //   BottomNavItem(
+      //     id: BottomNavId.subscription,
+      //     icon: ImageConst.subscription,
+      //     label: 'Promotions',
+      //   ),
+      //   BottomNavItem(
+      //     id: BottomNavId.sales,
+      //     icon: ImageConst.report,
+      //     label: 'Report',
+      //   ),
+      //   BottomNavItem(
+      //     id: BottomNavId.profile,
+      //     icon: ImageConst.profile,
+      //     label: 'Profile',
+      //   ),
+      // ];
     }
 
     return  [

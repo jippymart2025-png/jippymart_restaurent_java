@@ -439,7 +439,7 @@ class ProductListController extends GetxController {
         .where((s) => s.isNotEmpty)
         .toSet();
 
-    final remote = await FireStoreUtils.getMerchantCategoryById();
+    final remote = await FireStoreUtils.getAllMasterCategories();
 
     if (remote != null && remote.isNotEmpty) {
       final list = usedIds.isEmpty

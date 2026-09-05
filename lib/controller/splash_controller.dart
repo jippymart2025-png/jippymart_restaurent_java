@@ -89,7 +89,7 @@ class SplashController extends GetxController {
 
       Constant.userModel = userProfile;
       print( "getUserProfilegetUserProfile  ${Constant.userModel?.toJson()} ");
-      if (Constant.userModel?.role != Constant.userRoleVendor) {
+      if (Constant.userModel?.role != Constant.userRoleMerchant) {
         loginController.clearUserData();
         Get.offAll(() => const LandingScreen());
         return;

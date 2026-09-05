@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/app/chat_screens/ChatVideoContainer.dart';
 import 'package:jippymart_restaurant/app/chat_screens/full_screen_image_viewer.dart';
 import 'package:jippymart_restaurant/app/chat_screens/full_screen_video_viewer.dart';
-import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/chat_controller.dart';
 import 'package:jippymart_restaurant/models/conversation_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';

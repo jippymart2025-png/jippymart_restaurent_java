@@ -24,9 +24,9 @@ class UserModel {
   UserLocation? location;
   UserBankDetails? userBankDetails;
   List<ShippingAddress>? shippingAddress;
-  String? carName;
-  String? carNumber;
-  String? carPictureURL;
+  // String? carName;
+  // String? carNumber;
+  // String? carPictureURL;
   List<dynamic>? inProgressOrderID;
   List<dynamic>? orderRequestData;
   String? vendorID;
@@ -70,9 +70,9 @@ class UserModel {
       this.role,
       this.location,
       this.shippingAddress,
-      this.carName,
-      this.carNumber,
-      this.carPictureURL,
+      // this.carName,
+      // this.carNumber,
+      // this.carPictureURL,
       this.inProgressOrderID,
       this.orderRequestData,
       this.vendorID,
@@ -166,9 +166,9 @@ class UserModel {
     // FIX: Handle shippingAddress with better error handling
     shippingAddress = _parseShippingAddress(json['shippingAddress']);
 
-    carName = json['carName'];
-    carNumber = json['carNumber'];
-    carPictureURL = json['carPictureURL'];
+    // carName = json['carName'];
+    // carNumber = json['carNumber'];
+    // carPictureURL = json['carPictureURL'];
     inProgressOrderID = json['inProgressOrderID'];
     orderRequestData = json['orderRequestData'];
     vendorID = json['vendorID'] ?? '';
@@ -327,14 +327,14 @@ class UserModel {
     if (role == Constant.userRoleDriver) {
       data['vendorID'] = vendorID;
       data['isActive'] = isActive;
-      data['carName'] = carName;
-      data['carNumber'] = carNumber;
-      data['carPictureURL'] = carPictureURL;
+      // data['carName'] = carName;
+      // data['carNumber'] = carNumber;
+      // data['carPictureURL'] = carPictureURL;
       data['inProgressOrderID'] = inProgressOrderID;
       data['orderRequestData'] = orderRequestData;
       data['rotation'] = rotation;
     }
-    if (role == Constant.userRoleVendor) {
+    if (role == Constant.userRoleMerchant) {
       data['vendorID'] = vendorID;
       data['subscriptionPlanId'] = subscriptionPlanId;
       data['subscriptionExpiryDate'] = subscriptionExpiryDate;

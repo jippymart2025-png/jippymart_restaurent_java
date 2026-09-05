@@ -124,6 +124,8 @@
 
 import 'dart:convert';
 
+import 'package:jippymart_restaurant/models/variant_group_model.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Supporting models
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,11 +139,12 @@ class AddonItem {
 /// One from/to slot inside a day.
 /// Serializes to: {"from": "11:00", "to": "22:00"}
 class TimeRangeItem {
+  int productAvailableTimingId;
   String from; // HH:MM
   String to;   // HH:MM
-  TimeRangeItem({required this.from, required this.to});
+  TimeRangeItem({ this.productAvailableTimingId =0,required this.from, required this.to});
 
-  Map<String, dynamic> toJson() => {'from': from, 'to': to};
+  Map<String, dynamic> toJson() => {'productAvailableTimingId': productAvailableTimingId,'from': from, 'to': to};
 }
 
 /// One product option / variant.
@@ -207,10 +210,10 @@ class SelectedProductModel {
   String? description;
   String? categoryId;
   bool? isVeg;
-
+ bool? hasProductVariants;
 
   List<AddonItem> addons;
-
+  //List<StagedVariantGroup> variantGroups = [];
   /// Ordered list of selected day names, e.g. ['Monday', 'Tuesday']
   List<String> availableDays;
 
@@ -226,6 +229,7 @@ class SelectedProductModel {
     this.description,
     this.categoryId,
     this.isVeg,
+    this.hasProductVariants,
     this.vendorProductId,
     required this.merchantPrice,
     required this.onlinePrice,
@@ -270,5 +274,5 @@ class SelectedProductModel {
   List<Map<String, dynamic>> get optionsJson =>
       options.where((o) => o.isAvailable).map((o) => o.toJson()).toList();
 
-  String? get imageLink => null;
+  String?  imageLink;
 }

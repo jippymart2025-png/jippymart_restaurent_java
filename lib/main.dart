@@ -49,22 +49,22 @@ Future<void> initializeFirebase() async {
   try {
     // Check if Firebase is already initialized
     if (Firebase.apps.isNotEmpty) {
-      print('Firebase is already initialized');
+      debugPrint('Firebase is already initialized');
       return;
     }
     // Initialize Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+    debugPrint('Firebase initialized successfully');
     await FirebaseAppCheck.instance.activate(
       // Use debug provider for development
       androidProvider: AndroidProvider.debug,
       appleProvider: AppleProvider.debug,
     );
-    print('Firebase App Check initialized successfully');
+    debugPrint('Firebase App Check initialized successfully');
   } catch (e) {
-    print('Error initializing Firebase: $e');
+    debugPrint('Error initializing Firebase: $e');
     // Don't rethrow the error, just log it
   }
 }
@@ -124,9 +124,9 @@ Future<void> initializeService() async {
       ),
       iosConfiguration: IosConfiguration(),
     );
-    print('Service configured - call startService() when needed');
+    debugPrint('Service configured - call startService() when needed');
   } catch (e) {
-    print('Error initializing service: $e');
+    debugPrint('Error initializing service: $e');
   }
 }
 

@@ -94,7 +94,7 @@ class LoginController extends GetxController {
         Preferences.setString('merchantId', userModel.merchantId!);
       }
 
-      if (userModel.role != Constant.userRoleVendor || userModel.active != true) {
+      if (userModel.role != Constant.userRoleMerchant || userModel.active != true) {
         Get.offAll(() => const LandingScreen());
         return;
       }
@@ -355,10 +355,10 @@ class LoginController extends GetxController {
     await Preferences.setString('authToken', token);
   }
 
-  Future<void> _markLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', true);
-  }
+  // Future<void> _markLoggedIn() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setBool('is_logged_in', true);
+  // }
 
   Future<void> _navigateToDashboardAfterLogin() async {
     if (Get.isRegistered<DashBoardController>()) {
@@ -442,17 +442,17 @@ class LoginController extends GetxController {
   }
 
 // Helper method to parse bool from various types
-  bool _parseBoolValue(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is String) {
-      return value.toLowerCase() == 'true' || value == '1';
-    }
-    if (value is int) {
-      return value == 1;
-    }
-    return false;
-  }
+//   bool _parseBoolValue(dynamic value) {
+//     if (value == null) return false;
+//     if (value is bool) return value;
+//     if (value is String) {
+//       return value.toLowerCase() == 'true' || value == '1';
+//     }
+//     if (value is int) {
+//       return value == 1;
+//     }
+//     return false;
+//   }
 
 // // Helper method to save user data to SharedPreferences
 //   Future<void> _saveUserDataToSharedPreferences(Map<String, dynamic> userData) async {
@@ -586,20 +586,20 @@ class LoginController extends GetxController {
 // Helper method to clear user data on logout/error
   Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('firebase_id');
+    //await prefs.remove('firebase_id');
     await prefs.remove('email');
-    await prefs.remove('fcm_token');
+    //await prefs.remove('fcm_token');
     await prefs.remove('first_name');
     await prefs.remove('last_name');
     await prefs.remove('phone_number');
     await prefs.remove('country_code');
     await prefs.remove('role');
-    await prefs.remove('vendorID');
+    //await prefs.remove('vendorID');
     await prefs.remove('is_active');
     await prefs.remove('user_id');
     await prefs.remove('profile_picture');
-    await prefs.remove('zone_id');
-    await prefs.remove('is_document_verify');
+   // await prefs.remove('zone_id');
+    //await prefs.remove('is_document_verify');
     await prefs.setBool('is_logged_in', false);
     await prefs.remove('merchantId');
     await prefs.remove('userId');
@@ -682,9 +682,9 @@ class LoginController extends GetxController {
 Future<Map<String, dynamic>> getUserData() async {
   final prefs = await SharedPreferences.getInstance();
   return {
-    'firebase_id': prefs.getString('firebase_id') ?? '',
+    //'firebase_id': prefs.getString('firebase_id') ?? '',
     'email': prefs.getString('email') ?? '',
-    'fcm_token': prefs.getString('fcm_token') ?? '',
+    //'fcm_token': prefs.getString('fcm_token') ?? '',
     'first_name': prefs.getString('first_name') ?? '',
     'last_name': prefs.getString('last_name') ?? '',
     'phone_number': prefs.getString('phone_number') ?? '',
@@ -693,9 +693,9 @@ Future<Map<String, dynamic>> getUserData() async {
     'is_active': prefs.getBool('is_active') ?? false,
     'user_id': prefs.getString('user_id') ?? '',
     'profile_picture': prefs.getString('profile_picture') ?? '',
-    'zone_id': prefs.getString('zone_id') ?? '',
-    'vendorID': prefs.getString('vendorID') ?? '',
-    'is_document_verify': prefs.getBool('is_document_verify') ?? false,
+    //'zone_id': prefs.getString('zone_id') ?? '',
+    //'vendorID': prefs.getString('vendorID') ?? '',
+    //'is_document_verify': prefs.getBool('is_document_verify') ?? false,
     'is_logged_in': prefs.getBool('is_logged_in') ?? false,
   };
 }

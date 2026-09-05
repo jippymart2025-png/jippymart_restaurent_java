@@ -326,6 +326,7 @@ import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/pricing_calculator.dart';
 
 import '../models/addproduct_from _masterproduct.dart';
+import '../models/variant_group_model.dart';
 
 class AddFromCatalogController extends GetxController {
   final TextEditingController categorySearchController = TextEditingController();
@@ -451,7 +452,7 @@ class AddFromCatalogController extends GetxController {
     try {
       final outletCategoryMap = await _loadOutletCategoryIdMap();
 
-      final list = await FireStoreUtils.getMerchantCategoryById();
+      final list = await FireStoreUtils.getAllMasterCategories();
 
       if (list == null || list.isEmpty) {
         categoryList.clear();
@@ -723,7 +724,7 @@ class AddFromCatalogController extends GetxController {
     }
 
     try {
-      final res = await FoodApiService.getMasterProductsByCategory(
+      final res = await FoodApiService.getMasterProductsByCategoryId(
         cat!.id!,
         page: currentPage.value,
         perPage: perPage,
@@ -866,7 +867,7 @@ class AddFromCatalogController extends GetxController {
         if (t.day != null && t.timeslot != null) {
           final slots = t.timeslot!
               .map<TimeRangeItem>(
-                (s) => TimeRangeItem(
+                (s) => TimeRangeItem(productAvailableTimingId: s.productAvailableTimingId ?? 0,
               from: s.from ?? '',
               to: s.to ?? '',
             ),
@@ -1382,7 +1383,7 @@ class AddFromCatalogController extends GetxController {
       // -----------------------------------------------------------------------
 
       final res =
-      await FoodApiService.addProductsFromMaster(
+      await FoodApiService.addProductsToOutletFromMaster(
         selected,
         categoryId: categoryId,
       );

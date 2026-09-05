@@ -2372,13 +2372,10 @@ import 'package:jippymart_restaurant/models/selected_product_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
-import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
-import 'package:dropdown_search/dropdown_search.dart';
-//import 'package:jippymart_restaurant/lib/app/product_screens/add_masterproduct_screen.dart';
-//import 'package:jippymart_restaurent_java/app/product_screens/add_masterproduct_screen.dart';
+import '../../models/variant_group_model.dart';
 import 'add_masterproduct_screen.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Screen
@@ -3455,7 +3452,13 @@ class _SelectedProductForm extends StatelessWidget {
             isDark: isDark,
             onChanged: (v) => ctrl.setAvailable(id, v),
           ),
-
+          // const SizedBox(height: 14),
+          // _VariantsButton(
+          //   id: id,
+          //   variantGroups: sel.variantGroups,
+          //   isDark: isDark,
+          //   onSaved: (groups) => ctrl.setVariantGroups(id, groups),
+          // ),
           // ── Inline options (no button — always visible when exist) ─
           if (sel.options.isNotEmpty) ...[
             const SizedBox(height: 14),
@@ -3503,7 +3506,69 @@ class _SelectedProductForm extends StatelessWidget {
     );
   }
 }
-
+// class _VariantsButton extends StatelessWidget {
+//   const _VariantsButton({
+//     required this.id,
+//     required this.variantGroups,
+//     required this.isDark,
+//     required this.onSaved,
+//   });
+//
+//   final String id;
+//   final List<StagedVariantGroup> variantGroups;
+//   final bool isDark;
+//   final ValueChanged<List<StagedVariantGroup>> onSaved;
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final count = variantGroups.length;
+//     return GestureDetector(
+//       onTap: () async {
+//         final result = await showModalBottomSheet<List<StagedVariantGroup>>(
+//           context: context,
+//           isScrollControlled: true,
+//           builder: (_) => VariantBuilderSheet(initialGroups: variantGroups),
+//         );
+//         if (result != null) onSaved(result);
+//       },
+//       child: Container(
+//         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+//         decoration: BoxDecoration(
+//           color: count > 0
+//               ? ColorConst.orange.withOpacity(0.08)
+//               : (isDark ? AppThemeData.grey700 : Colors.white),
+//           borderRadius: BorderRadius.circular(10),
+//           border: Border.all(
+//             color: count > 0
+//                 ? ColorConst.orange.withOpacity(0.4)
+//                 : (isDark ? AppThemeData.grey600 : Colors.grey.shade300),
+//           ),
+//         ),
+//         child: Row(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Icon(Icons.tune_rounded,
+//                 size: 15,
+//                 color: count > 0
+//                     ? ColorConst.orange
+//                     : (isDark ? AppThemeData.grey400 : AppThemeData.grey600)),
+//             const SizedBox(width: 6),
+//             Text(
+//               count > 0 ? '$count variant group(s)' : 'Add variants',
+//               style: TextStyle(
+//                 fontSize: 12,
+//                 fontFamily: AppThemeData.medium,
+//                 color: count > 0
+//                     ? ColorConst.orange
+//                     : (isDark ? AppThemeData.grey400 : AppThemeData.grey600),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 // ─────────────────────────────────────────────────────────────────────────────
 // Switch row — replaces ToggleChip; cleaner for publish/available
 // ─────────────────────────────────────────────────────────────────────────────

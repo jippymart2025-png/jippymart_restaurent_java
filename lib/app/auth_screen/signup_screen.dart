@@ -12,10 +12,8 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
 import '../../constant/constant.dart';
 import '../../models/location_model.dart';
-import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
  // ADD THIS
 import '../add_restaurant_screen/locationselection.dart';
 class SignupScreen extends StatelessWidget {
@@ -247,22 +245,82 @@ class SignupScreen extends StatelessWidget {
           );
         });
   }
+  // void _openLocationPicker(BuildContext context, SignupController controller) {
+  //   Constant.checkPermission(
+  //     context: context,
+  //     onTap: () async {
+  //       ShowToastDialog.showLoader("Getting location...".tr);
+  //       try {
+  //         await Geolocator.requestPermission();
+  //         final position = await Geolocator.getCurrentPosition();
+  //         ShowToastDialog.closeLoader();
+  //         final initialPos = Constant.selectedMapType == 'osm'
+  //             ? const LatLng(20.5937, 78.9629)
+  //             : LatLng(position.latitude, position.longitude);
+  //         final result = await Get.to(
+  //               () => MapPickerPage(initialPosition: initialPos),
+  //           fullscreenDialog: Constant.selectedMapType != 'osm',
+  //         );
+  //         if (result != null) {
+  //           final data = result as Map<String, dynamic>;
+  //           final LatLng selectedLatLng = data['location'] as LatLng;
+  //           final String selectedAddress = data['address'] as String? ?? '';
+  //           controller.latitudeController.value.text = selectedLatLng.latitude.toString();
+  //           controller.longitudeController.value.text = selectedLatLng.longitude.toString();
+  //           controller.locationDisplayController.text = selectedAddress;
+  //         }
+  //       } catch (e) {
+  //         ShowToastDialog.closeLoader();
+  //         ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
+  //       }
+  //     },
+  //   );
+  // }
+
   void _openLocationPicker(BuildContext context, SignupController controller) {
     Constant.checkPermission(
       context: context,
       onTap: () async {
-        ShowToastDialog.showLoader("Getting location...".tr);
         try {
-          await Geolocator.requestPermission();
+          // 1. Check if location services are enabled on the device
+          bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) {
+            ShowToastDialog.showToast("Please enable location services".tr);
+            return;
+          }
+
+          // 2. Check current permission status
+          LocationPermission permission = await Geolocator.checkPermission();
+
+          if (permission == LocationPermission.denied) {
+            // 3. Ask for permission if not granted yet
+            permission = await Geolocator.requestPermission();
+            if (permission == LocationPermission.denied) {
+              ShowToastDialog.showToast("Location permission denied".tr);
+              return;
+            }
+          }
+
+          if (permission == LocationPermission.deniedForever) {
+            ShowToastDialog.showToast(
+              "Location permission permanently denied, please enable it from app settings".tr,
+            );
+            return;
+          }
+
+          // 4. Permission granted — fetch current location
+          ShowToastDialog.showLoader("Getting location...".tr);
           final position = await Geolocator.getCurrentPosition();
           ShowToastDialog.closeLoader();
-          final initialPos = Constant.selectedMapType == 'osm'
-              ? const LatLng(20.5937, 78.9629)
-              : LatLng(position.latitude, position.longitude);
+
+          // Always use the real GPS position (MapPickerPage only renders GoogleMap)
+          final initialPosition = LatLng(position.latitude, position.longitude);
+
           final result = await Get.to(
-                () => MapPickerPage(initialPosition: initialPos),
+                () => MapPickerPage(initialPosition: initialPosition),
             fullscreenDialog: Constant.selectedMapType != 'osm',
           );
+
           if (result != null) {
             final data = result as Map<String, dynamic>;
             final LatLng selectedLatLng = data['location'] as LatLng;
@@ -277,8 +335,7 @@ class SignupScreen extends StatelessWidget {
         }
       },
     );
-  }
-  // call site, inside build():
+  }  // call site, inside build():
   //merchantForm(controller, themeChange, context),
   Widget merchantForm(
       SignupController controller,

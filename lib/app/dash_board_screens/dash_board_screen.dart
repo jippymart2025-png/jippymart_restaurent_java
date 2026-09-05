@@ -4,27 +4,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/controller/product_list_controller.dart';
 import 'package:jippymart_restaurant/controller/sales_report_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
-import 'package:jippymart_restaurant/utils/const/image_const.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/service/dashboard_api_service.dart';
 import '../../models/bottom_nav_item.dart';
 import '../../utils/preferences.dart';
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Nav item data – plain const records, no runtime allocation
-// ─────────────────────────────────────────────────────────────────────────────
-//
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DashBoardScreen
@@ -373,16 +363,16 @@ class _StatusBanner extends StatelessWidget {
       }
 
       final outletId = DashBoardController.resolveActiveOutletId();
-      print('========== OPEN OUTLET ==========');
-      print('outletId = $outletId');
-      print('loginType = ${Preferences.getString('loginType')}');
-      print(
+      debugPrint('========== OPEN OUTLET ==========');
+      debugPrint('outletId = $outletId');
+      debugPrint('loginType = ${Preferences.getString('loginType')}');
+      debugPrint(
         'Preferences outletId = ${Preferences.getInt('outletId')}',
       );
-      print(
+      debugPrint(
         'Preferences selectedOutletId = ${Preferences.getInt('selectedOutletId')}',
       );
-      print('=================================');
+      debugPrint('=================================');
       if (outletId <= 0) {
         ShowToastDialog.showToast('No outlet selected'.tr);
         return;

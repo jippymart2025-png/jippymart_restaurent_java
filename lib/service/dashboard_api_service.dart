@@ -6,6 +6,7 @@ import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/models/dashboard_model.dart';
 import 'package:jippymart_restaurant/config/app_config.dart';
 
+import '../utils/common.dart';
 import '../utils/fire_store_utils.dart';
 import '../utils/preferences.dart';
 
@@ -45,7 +46,7 @@ extension DashboardFilterExt on DashboardFilter {
 /// Fetches vendor dashboard data.
 /// API: GET {{baseURL}}vendor/dashboard?vendor_id=...&filter=last_week|last_month
 class DashboardApiService {
-  static String get _baseUrl => Constant.baseUrl;
+  //static String get _baseUrl => Constant.baseUrl;
 
   static Map<String, String> get _headers => {
         'Content-Type': 'application/json',
@@ -87,99 +88,99 @@ class DashboardApiService {
   /// GET vendor/dashboard?vendor_id=...&filter=...
   /// [vendorId] current vendor ID (e.g. Constant.userModel?.vendorID).
   /// [filter] optional: last_week, last_month; omit for all data.
-  static Future<DashboardModel?> getDashboard({
-    required String vendorId,
-    DashboardFilter filter = DashboardFilter.none,
-    bool forceRefresh = false,
-  }) async {
-    final id = vendorId.trim();
-    if (id.isEmpty) return null;
-
-    final cacheKey = _makeKey(
-      vendorId: id,
-      endpoint: 'dashboard',
-      filter: filter,
-    );
-    if (!forceRefresh) {
-      final cached = _getFromCache(cacheKey);
-      if (cached != null) {
-        if (AppConfig.enableDebugLogs) {
-          // ignore: avoid_print
-          print('DashboardApiService.getDashboard using cached data for $cacheKey');
-        }
-        return cached;
-      }
-    }
-
-    try {
-      final queryParams = <String>['vendor_id=${Uri.encodeComponent(id)}'];
-      final filterValue = filter.queryValue;
-      if (filterValue != null && filterValue.isNotEmpty) {
-        queryParams.add('filter=${Uri.encodeComponent(filterValue)}');
-      }
-      final url = '${_baseUrl}vendor/dashboard?${queryParams.join('&')}';
-      final response = await http.get(Uri.parse(url), headers: _headers);
-
-      final bodyStr = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
-      if (bodyStr.isEmpty) return null;
-
-      final json = jsonDecode(bodyStr) as Map<String, dynamic>;
-      final model = DashboardModel.fromJson(json);
-      _saveToCache(cacheKey, model);
-      return model;
-    } catch (e, st) {
-      print('DashboardApiService.getDashboard error: $e $st');
-      return null;
-    }
-  }
+  // static Future<DashboardModel?> getDashboard({
+  //   required String vendorId,
+  //   DashboardFilter filter = DashboardFilter.none,
+  //   bool forceRefresh = false,
+  // }) async {
+  //   final id = vendorId.trim();
+  //   if (id.isEmpty) return null;
+  //
+  //   final cacheKey = _makeKey(
+  //     vendorId: id,
+  //     endpoint: 'dashboard',
+  //     filter: filter,
+  //   );
+  //   if (!forceRefresh) {
+  //     final cached = _getFromCache(cacheKey);
+  //     if (cached != null) {
+  //       if (AppConfig.enableDebugLogs) {
+  //         // ignore: avoid_print
+  //         print('DashboardApiService.getDashboard using cached data for $cacheKey');
+  //       }
+  //       return cached;
+  //     }
+  //   }
+  //
+  //   try {
+  //     final queryParams = <String>['vendor_id=${Uri.encodeComponent(id)}'];
+  //     final filterValue = filter.queryValue;
+  //     if (filterValue != null && filterValue.isNotEmpty) {
+  //       queryParams.add('filter=${Uri.encodeComponent(filterValue)}');
+  //     }
+  //     final url = '${_baseUrl}vendor/dashboard?${queryParams.join('&')}';
+  //     final response = await http.get(Uri.parse(url), headers: _headers);
+  //
+  //     final bodyStr = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+  //     if (bodyStr.isEmpty) return null;
+  //
+  //     final json = jsonDecode(bodyStr) as Map<String, dynamic>;
+  //     final model = DashboardModel.fromJson(json);
+  //     _saveToCache(cacheKey, model);
+  //     return model;
+  //   } catch (e, st) {
+  //     print('DashboardApiService.getDashboard error: $e $st');
+  //     return null;
+  //   }
+  // }
 
   /// GET vendor/SettledReport?vendor_id=...&filter=...
   /// Same response shape as dashboard. Use for "Settled earnings" report.
-  static Future<DashboardModel?> getSettledReport({
-    required String vendorId,
-    DashboardFilter filter = DashboardFilter.none,
-    bool forceRefresh = false,
-  }) async {
-    final id = vendorId.trim();
-    if (id.isEmpty) return null;
-
-    final cacheKey = _makeKey(
-      vendorId: id,
-      endpoint: 'settled',
-      filter: filter,
-    );
-    if (!forceRefresh) {
-      final cached = _getFromCache(cacheKey);
-      if (cached != null) {
-        if (AppConfig.enableDebugLogs) {
-          // ignore: avoid_print
-          print('DashboardApiService.getSettledReport using cached data for $cacheKey');
-        }
-        return cached;
-      }
-    }
-
-    try {
-      final queryParams = <String>['vendor_id=${Uri.encodeComponent(id)}'];
-      final filterValue = filter.queryValue;
-      if (filterValue != null && filterValue.isNotEmpty) {
-        queryParams.add('filter=${Uri.encodeComponent(filterValue)}');
-      }
-      final url = '${_baseUrl}vendor/SettledReport?${queryParams.join('&')}';
-      final response = await http.get(Uri.parse(url), headers: _headers);
-
-      final bodyStr = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
-      if (bodyStr.isEmpty) return null;
-
-      final json = jsonDecode(bodyStr) as Map<String, dynamic>;
-      final model = DashboardModel.fromJson(json);
-      _saveToCache(cacheKey, model);
-      return model;
-    } catch (e, st) {
-      print('DashboardApiService.getSettledReport error: $e $st');
-      return null;
-    }
-  }
+  // static Future<DashboardModel?> getSettledReport({
+  //   required String vendorId,
+  //   DashboardFilter filter = DashboardFilter.none,
+  //   bool forceRefresh = false,
+  // }) async {
+  //   final id = vendorId.trim();
+  //   if (id.isEmpty) return null;
+  //
+  //   final cacheKey = _makeKey(
+  //     vendorId: id,
+  //     endpoint: 'settled',
+  //     filter: filter,
+  //   );
+  //   if (!forceRefresh) {
+  //     final cached = _getFromCache(cacheKey);
+  //     if (cached != null) {
+  //       if (AppConfig.enableDebugLogs) {
+  //         // ignore: avoid_print
+  //         print('DashboardApiService.getSettledReport using cached data for $cacheKey');
+  //       }
+  //       return cached;
+  //     }
+  //   }
+  //
+  //   try {
+  //     final queryParams = <String>['vendor_id=${Uri.encodeComponent(id)}'];
+  //     final filterValue = filter.queryValue;
+  //     if (filterValue != null && filterValue.isNotEmpty) {
+  //       queryParams.add('filter=${Uri.encodeComponent(filterValue)}');
+  //     }
+  //     final url = '${_baseUrl}vendor/SettledReport?${queryParams.join('&')}';
+  //     final response = await http.get(Uri.parse(url), headers: _headers);
+  //
+  //     final bodyStr = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+  //     if (bodyStr.isEmpty) return null;
+  //
+  //     final json = jsonDecode(bodyStr) as Map<String, dynamic>;
+  //     final model = DashboardModel.fromJson(json);
+  //     _saveToCache(cacheKey, model);
+  //     return model;
+  //   } catch (e, st) {
+  //     print('DashboardApiService.getSettledReport error: $e $st');
+  //     return null;
+  //   }
+  // }
 
   static String _javaSalesCacheKey({
     required int merchantId,
@@ -218,18 +219,18 @@ class DashboardApiService {
       if (outletId != null && outletId > 0) {
         queryParams.add('outletId=$outletId');
       }
-
+      final headers = await getHeaders();
       final token = Preferences.getString('authToken');
-      final url =
-          'http://187.127.156.147:8084/api/$endpoint?${queryParams.join('&')}';
+      final url = '${Constant.baseUrl}$endpoint?${queryParams.join('&')}';
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers : headers,
+        // headers: {
+        //   'Accept': 'application/json',
+        //   'Content-Type': 'application/json',
+        //   'Authorization': 'Bearer $token',
+        // },
       );
 
       if (AppConfig.enableDebugLogs) {

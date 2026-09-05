@@ -14,7 +14,6 @@ import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
-import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
 import '../add_restaurant_screen/locationselection.dart';
 import '../../constant/show_toast_dialog.dart';
 
@@ -198,11 +197,13 @@ class EditProfileScreen extends StatelessWidget {
                                             textInputType: TextInputType.emailAddress,
                                             controller: controller.emailController.value,
                                             hintText: 'Email'.tr,
+                                            enable: false,
                                           ),
                                           TextFieldWidget(
                                             title: 'Phone Number'.tr,
                                             controller: controller.outletPhoneController.value,
                                             hintText: 'Phone Number'.tr,
+                                            enable: false,
                                           ),
                                           TextFieldWidget(
                                             title: 'Alternate Phone Number'.tr,
@@ -215,11 +216,13 @@ class EditProfileScreen extends StatelessWidget {
                                             controller: controller.fssaiNumberController.value,
                                             hintText: 'FSSAI Number'.tr,
                                             textInputType: TextInputType.number,
+                                            enable: false,
                                           ),
                                           TextFieldWidget(
                                             title: 'GST Number'.tr,
                                             controller: controller.gstNumberController.value,
                                             hintText: 'GST Number'.tr,
+                                            enable: false,
                                           ),
                                           Obx(() {
                                             final selectedNames = controller.cuisineTypes
@@ -233,7 +236,7 @@ class EditProfileScreen extends StatelessWidget {
                                                 title: 'Cuisine Type'.tr,
                                                 controller: TextEditingController(text: selectedNames),
                                                 hintText: 'Select Cuisine Types'.tr,
-                                                enable: false,
+                                                //enable: false,
                                               ),
                                             );
                                           }),
