@@ -350,6 +350,7 @@ class LoginController extends GetxController {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', true);
+    await prefs.setBool(Preferences.isFinishOnBoardingKey, true);
     await prefs.setString('firebase_id', userId.toString());
     await prefs.setString('user_id', userId.toString());
     await Preferences.setString('authToken', token);

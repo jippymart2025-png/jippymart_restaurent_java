@@ -9,14 +9,12 @@ import 'package:get/get.dart';
 import 'package:jippymart_restaurant/controller/login_controller.dart';
 import 'package:mime/mime.dart';
 import 'package:jippymart_restaurant/app/chat_screens/ChatVideoContainer.dart';
-import 'package:jippymart_restaurant/constant/collection_name.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/models/AttributesModel.dart';
 import 'package:jippymart_restaurant/models/admin_commission.dart';
 import 'package:jippymart_restaurant/models/advertisement_model.dart';
 import 'package:jippymart_restaurant/models/conversation_model.dart';
-import 'package:jippymart_restaurant/models/dine_in_booking_model.dart';
 import 'package:jippymart_restaurant/models/document_model.dart';
 import 'package:jippymart_restaurant/models/driver_document_model.dart';
 import 'package:jippymart_restaurant/models/email_template_model.dart';
@@ -66,9 +64,6 @@ import '../models/merchant_request_model.dart';
 import '../models/outlet_details_model.dart';
 import '../models/outlet_fetch_result.dart';
 import '../models/outlet_model.dart';
-
-import 'package:jippymart_restaurant/models/addproduct_from _masterproduct.dart';
-
 import '../models/outlet_product_model.dart';
 import '../models/promotion_models.dart';
 import '../models/variant_group_model.dart';
@@ -195,11 +190,11 @@ class FireStoreUtils {
 
   static Future<bool> userExistOrNot(String uid) async {
     bool isExist = false;
-    print("userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
+    debugPrint("userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
     await http.get(
         Uri.parse('${Constant.baseUrl}restaurant/exists/$uid')
     ).then((response) {
-      print("userExistOrNot ${response.body} ");
+      debugPrint("userExistOrNot ${response.body} ");
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         isExist = data['exists'] ?? false;
@@ -232,7 +227,7 @@ class FireStoreUtils {
       }
 
       String url = '${Constant.baseUrl}restaurant/users/$uuid';
-      print(" getUserProfile $url");
+      debugPrint(" getUserProfile $url");
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -246,7 +241,7 @@ class FireStoreUtils {
           final userData = responseData['data'] ?? responseData; // Adjust based on your API structure
           final userModel = UserModel.fromJson(userData);
           Constant.userModel = userModel;
-          print(" getUserProfile  ${  Constant.userModel?.toJson()} ");
+          debugPrint(" getUserProfile  ${  Constant.userModel?.toJson()} ");
           
           // Performance Optimization: Cache the result
           _cachedUserProfile = userModel;
@@ -272,7 +267,7 @@ class FireStoreUtils {
   static Future<UserModel?> getMerchantProfile(String merchantId) async {
     try {
       if (merchantId.trim().isEmpty) {
-        print("Merchant ID is empty");
+        debugPrint("Merchant ID is empty");
         return null;
       }
 
@@ -289,13 +284,13 @@ class FireStoreUtils {
         headers: headers,
       );
 
-      print("Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+      debugPrint("Status Code: ${response.statusCode}");
+      debugPrint("Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
 
-        print("Merchant Profile JSON = $jsonData");
+        debugPrint("Merchant Profile JSON = $jsonData");
 
         final profileData = jsonData is Map<String, dynamic> &&
                 jsonData['data'] is Map
@@ -307,12 +302,12 @@ class FireStoreUtils {
       }
 
 
-      print(
+      debugPrint(
         "Failed to fetch profile. Status: ${response.statusCode}",
       );
       return null;
     } catch (e, stackTrace) {
-      print("getMerchantProfile Error: $e");
+      debugPrint("getMerchantProfile Error: $e");
       print(stackTrace);
       return null;
     }
@@ -347,8 +342,8 @@ class FireStoreUtils {
         'userType': 'MERCHANT',
       };
 
-      print("===== UPDATE MERCHANT REQUEST =====");
-      print(json.encode(body));
+      debugPrint("===== UPDATE MERCHANT REQUEST =====");
+      debugPrint(json.encode(body));
 
       final response = await http.put(
         Uri.parse('${Constant.baseUrl}fm/merchants/updateMerchantProfile'),
@@ -389,8 +384,8 @@ class FireStoreUtils {
         ),
       );
 
-      print("Status Code : ${response.statusCode}");
-      print("Response : ${response.body}");
+      debugPrint("Status Code : ${response.statusCode}");
+      debugPrint("Response : ${response.body}");
 
       if (response.statusCode == 200 ||
           response.statusCode == 201) {
@@ -405,7 +400,7 @@ class FireStoreUtils {
 
       return null;
     } catch (e) {
-      print("createMerchant Error : $e");
+      debugPrint("createMerchant Error : $e");
       return null;
     }
   }
@@ -417,17 +412,17 @@ class FireStoreUtils {
       final headers = await getHeaders();
       final url = '${Constant.baseUrl}fm/outlets/merchant/$merchantId';
 
-      print("===== getMerchantOutlets API =====");
-      print("URL: $url");
-      print("merchantId: $merchantId");
+      debugPrint("===== getMerchantOutlets API =====");
+      debugPrint("URL: $url");
+      debugPrint("merchantId: $merchantId");
 
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
       );
 
-      print("Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+      debugPrint("Status Code: ${response.statusCode}");
+      debugPrint("Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -439,7 +434,7 @@ class FireStoreUtils {
                 ? <dynamic>[]
                 : <dynamic>[];
 
-        print("API DATA COUNT = ${data.length}");
+        debugPrint("API DATA COUNT = ${data.length}");
 
         final outlets = data
             .map((e) {
@@ -453,26 +448,26 @@ class FireStoreUtils {
                   );
                 }
               } catch (parseError) {
-                print("Outlet list item parse warning: $parseError");
+                debugPrint("Outlet list item parse warning: $parseError");
               }
               return null;
             })
             .whereType<OutletModel>()
             .toList();
 
-        print("PARSED OUTLET COUNT = ${outlets.length}");
+        debugPrint("PARSED OUTLET COUNT = ${outlets.length}");
 
         return outlets;
       }
 
       if (response.statusCode == 404) {
-        print("getMerchantOutlets: no outlets found (404)");
+        debugPrint("getMerchantOutlets: no outlets found (404)");
         return [];
       }
 
       return [];
     } catch (e, stackTrace) {
-      print("getMerchantOutlets Error = $e");
+      debugPrint("getMerchantOutlets Error = $e");
       print(stackTrace);
       return [];
     }
@@ -485,22 +480,22 @@ class FireStoreUtils {
       final headers = await getHeaders();
       final url = '${Constant.baseUrl}fm/outlets/getOutletById/$outletId';
 
-      print("===== getOutletById API =====");
-      print("URL: $url");
-      print("outletId: $outletId");
+      debugPrint("===== getOutletById API =====");
+      debugPrint("URL: $url");
+      debugPrint("outletId: $outletId");
 
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
       );
 
-      print("Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+      debugPrint("Status Code: ${response.statusCode}");
+      debugPrint("Response Body: ${response.body}");
 
       final parsed = _parseOutletFetchResult(response.body, outletId);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        print("[getOutletById] HTTP failure — ${response.statusCode}");
+        debugPrint("[getOutletById] HTTP failure — ${response.statusCode}");
         if (parsed.isSuccess && parsed.outletId != null) {
           return parsed;
         }
@@ -512,7 +507,7 @@ class FireStoreUtils {
 
       return parsed;
     } catch (e, stackTrace) {
-      print("getOutletById Error = $e");
+      debugPrint("getOutletById Error = $e");
       print(stackTrace);
       return OutletFetchResult.parseError(e.toString());
     }
@@ -531,12 +526,12 @@ class FireStoreUtils {
         decoded = Map<String, dynamic>.from(raw);
       }
     } catch (decodeError, stackTrace) {
-      print("[getOutletById] JSON decode error — $decodeError");
+      debugPrint("[getOutletById] JSON decode error — $decodeError");
       print(stackTrace);
 
       final fallbackMerchantId = OutletModel.extractMerchantIdFromRaw(body);
       if (fallbackMerchantId != null && fallbackMerchantId > 0) {
-        print(
+        debugPrint(
           "[getOutletById] Fallback merchantId=$fallbackMerchantId from raw body",
         );
         final fallbackOutletId = OutletModel.extractOutletIdFromRaw(body);
@@ -562,13 +557,13 @@ class FireStoreUtils {
     if (decoded['success'] == false) {
       final msg =
           decoded['message']?.toString() ?? 'API returned success=false';
-      print("[getOutletById] API failure — $msg");
+      debugPrint("[getOutletById] API failure — $msg");
       return OutletFetchResult.apiError(msg);
     }
 
     final dynamic rawData = decoded['data'] ?? decoded;
     if (rawData is! Map) {
-      print("[getOutletById] No outlet data map in response");
+      debugPrint("[getOutletById] No outlet data map in response");
       return OutletFetchResult.empty();
     }
 
@@ -580,7 +575,7 @@ class FireStoreUtils {
       outlet = OutletModel.fromJsonSafe(dataMap);
     } catch (parseError, stackTrace) {
       hadParseWarning = true;
-      print("[getOutletById] Model parse warning — $parseError");
+      debugPrint("[getOutletById] Model parse warning — $parseError");
       print(stackTrace);
       outlet = OutletModel(
         outletId: OutletModel.parseOutletIdFromMap(dataMap),
@@ -595,18 +590,18 @@ class FireStoreUtils {
         OutletModel.parseOutletIdFromMap(dataMap);
 
     if (resolvedOutletId == null || resolvedOutletId <= 0) {
-      print('[getOutletById] outletId missing in response body');
+      debugPrint('[getOutletById] outletId missing in response body');
       return OutletFetchResult.apiError('outletId missing in outlet response');
     }
 
-    print(
+    debugPrint(
       "[getOutletById] Parsed merchantId=$merchantId outletId=$resolvedOutletId",
     );
 
     if (merchantId == null || merchantId <= 0) {
       final fallbackMerchantId = OutletModel.extractMerchantIdFromRaw(body);
       if (fallbackMerchantId != null && fallbackMerchantId > 0) {
-        print("[getOutletById] Using fallback merchantId=$fallbackMerchantId");
+        debugPrint("[getOutletById] Using fallback merchantId=$fallbackMerchantId");
         return OutletFetchResult.success(
           outlet: OutletModel(
             outletId: resolvedOutletId,
@@ -707,12 +702,12 @@ class FireStoreUtils {
         final responseData = jsonDecode(response.body);
         return responseData['success'] ?? true; // Adjust based on your API response
       } else {
-        print('Failed to update wallet: ${response.statusCode}');
+        debugPrint('Failed to update wallet: ${response.statusCode}');
         return false;
       }
     } catch (e) {
       // Handle network or other errors
-      print('Error updating wallet: $e');
+      debugPrint('Error updating wallet: $e');
       return false;
     }
   }
@@ -721,7 +716,7 @@ class FireStoreUtils {
     try {
       String? userId = await getFirebaseId();
       userModel.id = userId;
-      print("updateUser  ${ userModel.toJson()}");
+      debugPrint("updateUser  ${ userModel.toJson()}");
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/updateUser'),
         headers: {
@@ -1079,11 +1074,11 @@ class FireStoreUtils {
         }
       } else {
         // Handle non-200 status codes
-        print('API Error: ${response.statusCode}');
+        debugPrint('API Error: ${response.statusCode}');
         isExist = false;
       }
     } catch (e, s) {
-      print('checkReferralCodeValidOrNot $e $s');
+      debugPrint('checkReferralCodeValidOrNot $e $s');
       return false;
     }
     return isExist;
@@ -1256,11 +1251,11 @@ class FireStoreUtils {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         isUpdate = true;
       } else {
-        print("Failed to update order: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to update order: ${response.statusCode} - ${response.body}");
         isUpdate = false;
       }
     } catch (error) {
-      print("Failed to update order: $error");
+      debugPrint("Failed to update order: $error");
       isUpdate = false;
     }
     return isUpdate;
@@ -1291,11 +1286,11 @@ class FireStoreUtils {
   //     if (response.statusCode >= 200 && response.statusCode < 300) {
   //       isUpdate = true;
   //     } else {
-  //       print("Failed to update order: ${response.statusCode} - ${response.body}");
+  //       debugPrint("Failed to update order: ${response.statusCode} - ${response.body}");
   //       isUpdate = false;
   //     }
   //   // } catch (error) {
-  //   //   print("Failed to update order: $error");
+  //   //   debugPrint("Failed to update order: $error");
   //     isUpdate = false;
   //   // }
   //   return isUpdate;
@@ -1475,17 +1470,17 @@ class FireStoreUtils {
 
         if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
           ratingModel = RatingModel.fromJson(jsonResponse['data']);
-          print("======> Review found");
+          debugPrint("======> Review found");
         } else {
-          print("======> No review found");
+          debugPrint("======> No review found");
           ratingModel = null;
         }
       } else {
-        print("Failed to fetch review: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to fetch review: ${response.statusCode} - ${response.body}");
         ratingModel = null;
       }
     } catch (error) {
-      print("Error fetching review: $error");
+      debugPrint("Error fetching review: $error");
       ratingModel = null;
     }
 
@@ -1504,7 +1499,7 @@ class FireStoreUtils {
     List<ProductModel> productList = [];
     try {
       String url = '${Constant.baseUrl}restaurant/products?vendorID=${Constant.userModel!.vendorID}';
-      print("getProduct $url ");
+      debugPrint("getProduct $url ");
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -1515,19 +1510,19 @@ class FireStoreUtils {
         final jsonResponse = json.decode(response.body);
         if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
           final List<dynamic> productsData = jsonResponse['data'];
-          print("======>");
+          debugPrint("======>");
           print(productsData.length);
 
           for (int i = 0; i < productsData.length; i++) {
             try {
               final productData = productsData[i];
-              print("Processing product $i: ${productData['name']}");
+              debugPrint("Processing product $i: ${productData['name']}");
               ProductModel productModel = ProductModel.fromJson(productData);
               productList.add(productModel);
             } catch (e, stackTrace) {
-              print("Error processing product $i: $e");
-              print("Stack trace: $stackTrace");
-              print("Problematic product data: ${productsData[i]}");
+              debugPrint("Error processing product $i: $e");
+              debugPrint("Stack trace: $stackTrace");
+              debugPrint("Problematic product data: ${productsData[i]}");
               // Continue with next product instead of failing completely
               continue;
             }
@@ -1536,14 +1531,14 @@ class FireStoreUtils {
             _productCache[vendorID] = _ProductCacheEntry(productList, DateTime.now());
           }
         } else {
-          print("No products found or API returned error");
+          debugPrint("No products found or API returned error");
         }
       } else {
-        print("Failed to fetch products: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to fetch products: ${response.statusCode} - ${response.body}");
         return null;
       }
     } catch (error) {
-      print("Error fetching products: $error");
+      debugPrint("Error fetching products: $error");
       return null;
     }
     return productList;
@@ -1582,7 +1577,7 @@ class FireStoreUtils {
           final id = outlet.outletId;
           if (id != null && id > 0 && id == storedId) {
             await _syncOutletPreferences(id, outletName: outlet.outletName);
-            print('[resolveOutletIdForMenu] using list outletId=$id');
+            debugPrint('[resolveOutletIdForMenu] using list outletId=$id');
             return id;
           }
         }
@@ -1596,7 +1591,7 @@ class FireStoreUtils {
               id > 0 &&
               name.isNotEmpty &&
               name.toLowerCase() == storedName.toLowerCase()) {
-            print(
+            debugPrint(
               '[resolveOutletIdForMenu] corrected $storedId -> $id '
               'for outlet "$storedName"',
             );
@@ -1677,18 +1672,18 @@ class FireStoreUtils {
           '${Constant.baseUrl}fm/outlets/getOutletDetails'
           '?outletId=$resolvedOutletId&userType=$userType';
 
-      print('getOutletProducts => $url');
+      debugPrint('getOutletProducts => $url');
 
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
       );
 
-      print('getOutletProducts status => ${response.statusCode}');
-      print('getOutletProducts body => ${response.body}');
+      debugPrint('getOutletProducts status => ${response.statusCode}');
+      debugPrint('getOutletProducts body => ${response.body}');
 
       if (response.statusCode != 200) {
-        print(
+        debugPrint(
           'getOutletProducts failed: ${response.statusCode} — ${response.body}',
         );
         try {
@@ -1708,7 +1703,7 @@ class FireStoreUtils {
 
       final decoded = json.decode(response.body);
       if (decoded is! Map) {
-        print('getOutletProducts: response is not a JSON object');
+        debugPrint('getOutletProducts: response is not a JSON object');
         _lastOutletProductsError = 'Invalid menu response from server';
         return const OutletProductsResult(products: [], categories: []);
       }
@@ -1717,7 +1712,7 @@ class FireStoreUtils {
       if (map['success'] == false) {
         final msg = map['message']?.toString() ??
             'Could not load outlet menu';
-        print('getOutletProducts API error: $msg');
+        debugPrint('getOutletProducts API error: $msg');
         _lastOutletProductsError = msg;
         return null;
       }
@@ -1727,34 +1722,34 @@ class FireStoreUtils {
       if (rawData is Map) {
         detailsMap = Map<String, dynamic>.from(rawData);
       } else {
-        print('getOutletProducts: no outlet details object in response');
+        debugPrint('getOutletProducts: no outlet details object in response');
         return const OutletProductsResult(products: [], categories: []);
       }
 
       final details = OutletDetailsModel.fromJson(detailsMap);
       final result = details.toProductsResult();
-      print("========== PARSED PRODUCTS ==========");
+      debugPrint("========== PARSED PRODUCTS ==========");
 
       for (final p in result.products) {
-        print(
+        debugPrint(
           "Name=${p.name}, "
               "Id=${p.id}, "
               "Category=${p.categoryID}",
         );
       }
 
-      print("Total Parsed Products = ${result.products.length}");
+      debugPrint("Total Parsed Products = ${result.products.length}");
       _outletProductCache[resolvedOutletId] =
           _OutletProductsCacheEntry(result, DateTime.now());
 
-      print(
+      debugPrint(
         'getOutletProducts loaded ${result.products.length} products, '
         '${result.categories.length} categories',
       );
 
       return result;
     } catch (error, stackTrace) {
-      print('getOutletProducts error: $error');
+      debugPrint('getOutletProducts error: $error');
       print(stackTrace);
       _lastOutletProductsError = 'Failed to load outlet menu';
       return null;
@@ -1811,7 +1806,7 @@ class FireStoreUtils {
   //       Map<String, dynamic>.from(rawData),
   //     );
   //   } catch (e, st) {
-  //     print('fetchOutletDetailsModel error: $e $st');
+  //     debugPrint('fetchOutletDetailsModel error: $e $st');
   //     return null;
   //   }
   // }
@@ -1841,7 +1836,7 @@ class FireStoreUtils {
   //       body: json.encode(outletDetails.toJson()),
   //     );
   //
-  //     print(
+  //     debugPrint(
   //       'editAndUpdateOutletProducts status=${response.statusCode} '
   //       'body=${response.body}',
   //     );
@@ -1852,7 +1847,7 @@ class FireStoreUtils {
   //     }
   //     return false;
   //   } catch (e, st) {
-  //     print('editAndUpdateOutletProducts error: $e $st');
+  //     debugPrint('editAndUpdateOutletProducts error: $e $st');
   //     return false;
   //   }
   // }
@@ -1882,10 +1877,10 @@ class FireStoreUtils {
       final headers = await getHeaders();
       final url = '${Constant.baseUrl}fm/products/$productId';
 
-      print('getOutletSingleProductDetails => $url');
+      debugPrint('getOutletSingleProductDetails => $url');
       final response = await http.get(Uri.parse(url), headers: headers);
-      print('getOutletSingleProductDetails status => ${response.statusCode}');
-      print('getOutletSingleProductDetails body => ${response.body}');
+      debugPrint('getOutletSingleProductDetails status => ${response.statusCode}');
+      debugPrint('getOutletSingleProductDetails body => ${response.body}');
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
@@ -1930,8 +1925,8 @@ class FireStoreUtils {
         ),
       );
 
-      print('updateSingleOutletProductDetails => $url');
-      print('updateSingleOutletProductDetails body => $body');
+      debugPrint('updateSingleOutletProductDetails => $url');
+      debugPrint('updateSingleOutletProductDetails body => $body');
 
       final response = await http.put(
         Uri.parse(url),
@@ -1939,10 +1934,10 @@ class FireStoreUtils {
         body: body,
       );
 
-      print(
+      debugPrint(
         'updateSingleOutletProductDetails status => ${response.statusCode}',
       );
-      print(
+      debugPrint(
         'updateSingleOutletProductDetails resp => ${response.body}',
       );
 
@@ -2073,9 +2068,9 @@ class FireStoreUtils {
       final headers = await getHeaders();
       final response = await http.get(Uri.parse(url), headers: headers);
 
-      print("getProductVariantGroups => $url");
-      print("Status Code => ${response.statusCode}");
-      print("Response => ${response.body}");
+      debugPrint("getProductVariantGroups => $url");
+      debugPrint("Status Code => ${response.statusCode}");
+      debugPrint("Response => ${response.body}");
 
       if (response.statusCode != 200) {
         throw Exception("Failed to load variant groups: ${response.statusCode}");
@@ -2091,7 +2086,7 @@ class FireStoreUtils {
       _variantGroupsCacheTime = DateTime.now();
       return groups;
     } catch (e) {
-      print("Error fetching variant groups: $e");
+      debugPrint("Error fetching variant groups: $e");
       return null;
     }
   }
@@ -2105,9 +2100,9 @@ class FireStoreUtils {
       final headers = await getHeaders();
       final response = await http.get(Uri.parse(url), headers: headers);
 
-      print("getVariantGroupValues => $url");
-      print("Status Code => ${response.statusCode}");
-      print("Response => ${response.body}");
+      debugPrint("getVariantGroupValues => $url");
+      debugPrint("Status Code => ${response.statusCode}");
+      debugPrint("Response => ${response.body}");
 
       if (response.statusCode != 200) {
         throw Exception("Failed to load values: ${response.statusCode}");
@@ -2119,7 +2114,7 @@ class FireStoreUtils {
           .where((v) => v.isActive)
           .toList();
     } catch (e) {
-      print("Error fetching group values: $e");
+      debugPrint("Error fetching group values: $e");
       return null;
     }
   }
@@ -2139,9 +2134,9 @@ class FireStoreUtils {
         body: jsonEncode({'variantName': variantName}),
       );
 
-      print("createVariantGroupValue => $url : $variantName");
-      print("Status Code => ${response.statusCode}");
-      print("Response => ${response.body}");
+      debugPrint("createVariantGroupValue => $url : $variantName");
+      debugPrint("Status Code => ${response.statusCode}");
+      debugPrint("Response => ${response.body}");
 
       if (response.statusCode != 200) {
         throw Exception("Failed to create value: ${response.statusCode}");
@@ -2149,7 +2144,7 @@ class FireStoreUtils {
 
       return VariantGroupValueModel.fromJson(jsonDecode(response.body));
     } catch (e) {
-      print("Error creating group value: $e");
+      debugPrint("Error creating group value: $e");
       return null;
     }
   }
@@ -2166,9 +2161,9 @@ class FireStoreUtils {
       final url = '${Constant.baseUrl}fm/products/$productId/variant-options';
       final response = await http.get(Uri.parse(url), headers: headers);
 
-      print('getProductVariantOptions => $url');
-      print('Status Code => ${response.statusCode}');
-      print('Response => ${response.body}');
+      debugPrint('getProductVariantOptions => $url');
+      debugPrint('Status Code => ${response.statusCode}');
+      debugPrint('Response => ${response.body}');
 
       if (response.statusCode != 200) {
         throw Exception('Failed to load variant options: ${response.statusCode}');
@@ -2207,7 +2202,7 @@ class FireStoreUtils {
         );
       }).toList();
     } catch (e) {
-      print('Error fetching product variant options: $e');
+      debugPrint('Error fetching product variant options: $e');
       return null;
     }
   }
@@ -2231,12 +2226,12 @@ class FireStoreUtils {
           'variantPrice': variantPrice,
         }),
       );
-      print('addProductVariantOption => $url');
-      print('Status Code => ${response.statusCode}');
-      print('Response => ${response.body}');
+      debugPrint('addProductVariantOption => $url');
+      debugPrint('Status Code => ${response.statusCode}');
+      debugPrint('Response => ${response.body}');
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print('Error adding variant option: $e');
+      debugPrint('Error adding variant option: $e');
       return false;
     }
   }
@@ -2250,12 +2245,12 @@ class FireStoreUtils {
       final headers = await getHeaders();
       final url = '${Constant.baseUrl}fm/products/$productId/variant-options/$optionId';
       final response = await http.delete(Uri.parse(url), headers: headers);
-      print('deleteProductVariantOption => $url');
-      print('Status Code => ${response.statusCode}');
-      print('Response => ${response.body}');
+      debugPrint('deleteProductVariantOption => $url');
+      debugPrint('Status Code => ${response.statusCode}');
+      debugPrint('Response => ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
-      print('Error deleting variant option: $e');
+      debugPrint('Error deleting variant option: $e');
       return false;
     }
   }
@@ -2272,13 +2267,13 @@ class FireStoreUtils {
         body: jsonEncode(request.toJson()),
       );
 
-      print(response.body);
+      debugPrint(response.body);
 
       return CreateMasterProductResponse.fromJson(
         jsonDecode(response.body),
       );
     } catch (e) {
-      print(
+      debugPrint(
         "createMasterProduct Error => $e",
       );
       return null;
@@ -2288,7 +2283,7 @@ class FireStoreUtils {
     bool isUpdate = false;
     try {
       log("updateProduct ${productModel.toJson()} ");
-      print("updateProduct url  ${productModel.id} ");
+      debugPrint("updateProduct url  ${productModel.id} ");
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/products'
             // '/${productModel.id}'
@@ -2302,11 +2297,11 @@ class FireStoreUtils {
         isUpdate = true;
         invalidateProductCache(Constant.userModel?.vendorID);
       } else {
-        print("Failed to update product: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to update product: ${response.statusCode} - ${response.body}");
         isUpdate = false;
       }
     } catch (error) {
-      print("Failed to update productss: $error");
+      debugPrint("Failed to update productss: $error");
       isUpdate = false;
     }
     return isUpdate;
@@ -2331,11 +2326,11 @@ class FireStoreUtils {
         invalidateProductCache(Constant.userModel?.vendorID);
         return true;
       } else {
-        print('updateMasterProduct failed: ${response.statusCode} - ${response.body}');
+        debugPrint('updateMasterProduct failed: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      print('updateMasterProduct error: $e');
+      debugPrint('updateMasterProduct error: $e');
       return false;
     }
   }
@@ -2356,11 +2351,11 @@ class FireStoreUtils {
         invalidateVendorCategoryCache();
         isDeleted = true;
       } else {
-        print("Failed to delete product: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to delete product: ${response.statusCode} - ${response.body}");
         isDeleted = false;
       }
     } catch (error) {
-      print("Failed to delete product: $error");
+      debugPrint("Failed to delete product: $error");
       isDeleted = false;
     }
 
@@ -2658,7 +2653,7 @@ class FireStoreUtils {
         throw Exception('Failed to load payment settings: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching payment settings: $e');
+      debugPrint('Error fetching payment settings: $e');
       rethrow;
     }
   }
@@ -2677,18 +2672,18 @@ class FireStoreUtils {
         }
       }
 
-      print("getVendorById  ");
+      debugPrint("getVendorById  ");
       if (vendorId.isNotEmpty) {
         final response = await http.get(
           Uri.parse('${Constant.baseUrl}restaurant/vendors/$vendorId'),
           headers: {'Content-Type': 'application/json'},
         );
         if (response.statusCode == 200) {
-          print("getVendorById  ${response.body}");
+          debugPrint("getVendorById  ${response.body}");
           final Map<String, dynamic> responseData = jsonDecode(response.body);
           if (responseData['success'] == true && responseData['data'] != null) {
             vendorModel = VendorModel.fromJson(responseData['data']);
-            print("getVendorById  ${response.body}");
+            debugPrint("getVendorById  ${response.body}");
 
             // Performance Optimization: Cache the result
             _cachedVendor = vendorModel;
@@ -2721,7 +2716,7 @@ class FireStoreUtils {
     try {
       String url = '${Constant.baseUrl}fm/getHomeOrAllCategories?filter=ALL';
 
-      print("getVendorCategoryById => $url");
+      debugPrint("getVendorCategoryById => $url");
       //final token = Preferences.getString('authToken');
       final headers = await getHeaders();
       final response = await http.get(
@@ -2729,8 +2724,8 @@ class FireStoreUtils {
         headers: headers,
       );
 
-      print("Status Code => ${response.statusCode}");
-      print("Response => ${response.body}");
+      debugPrint("Status Code => ${response.statusCode}");
+      debugPrint("Response => ${response.body}");
 
       if (response.statusCode != 200) {
         throw Exception(
@@ -2758,12 +2753,12 @@ class FireStoreUtils {
       _cachedVendorCategories = categories;
       _vendorCategoriesCacheTime = DateTime.now();
 
-      print(
+      debugPrint(
           "Loaded Categories => ${categories.length}");
 
       return categories;
     } catch (e) {
-      print(
+      debugPrint(
           "Error fetching categories: $e");
       return null;
     }
@@ -2791,7 +2786,7 @@ class FireStoreUtils {
         }),
       );
 
-      print(response.body);
+      debugPrint(response.body);
 
       return response.statusCode == 200 ||
           response.statusCode == 201;
@@ -2816,14 +2811,14 @@ class FireStoreUtils {
         if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
           productModel = ProductModel.fromJson(jsonResponse['data']);
         } else {
-          print("Product not found or API returned error");
+          debugPrint("Product not found or API returned error");
         }
       } else {
-        print("Failed to fetch product: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to fetch product: ${response.statusCode} - ${response.body}");
         return null;
       }
     } catch (e, s) {
-      print('getProductById error: $e $s');
+      debugPrint('getProductById error: $e $s');
       return null;
     }
 
@@ -3021,11 +3016,11 @@ class FireStoreUtils {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         isAdded = true;
       } else {
-        print("Failed to create order: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to create order: ${response.statusCode} - ${response.body}");
         isAdded = false;
       }
     } catch (error) {
-      print("Failed to create order: $error");
+      debugPrint("Failed to create order: $error");
       isAdded = false;
     }
 
@@ -3067,18 +3062,18 @@ class FireStoreUtils {
         if (jsonResponse['success'] == true) {
           return true;
         } else {
-          print('API returned unsuccessful response: ${jsonResponse['message']}');
+          debugPrint('API returned unsuccessful response: ${jsonResponse['message']}');
           return false;
         }
       } else if (response.statusCode == 404) {
-        print('Coupon not found (404)');
+        debugPrint('Coupon not found (404)');
         return false;
       } else {
-        print('Failed to delete coupon: ${response.statusCode}');
+        debugPrint('Failed to delete coupon: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      print('Error deleting coupon: $e');
+      debugPrint('Error deleting coupon: $e');
       return false;
     }
   }
@@ -3194,12 +3189,12 @@ class FireStoreUtils {
     List<DocumentModel> documentList = [];
     try {
       String url = '${Constant.baseUrl}documents';
-      print(" getDocumentList  $url");
+      debugPrint(" getDocumentList  $url");
       final response = await http.get(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
-      print(" getDocumentList  ${response.body}");
+      debugPrint(" getDocumentList  ${response.body}");
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         if (responseData['success'] == true && responseData['data'] != null) {
@@ -3224,7 +3219,7 @@ class FireStoreUtils {
     try {
       String? userId = await getFirebaseId();
    String url =    '${Constant.baseUrl}documents/driver';
-      print("getDocumentOfDriver userId: $userId  $url");
+      debugPrint("getDocumentOfDriver userId: $userId  $url");
       final response = await http.post(
         Uri.parse(url),
         headers: {
@@ -3234,26 +3229,26 @@ class FireStoreUtils {
           "userId": userId,
         }),
       );
-      print("API Status Code: ${response.statusCode}");
-      print("API Response: ${response.body}");
+      debugPrint("API Status Code: ${response.statusCode}");
+      debugPrint("API Response: ${response.body}");
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
         if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
           return DriverDocumentModel.fromJson(jsonResponse['data']);
         } else if (jsonResponse['success'] == true && jsonResponse['data'] == null) {
-          print('No document found for driver');
+          debugPrint('No document found for driver');
           return null;
         } else {
           throw Exception('API unsuccessful: ${jsonResponse['message']}');
         }
       } else if (response.statusCode == 404) {
-        print('Driver document not found (404)');
+        debugPrint('Driver document not found (404)');
         return null;
       } else {
         throw Exception('Failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching driver document: $e');
+      debugPrint('Error fetching driver document: $e');
       return null;
     }
   }
@@ -3341,14 +3336,14 @@ class FireStoreUtils {
     String userId = await FireStoreUtils.getCurrentUid();
     bool isAdded = false;
 
-    print("------------ Document Upload Debug Log ------------");
-    print("User ID      : $userId");
-    print("documentId   : ${documents.documentId}");
-    print("status       : ${documents.status}");
-    print("type         : restaurant");
-    print("frontImage   : ${documents.frontImage}");
-    print("backImage    : ${documents.backImage}");
-    print("--------------------------------------------------");
+    debugPrint("------------ Document Upload Debug Log ------------");
+    debugPrint("User ID      : $userId");
+    debugPrint("documentId   : ${documents.documentId}");
+    debugPrint("status       : ${documents.status}");
+    debugPrint("type         : restaurant");
+    debugPrint("frontImage   : ${documents.frontImage}");
+    debugPrint("backImage    : ${documents.backImage}");
+    debugPrint("--------------------------------------------------");
 
     try {
       var request = http.MultipartRequest(
@@ -3365,7 +3360,7 @@ class FireStoreUtils {
           documents.frontImage!.isNotEmpty &&
           !documents.frontImage!.startsWith('http')) {
         final file = File(documents.frontImage!);
-        print("Front exists: ${file.existsSync()} / Size: ${file.lengthSync()}");
+        debugPrint("Front exists: ${file.existsSync()} / Size: ${file.lengthSync()}");
         if (file.existsSync() && file.lengthSync() > 0) {
           request.files.add(await http.MultipartFile.fromPath(
             'front_image',   // <-- CHANGE TO MATCH LARAVEL
@@ -3379,7 +3374,7 @@ class FireStoreUtils {
           documents.backImage!.isNotEmpty &&
           !documents.backImage!.startsWith('http')) {
         final file = File(documents.backImage!);
-        print("Back exists: ${file.existsSync()} / Size: ${file.lengthSync()}");
+        debugPrint("Back exists: ${file.existsSync()} / Size: ${file.lengthSync()}");
         if (file.existsSync() && file.lengthSync() > 0) {
           request.files.add(await http.MultipartFile.fromPath(
             'back_image',    // <-- CHANGE TO MATCH LARAVEL
@@ -3389,15 +3384,15 @@ class FireStoreUtils {
       }
       // SEND REQUEST
       var response = await request.send();
-      print("📤 uploadDriverDocument Status: ${response.statusCode}");
+      debugPrint("📤 uploadDriverDocument Status: ${response.statusCode}");
 
       // READ RESPONSE BODY
       final respStr = await response.stream.bytesToString();
-      print("📥 Response Body: $respStr");
+      debugPrint("📥 Response Body: $respStr");
 
       isAdded = response.statusCode == 200;
     } catch (e) {
-      print("❌ Error uploading document: $e");
+      debugPrint("❌ Error uploading document: $e");
     }
 
     return isAdded;
@@ -3415,11 +3410,11 @@ class FireStoreUtils {
         final jsonData = json.decode(response.body);
         return DeliveryCharge.fromJson(jsonData);
       } else {
-        print('Failed to load delivery charge: ${response.statusCode}');
+        debugPrint('Failed to load delivery charge: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error fetching delivery charge: $e');
+      debugPrint('Error fetching delivery charge: $e');
       return null;
     }
   }
@@ -3464,7 +3459,7 @@ class FireStoreUtils {
         throw Exception('Failed to create vendor: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error creating vendor: $e');
+      debugPrint('Error creating vendor: $e');
       rethrow;
     }
   }
@@ -3482,8 +3477,8 @@ class FireStoreUtils {
         body: jsonEncode(body),
       );
 
-      print("STATUS CODE = ${response.statusCode}");
-      print("RESPONSE = ${response.body}");
+      debugPrint("STATUS CODE = ${response.statusCode}");
+      debugPrint("RESPONSE = ${response.body}");
 
       if (response.statusCode == 200 ||
           response.statusCode == 201) {
@@ -3501,7 +3496,7 @@ class FireStoreUtils {
       return null;
 
     } catch (e) {
-      print("CREATE OUTLET ERROR = $e");
+      debugPrint("CREATE OUTLET ERROR = $e");
       return null;
     }
   }
@@ -3510,7 +3505,7 @@ class FireStoreUtils {
   static Future<OutletModel?> getOutletProfile(int outletId) async {
     try {
       if (outletId <= 0) {
-        print("Outlet ID is invalid");
+        debugPrint("Outlet ID is invalid");
         return null;
       }
 
@@ -3524,8 +3519,8 @@ class FireStoreUtils {
         headers: headers,
       );
 
-      print("getOutletProfile Status: ${response.statusCode}");
-      print("getOutletProfile Body: ${response.body}");
+      debugPrint("getOutletProfile Status: ${response.statusCode}");
+      debugPrint("getOutletProfile Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
@@ -3536,7 +3531,7 @@ class FireStoreUtils {
       }
       return null;
     } catch (e, st) {
-      print("getOutletProfile Error: $e");
+      debugPrint("getOutletProfile Error: $e");
       print(st);
       return null;
     }
@@ -3551,8 +3546,8 @@ class FireStoreUtils {
       final url =
           '${Constant.baseUrl}fm/outlets/updateOutletDetailsByMerchant/$outletId';
 
-      print("===== UPDATE OUTLET REQUEST =====");
-      print(json.encode(body));
+      debugPrint("===== UPDATE OUTLET REQUEST =====");
+      debugPrint(json.encode(body));
 
       final response = await http.put(
         Uri.parse(url),
@@ -3560,8 +3555,8 @@ class FireStoreUtils {
         body: json.encode(body),
       );
 
-      print("updateOutletProfile Status: ${response.statusCode}");
-      print("updateOutletProfile Body: ${response.body}");
+      debugPrint("updateOutletProfile Status: ${response.statusCode}");
+      debugPrint("updateOutletProfile Body: ${response.body}");
 
       if (response.statusCode == 200) {
         log("updateOutletProfile success: ${response.body}");
@@ -3589,8 +3584,8 @@ class FireStoreUtils {
         headers: headers,
       );
 
-      print("getCuisineTypes Status: ${response.statusCode}");
-      print("getCuisineTypes Body: ${response.body}");
+      debugPrint("getCuisineTypes Status: ${response.statusCode}");
+      debugPrint("getCuisineTypes Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
@@ -3606,7 +3601,7 @@ class FireStoreUtils {
 
       return [];
     } catch (e) {
-      print("getCuisineTypes Error: $e");
+      debugPrint("getCuisineTypes Error: $e");
       return [];
     }
   }
@@ -3676,17 +3671,17 @@ class FireStoreUtils {
 
 // Validate the JSON structure before sending
   static void _validateJsonBeforeSending(Map<String, dynamic> json) {
-    print("=== VALIDATION: workingHours type: ${json['workingHours']?.runtimeType}");
-    print("=== VALIDATION: workingHours is List: ${json['workingHours'] is List}");
+    debugPrint("=== VALIDATION: workingHours type: ${json['workingHours']?.runtimeType}");
+    debugPrint("=== VALIDATION: workingHours is List: ${json['workingHours'] is List}");
 
     // Convert to JSON string and back to verify it survives encoding
     String testJson = jsonEncode(json);
     Map<String, dynamic> decoded = jsonDecode(testJson);
-    print("=== VALIDATION: After encode/decode, workingHours type: ${decoded['workingHours']?.runtimeType}");
-    print("=== VALIDATION: After encode/decode, workingHours is List: ${decoded['workingHours'] is List}");
+    debugPrint("=== VALIDATION: After encode/decode, workingHours type: ${decoded['workingHours']?.runtimeType}");
+    debugPrint("=== VALIDATION: After encode/decode, workingHours is List: ${decoded['workingHours'] is List}");
 
     if (decoded['workingHours'] is! List) {
-      print("=== WARNING: workingHours did not survive JSON encoding as List!");
+      debugPrint("=== WARNING: workingHours did not survive JSON encoding as List!");
     }
   }
 
@@ -4113,8 +4108,8 @@ class FireStoreUtils {
         if (responseData['success'] == true) {
           // If API returns the notification data
           if (responseData['data'] != null) {
-            print("------>");
-            print(responseData['data']);
+            debugPrint("------>");
+            debugPrint(responseData['data']);
 
             NotificationModel notificationModel =
             NotificationModel.fromJson(responseData['data']);
@@ -4304,19 +4299,19 @@ class FireStoreUtils {
         final jsonResponse = json.decode(response.body);
         if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
           final List<dynamic> reviewsData = jsonResponse['data'];
-          print("======>");
+          debugPrint("======>");
           print(reviewsData.length);
           for (final reviewData in reviewsData) {
             ratingModelList.add(RatingModel.fromJson(reviewData));
           }
         } else {
-          print("No reviews found or API returned error");
+          debugPrint("No reviews found or API returned error");
         }
       } else {
-        print("Failed to fetch reviews: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to fetch reviews: ${response.statusCode} - ${response.body}");
       }
     } catch (error) {
-      print("Error fetching reviews: $error");
+      debugPrint("Error fetching reviews: $error");
     }
 
     return ratingModelList;
@@ -4421,13 +4416,13 @@ class FireStoreUtils {
       );
       if (response.statusCode >= 200 && response.statusCode < 300) {
         invalidateProductCache(Constant.userModel?.vendorID);
-        print('Product availability updated successfully');
+        debugPrint('Product availability updated successfully');
       } else {
-        print("Failed to update product availability: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to update product availability: ${response.statusCode} - ${response.body}");
         throw Exception('Failed to update product availability');
       }
     } catch (error) {
-      print("Failed to update product availability: $error");
+      debugPrint("Failed to update product availability: $error");
       throw error;
     }
   }
@@ -4435,11 +4430,11 @@ class FireStoreUtils {
 
   static Future<void> updateCategoryIsActive(String categoryId, bool isActive) async {
     try {
-      print("updateCategoryIsActive ${isActive}");
+      debugPrint("updateCategoryIsActive ${isActive}");
       String url  = '${Constant.baseUrl}restaurant/vendor-categories/$categoryId/active';
           // 'restaurant/categories/$categoryId/products-availability'
       // ;
-      print("updateCategoryIsActive $url vendorID ${Constant.userModel!.vendorID}  isAvailable ${isActive ? 1 : 0}");
+      debugPrint("updateCategoryIsActive $url vendorID ${Constant.userModel!.vendorID}  isAvailable ${isActive ? 1 : 0}");
       final response = await http.put(
         Uri.parse(url),
         headers: {
@@ -4453,13 +4448,13 @@ class FireStoreUtils {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         invalidateProductCache(Constant.userModel?.vendorID);
         invalidateVendorCategoryCache();
-        print('Category availability updated successfully');
+        debugPrint('Category availability updated successfully');
       } else {
-        print("Failed to update category availability: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to update category availability: ${response.statusCode} - ${response.body}");
         throw Exception('Failed to update category availability');
       }
     } catch (error) {
-      print("Failed to update category availability: $error");
+      debugPrint("Failed to update category availability: $error");
       throw error;
     }
   }
@@ -4484,13 +4479,13 @@ class FireStoreUtils {
 
       if (response.statusCode == 200) {
         invalidateProductCache(Constant.userModel?.vendorID);
-        print('Products availability updated successfully');
+        debugPrint('Products availability updated successfully');
       } else {
-        print('Failed to update products availability: ${response.statusCode}');
+        debugPrint('Failed to update products availability: ${response.statusCode}');
         throw Exception('Failed to update products availability');
       }
     } catch (e) {
-      print('Error updating products availability: $e');
+      debugPrint('Error updating products availability: $e');
       throw e;
     }
   }
@@ -4529,9 +4524,9 @@ class FireStoreUtils {
   //       body: jsonEncode(body),
   //     );
   //
-  //     print('postOutletItemUnavailability => ${jsonEncode(body)}');
-  //     print('postOutletItemUnavailability status => ${response.statusCode}');
-  //     print('postOutletItemUnavailability body => ${response.body}');
+  //     debugPrint('postOutletItemUnavailability => ${jsonEncode(body)}');
+  //     debugPrint('postOutletItemUnavailability status => ${response.statusCode}');
+  //     debugPrint('postOutletItemUnavailability body => ${response.body}');
   //
   //     if (response.statusCode != 200 && response.statusCode != 201) {
   //       return false;
@@ -4544,8 +4539,8 @@ class FireStoreUtils {
   //
   //     return true;
   //   } catch (e, stackTrace) {
-  //     print('postOutletItemUnavailability error: $e');
-  //     print(stackTrace);
+  //     debugPrint('postOutletItemUnavailability error: $e');
+  //     debugPrint(stackTrace);
   //     return false;
   //   }
   // }
@@ -4675,9 +4670,9 @@ class FireStoreUtils {
         body: jsonEncode(body),
       );
 
-      print('restoreOutletItemAvailability => ${jsonEncode(body)}');
-      print('restoreOutletItemAvailability status => ${response.statusCode}');
-      print('restoreOutletItemAvailability body => ${response.body}');
+      debugPrint('restoreOutletItemAvailability => ${jsonEncode(body)}');
+      debugPrint('restoreOutletItemAvailability status => ${response.statusCode}');
+      debugPrint('restoreOutletItemAvailability body => ${response.body}');
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         return false;
@@ -4690,12 +4685,54 @@ class FireStoreUtils {
 
       return true;
     } catch (e, stackTrace) {
-      print('restoreOutletItemAvailability error: $e');
+      debugPrint('restoreOutletItemAvailability error: $e');
       print(stackTrace);
       return false;
     }
   }
 // ── Promotion APIs ──────────────────────────────────────────────────────────
+
+  static Future<bool> restoreOnlyOutletItemAvailability({
+    required String type,
+    required int unavailabilityId,
+    String reason = 'Restored availability',
+  }) async {
+    try {
+      //final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
+      final body = {
+        'outletId': unavailabilityId,
+        'isToggle' : true,
+      };
+
+      final response = await http.put(
+        Uri.parse(
+          '${Constant.baseUrl}fm/outlets/toggleForOutlet',
+        ),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      debugPrint('restoreOutletItemAvailability => ${jsonEncode(body)}');
+      debugPrint('restoreOutletItemAvailability status => ${response.statusCode}');
+      debugPrint('restoreOutletItemAvailability body => ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        return false;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map && decoded['success'] == false) {
+        return false;
+      }
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('restoreOutletItemAvailability error: $e');
+      print(stackTrace);
+      return false;
+    }
+  }
 
 
 

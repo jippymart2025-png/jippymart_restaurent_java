@@ -335,7 +335,7 @@ class DashboardApiService {
     required String reason,
   }) async {
     // OUTLET open — PATCH /api/fm/outlet-unavailability/restore (type=OUTLET, id=outletId)
-    return FireStoreUtils.restoreOutletItemAvailability(
+    return FireStoreUtils.restoreOnlyOutletItemAvailability(
       type: type,
       unavailabilityId: unavailabilityId,
       reason: reason,
