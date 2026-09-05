@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
+import 'package:jippymart_restaurant/service/terms_api_service.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 
@@ -30,8 +31,32 @@ class _TermsAndConditionScreenState extends State<TermsAndConditionScreen> {
 
   Future<void> _loadContent() async {
     try {
-      // Try to use cached constants first
-      String cachedData = widget.type == "privacy"
+      // Try the Java API first (merchant app).
+      final isPrivacy = widget.type == "privacy";
+      final apiContent = await TermsApiService.getContent(
+        appType: TermsApiService.appTypeMerchant,
+        appPolicyType: isPrivacy
+            ? TermsApiService.policyTypePrivacy
+            : TermsApiService.policyTypeTerms,
+      );
+      if (apiContent.isNotEmpty) {
+        // Cache for future visits.
+        if (isPrivacy) {
+          Constant.privacyPolicy = apiContent;
+        } else {
+          Constant.termsAndConditions = apiContent;
+        }
+        if (mounted) {
+          setState(() {
+            _htmlData = apiContent;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Try to use cached constants next
+      String cachedData = isPrivacy
           ? Constant.privacyPolicy
           : Constant.termsAndConditions;
 
@@ -54,7 +79,7 @@ class _TermsAndConditionScreenState extends State<TermsAndConditionScreen> {
 
         String htmlContent = '';
 
-        if (widget.type == "privacy") {
+        if (isPrivacy) {
           // Try derived first, then documents
           htmlContent = derived['privacyPolicy'] ?? '';
           if (htmlContent.isEmpty) {
