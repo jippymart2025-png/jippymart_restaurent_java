@@ -790,82 +790,83 @@ class ProfileScreen extends StatelessWidget {
                                               padding: const EdgeInsets.symmetric(
                                                   horizontal: 10, vertical: 8),
                                               child: Column(
-                                                children: [
-                                                  cardDecoration(
-                                                    themeChange,
-                                                    controller,
-                                                    Container(
-                                                      width: 44,
-                                                      height: 44,
-                                                      decoration: ShapeDecoration(
-                                                        color:
-                                                            themeChange.getThem()
-                                                                ? AppThemeData
-                                                                    .primary600
-                                                                : AppThemeData
-                                                                    .primary50,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(120),
-                                                        ),
-                                                      ),
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets.all(
-                                                                10),
-                                                        child: SvgPicture.asset(
-                                                            "assets/icons/ic_knife_fork.svg"),
-                                                      ),
-                                                    ),
-                                                    "Dine in Restaurant",
-                                                    () {
-                                                      Get.to(
-                                                          const DineInCreateScreen());
-                                                    },
-                                                  ),
-                                                  cardDecoration(
-                                                    themeChange,
-                                                    controller,
-                                                    Container(
-                                                      width: 44,
-                                                      height: 44,
-                                                      decoration: ShapeDecoration(
-                                                        color:
-                                                            themeChange.getThem()
-                                                                ? AppThemeData
-                                                                    .primary600
-                                                                : AppThemeData
-                                                                    .primary50,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(120),
-                                                        ),
-                                                      ),
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets.all(
-                                                                10),
-                                                        child: SvgPicture.asset(
-                                                          "assets/icons/ic_people-unknown.svg",
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    "Dine in Requests",
-                                                    () {
-                                                      DashBoardController
-                                                          dashBoardController =
-                                                          Get.find<
-                                                              DashBoardController>();
-                                                      dashBoardController
-                                                          .selectedIndex
-                                                          .value = 1;
-                                                    },
-                                                  ),
-                                                ],
+                                                // children: [
+                                                //   cardDecoration(
+                                                //     themeChange,
+                                                //     controller,
+                                                //     Container(
+                                                //       width: 44,
+                                                //       height: 44,
+                                                //       decoration: ShapeDecoration(
+                                                //         color:
+                                                //             themeChange.getThem()
+                                                //                 ? AppThemeData
+                                                //                     .primary600
+                                                //                 : AppThemeData
+                                                //                     .primary50,
+                                                //         shape:
+                                                //             RoundedRectangleBorder(
+                                                //           borderRadius:
+                                                //               BorderRadius
+                                                //                   .circular(120),
+                                                //         ),
+                                                //       ),
+                                                //       child: Padding(
+                                                //         padding:
+                                                //             const EdgeInsets.all(
+                                                //                 10),
+                                                //         child: SvgPicture.asset(
+                                                //             "assets/icons/ic_knife_fork.svg"),
+                                                //       ),
+                                                //     ),
+                                                //     "Dine in Restaurant",
+                                                //     // ()
+                                                //     // {
+                                                //     //   Get.to(
+                                                //     //       const DineInCreateScreen());
+                                                //     // },
+                                                //   ),
+                                                //   cardDecoration(
+                                                //     themeChange,
+                                                //     controller,
+                                                //     Container(
+                                                //       width: 44,
+                                                //       height: 44,
+                                                //       decoration: ShapeDecoration(
+                                                //         color:
+                                                //             themeChange.getThem()
+                                                //                 ? AppThemeData
+                                                //                     .primary600
+                                                //                 : AppThemeData
+                                                //                     .primary50,
+                                                //         shape:
+                                                //             RoundedRectangleBorder(
+                                                //           borderRadius:
+                                                //               BorderRadius
+                                                //                   .circular(120),
+                                                //         ),
+                                                //       ),
+                                                //       child: Padding(
+                                                //         padding:
+                                                //             const EdgeInsets.all(
+                                                //                 10),
+                                                //         child: SvgPicture.asset(
+                                                //           "assets/icons/ic_people-unknown.svg",
+                                                //         ),
+                                                //       ),
+                                                //     ),
+                                                //     "Dine in Requests",
+                                                //     () {
+                                                //       DashBoardController
+                                                //           dashBoardController =
+                                                //           Get.find<
+                                                //               DashBoardController>();
+                                                //       dashBoardController
+                                                //           .selectedIndex
+                                                //           .value = 1;
+                                                //     },
+                                                //   ),
+                                                // ],
                                               ),
                                             ),
                                           ),

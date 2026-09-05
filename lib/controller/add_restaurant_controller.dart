@@ -417,7 +417,7 @@ class AddRestaurantController extends GetxController {
       }
 
       vendorModel.value.id = vendorModel.value.id ?? currentUser.vendorID;
-      vendorModel.value.author = currentUser.id;
+      // vendorModel.value.author = currentUser.id;
       vendorModel.value.authorName = currentUser.firstName;
       vendorModel.value.authorProfilePic = currentUser.profilePictureURL;
 

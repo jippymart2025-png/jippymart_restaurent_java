@@ -203,17 +203,17 @@ class _StatusBanner extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            if (isLoading)
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: fg,
-                                ),
-                              )
-                            else
-                              _TogglePill(isOn: isOpen, color: fg),
+                            // if (isLoading)
+                            //   SizedBox(
+                            //     width: 20,
+                            //     height: 20,
+                            //     child: CircularProgressIndicator(
+                            //       strokeWidth: 2,
+                            //       color: fg,
+                            //     ),
+                            //   )
+                            // else
+                            //   _TogglePill(isOn: isOpen, color: fg),
                           ],
                         ),
                       ),

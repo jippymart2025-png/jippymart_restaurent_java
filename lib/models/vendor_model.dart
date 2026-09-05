@@ -7,9 +7,9 @@ import 'package:jippymart_restaurant/models/admin_commission.dart';
 class VendorModel {
   /// Preference key used to persist this vendor's zone id.
   static const String zoneIdPrefKey = 'zone_id';
-  String? author;
-  bool? dineInActive;
-  String? openDineTime;
+  // String? author;
+  // bool? dineInActive;
+  // String? openDineTime;
   List<dynamic>? categoryID;
   String? id;
   String? categoryPhoto;
@@ -55,9 +55,10 @@ class VendorModel {
   bool? isOpen;
 
   VendorModel(
-      {this.author,
-        this.dineInActive,
-        this.openDineTime,
+      {
+        // this.author,
+        // this.dineInActive,
+        // this.openDineTime,
         this.categoryID,
         this.id,
         this.categoryPhoto,
@@ -102,9 +103,9 @@ class VendorModel {
         this.isOpen});
 
   VendorModel.fromJson(Map<String, dynamic> json) {
-    author = json['author'];
-    dineInActive = _parseToBool(json['dine_in_active']);
-    openDineTime = json['openDineTime'];
+    // author = json['author'];
+    // dineInActive = _parseToBool(json['dine_in_active']);
+    // openDineTime = json['openDineTime'];
 
     // Handle categoryID - it might be a string or array
     categoryID = _parseJsonFieldToList(json['categoryID']) ?? [];
@@ -302,9 +303,9 @@ class VendorModel {
   /// Returns a copy with [isOpen] and/or [reststatus] updated; other fields shared.
   VendorModel copyWith({bool? isOpen, bool? reststatus}) {
     return VendorModel(
-      author: author,
-      dineInActive: dineInActive,
-      openDineTime: openDineTime,
+      // author: author,
+      // dineInActive: dineInActive,
+      // openDineTime: openDineTime,
       categoryID: categoryID,
       id: id,
       categoryPhoto: categoryPhoto,
@@ -352,9 +353,9 @@ class VendorModel {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['author'] = author;
-    data['dine_in_active'] = dineInActive;
-    data['openDineTime'] = openDineTime;
+    // data['author'] = author;
+    // data['dine_in_active'] = dineInActive;
+    // data['openDineTime'] = openDineTime;
     data['categoryID'] = categoryID;
     data['id'] = id;
     data['categoryPhoto'] = categoryPhoto;

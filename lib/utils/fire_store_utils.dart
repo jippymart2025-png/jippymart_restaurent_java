@@ -1374,27 +1374,27 @@ class FireStoreUtils {
     // Performance Optimization: Handle null vendor case (can happen when running in parallel)
     String? vendorAuthorId;
     
-    if (orderModel.vendor != null && orderModel.vendor!.author != null) {
-      vendorAuthorId = orderModel.vendor!.author.toString();
-    } else if (orderModel.vendorID != null) {
-      // Try to get vendor author from cached vendor data or fetch it
-      try {
-        // Check if cached vendor matches
-        if (_cachedVendor != null && _cachedVendorId == orderModel.vendorID && _cachedVendor!.author != null) {
-          vendorAuthorId = _cachedVendor!.author;
-          log("Using cached vendor data for wallet transaction. Order ID: ${orderModel.id}");
-        } else {
-          // Fetch vendor data (using cache if available)
-          VendorModel? vendor = await getVendorById(orderModel.vendorID!);
-          if (vendor != null && vendor.author != null) {
-            vendorAuthorId = vendor.author;
-            log("Fetched vendor data for wallet transaction. Order ID: ${orderModel.id}");
-          }
-        }
-      } catch (e) {
-        log("Error fetching vendor for wallet transaction: $e");
-      }
-    }
+    // if (orderModel.vendor != null && orderModel.vendor!.author != null) {
+    //   vendorAuthorId = orderModel.vendor!.author.toString();
+    // } else if (orderModel.vendorID != null) {
+    //   // Try to get vendor author from cached vendor data or fetch it
+    //   try {
+    //     // Check if cached vendor matches
+    //     if (_cachedVendor != null && _cachedVendorId == orderModel.vendorID && _cachedVendor!.author != null) {
+    //       vendorAuthorId = _cachedVendor!.author;
+    //       log("Using cached vendor data for wallet transaction. Order ID: ${orderModel.id}");
+    //     } else {
+    //       // Fetch vendor data (using cache if available)
+    //       VendorModel? vendor = await getVendorById(orderModel.vendorID!);
+    //       if (vendor != null && vendor.author != null) {
+    //         vendorAuthorId = vendor.author;
+    //         log("Fetched vendor data for wallet transaction. Order ID: ${orderModel.id}");
+    //       }
+    //     }
+    //   } catch (e) {
+    //     log("Error fetching vendor for wallet transaction: $e");
+    //   }
+    // }
     
     if (vendorAuthorId == null || vendorAuthorId.isEmpty) {
       log("Warning: Cannot determine vendor author ID, skipping wallet transaction. Order ID: ${orderModel.id}");
@@ -3620,9 +3620,9 @@ class FireStoreUtils {
 
     // Create a new map instead of using vendor.toJson() directly
     Map<String, dynamic> json = {
-      'author': vendor.author,
-      'dine_in_active': vendor.dineInActive,
-      'openDineTime': vendor.openDineTime,
+      // 'author': vendor.author,
+      // 'dine_in_active': vendor.dineInActive,
+      // 'openDineTime': vendor.openDineTime,
       'categoryID': vendor.categoryID,
       'id': vendor.id,
       'categoryPhoto': vendor.categoryPhoto,
