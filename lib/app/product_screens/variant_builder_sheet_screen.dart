@@ -5,19 +5,6 @@ import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
 import '../../models/outlet_product_model.dart';
 
-/// Full-screen "Add Variants" flow for a product that ALREADY exists in
-/// the outlet. Opens from EditProductScreen, e.g.:
-///
-/// ```dart
-/// final changed = await Get.to(
-///   () => VariantBuilderSheetScreen(productId: widget.productId),
-/// );
-/// if (changed == true) {
-///   // variants were added/removed — refresh product details so
-///   // hasProductVariants reflects the new state
-///   _fetchProductDetails();
-/// }
-/// ```
 class VariantBuilderSheetScreen extends StatefulWidget {
   const VariantBuilderSheetScreen({super.key, required this.productId,required this.originalProduct,});
 
@@ -182,14 +169,21 @@ class _VariantBuilderSheetScreenState
     _onOptionValuePicked(gi, oi, created);
   }
 
-  bool get _canSave =>
-      _groups.isNotEmpty &&
-          _groups.every((g) =>
-          g.groupId != 0 &&
-              g.options.isNotEmpty &&
-              g.options.every((o) => o.productVariantGroupValuesId != 0));
+  bool get _canSave {
+    for (final g in _groups) {
+      final isUntouchedPlaceholder = g.groupId == 0 &&
+          g.options.every((o) => o.productVariantGroupValuesId == 0);
+      if (isUntouchedPlaceholder) continue;
 
+      if (g.groupId == 0) return false;
+      if (g.options.any((o) => o.productVariantGroupValuesId == 0)) {
+        return false;
+      }
+    }
+    return true;
+  }
   Future<void> _save() async {
+    debugPrint('[VariantSave] _save called, canSave=$_canSave saving=$_saving');
     if (!_canSave || _saving) return;
     setState(() => _saving = true);
 
@@ -204,88 +198,20 @@ class _VariantBuilderSheetScreenState
         .where((id) => id != 0)
         .toSet();
 
+    debugPrint('[VariantSave] originalIds=$originalIds');
+    debugPrint('[VariantSave] currentIds=$currentIds');
+    debugPrint('[VariantSave] toDelete=${originalIds.difference(currentIds)}');
+
     var ok = true;
 
-    // Deleted rows: existed before, no longer present now.
     for (final id in originalIds.difference(currentIds)) {
+      debugPrint('[VariantSave] calling deleteProductVariantOption id=$id');
       final success = await FireStoreUtils.deleteProductVariantOption(
         productId: widget.productId,
         optionId: id,
       );
+      debugPrint('[VariantSave] delete result for id=$id -> $success');
       ok = ok && success;
-    }
-
-    // New rows: no productVariantOptionsId yet, but a value is picked.
-    for (final g in _groups) {
-      for (final o in g.options) {
-        if (o.productVariantOptionsId == 0 &&
-            o.productVariantGroupValuesId != 0) {
-          final success = await FireStoreUtils.addProductVariantOption(
-            productId: widget.productId,
-            productVariantGroupValuesId: o.productVariantGroupValuesId,
-            priceType: o.priceType,
-            variantPrice: o.variantPrice,
-          );
-          ok = ok && success;
-        }
-      }
-    }
-
-    // Edited rows (existing id, but price/type changed): this API has no
-    // PATCH, so treat as delete + recreate for any row whose id survived
-    // in currentIds but whose values differ from the original snapshot.
-    for (final g in _groups) {
-      for (final o in g.options) {
-        if (o.productVariantOptionsId == 0) continue;
-        final match = _original
-            .expand((og) => og.options)
-            .where((oo) => oo.productVariantOptionsId == o.productVariantOptionsId);
-        if (match.isEmpty) continue;
-        final orig = match.first;
-        final changed = orig.priceType != o.priceType ||
-            orig.variantPrice != o.variantPrice ||
-            orig.productVariantGroupValuesId != o.productVariantGroupValuesId;
-        if (changed) {
-          final deleted = await FireStoreUtils.deleteProductVariantOption(
-            productId: widget.productId,
-            optionId: o.productVariantOptionsId,
-          );
-          final added = await FireStoreUtils.addProductVariantOption(
-            productId: widget.productId,
-            productVariantGroupValuesId: o.productVariantGroupValuesId,
-            priceType: o.priceType,
-            variantPrice: o.variantPrice,
-          );
-          ok = ok && deleted && added;
-        }
-      }
-    }
-    if (ok) {
-      final hasVariantsNow = _groups.any((g) => g.options.isNotEmpty);
-      final flagSynced = await FireStoreUtils.updateSingleOutletProductDetails(
-        productId: widget.productId,
-        originalProduct: widget.originalProduct,
-        categoryId: widget.originalProduct.outletCategoryId ?? 0,
-        productName: widget.originalProduct.productName ?? '',
-        description: widget.originalProduct.description ?? '',
-        isVeg: widget.originalProduct.isVeg ?? true,
-        hasProductVariants: hasVariantsNow,
-        merchantPrice: widget.originalProduct.merchantPrice ?? 0,
-        imageLink: widget.originalProduct.imageLink ?? '',
-        outletId: null,
-        variantGroupsOverride: hasVariantsNow ? _buildVariantGroupsPayload() : const [],
-      );
-      ok = ok && flagSynced;
-    }
-    setState(() => _saving = false);
-
-    if (!mounted) return;
-    if (ok) {
-      Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Some changes failed to save. Please retry.')),
-      );
     }
   }
 
@@ -462,10 +388,10 @@ class _GroupBlock extends StatelessWidget {
                     },
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: onRemoveGroup,
-                ),
+                // IconButton(
+                //   icon: const Icon(Icons.delete_outline, color: Colors.red),
+                //   onPressed: onRemoveGroup,
+                // ),
               ],
             ),
             if (staged.groupId != 0) ...[
@@ -519,61 +445,264 @@ class _OptionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Autocomplete<VariantGroupValueModel>(
-              displayStringForOption: (v) => v.variantName,
-              initialValue: TextEditingValue(text: option.variantName),
-              optionsBuilder: (text) => text.text.isEmpty
-                  ? values
-                  : values.where((v) =>
-                  v.variantName.toLowerCase().contains(text.text.toLowerCase())),
-              onSelected: onValuePicked,
-              fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-                return TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: const InputDecoration(labelText: 'Value'),
-                  onSubmitted: (text) {
-                    final match = values.where(
-                            (v) => v.variantName.toLowerCase() == text.toLowerCase());
-                    if (match.isEmpty && text.trim().isNotEmpty) {
-                      onCreateValue(text);
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Price type'),
-              value: option.priceType,
-              items: const [
-                DropdownMenuItem(value: 'MAIN', child: Text('MAIN')),
-                DropdownMenuItem(value: 'ADD', child: Text('ADD')),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 500;
+
+          if (isCompact) {
+            // Stack fields vertically on small screens.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Autocomplete<VariantGroupValueModel>(
+                        displayStringForOption: (v) => v.variantName,
+                        initialValue:
+                        TextEditingValue(text: option.variantName),
+                        optionsBuilder: (text) {
+                          if (text.text.isEmpty) {
+                            return values;
+                          }
+
+                          return values.where(
+                                (v) => v.variantName
+                                .toLowerCase()
+                                .contains(text.text.toLowerCase()),
+                          );
+                        },
+                        onSelected: onValuePicked,
+                        fieldViewBuilder: (
+                            context,
+                            controller,
+                            focusNode,
+                            onSubmit,
+                            ) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Value',
+                            ),
+                            onSubmitted: (text) {
+                              final match = values.where(
+                                    (v) =>
+                                v.variantName.toLowerCase() ==
+                                    text.trim().toLowerCase(),
+                              );
+
+                              if (match.isEmpty &&
+                                  text.trim().isNotEmpty) {
+                                onCreateValue(text);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(width: 4),
+
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      icon: const Icon(
+                        Icons.close,
+                        size: 18,
+                      ),
+                      onPressed: onRemove,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Price type',
+                        ),
+                        value: option.priceType,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'MAIN',
+                            child: Text('MAIN'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'ADD',
+                            child: Text('ADD'),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          onPriceTypeChanged(v ?? 'MAIN');
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Price',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        initialValue: option.variantPrice == 0
+                            ? ''
+                            : option.variantPrice.toString(),
+                        onChanged: (v) {
+                          onPriceChanged(
+                            double.tryParse(v) ?? 0,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ],
-              onChanged: (v) => onPriceTypeChanged(v ?? 'MAIN'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: TextFormField(
-              decoration: const InputDecoration(labelText: 'Price'),
-              keyboardType: TextInputType.number,
-              initialValue: option.variantPrice == 0 ? '' : option.variantPrice.toString(),
-              onChanged: (v) => onPriceChanged(double.tryParse(v) ?? 0),
-            ),
-          ),
-          IconButton(icon: const Icon(Icons.close, size: 18), onPressed: onRemove),
-        ],
+            );
+          }
+
+          // Desktop / tablet layout.
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Autocomplete<VariantGroupValueModel>(
+                  displayStringForOption: (v) => v.variantName,
+                  initialValue:
+                  TextEditingValue(text: option.variantName),
+                  optionsBuilder: (text) {
+                    if (text.text.isEmpty) {
+                      return values;
+                    }
+
+                    return values.where(
+                          (v) => v.variantName
+                          .toLowerCase()
+                          .contains(text.text.toLowerCase()),
+                    );
+                  },
+                  onSelected: onValuePicked,
+                  fieldViewBuilder: (
+                      context,
+                      controller,
+                      focusNode,
+                      onSubmit,
+                      ) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Value',
+                      ),
+                      onSubmitted: (text) {
+                        final match = values.where(
+                              (v) =>
+                          v.variantName.toLowerCase() ==
+                              text.trim().toLowerCase(),
+                        );
+
+                        if (match.isEmpty &&
+                            text.trim().isNotEmpty) {
+                          onCreateValue(text);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<String>(
+                  // IMPORTANT
+                  isExpanded: true,
+
+                  decoration: const InputDecoration(
+                    labelText: 'Price type',
+                  ),
+
+                  value: option.priceType,
+
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'MAIN',
+                      child: Text(
+                        'MAIN',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'ADD',
+                      child: Text(
+                        'ADD',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+
+                  onChanged: (v) {
+                    onPriceTypeChanged(v ?? 'MAIN');
+                  },
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Price',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  initialValue: option.variantPrice == 0
+                      ? ''
+                      : option.variantPrice.toString(),
+                  onChanged: (v) {
+                    onPriceChanged(
+                      double.tryParse(v) ?? 0,
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(width: 2),
+
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 36,
+                ),
+                icon: const Icon(
+                  Icons.close,
+                  size: 18,
+                ),
+                onPressed: onRemove,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
+
 }

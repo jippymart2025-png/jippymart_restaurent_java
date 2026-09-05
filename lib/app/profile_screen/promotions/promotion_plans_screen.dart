@@ -315,14 +315,19 @@ class _PromotionPlansScreenState extends State<PromotionPlansScreen> {
                       '${plan.planStartDate} - ${plan.planEndDate}',
                       style: TextStyle(fontSize: 13, fontFamily: AppThemeData.semiBold, color: isDark ? Colors.white : Colors.black87),
                     ),
-                    const Spacer(),
-                    Icon(Icons.access_time_rounded, size: 15, color: isDark ? Colors.white70 : Colors.black54),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${plan.planStartTime} - ${plan.planEndTime}',
-                      style: TextStyle(fontSize: 13, fontFamily: AppThemeData.semiBold, color: isDark ? Colors.white : Colors.black87),
-                    ),
+
                   ],
+                ),
+
+                Row(
+                  children: [
+                  Icon(Icons.access_time_rounded, size: 15, color: isDark ? Colors.white70 : Colors.black54),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${plan.planStartTime} - ${plan.planEndTime}',
+                    style: TextStyle(fontSize: 13, fontFamily: AppThemeData.semiBold, color: isDark ? Colors.white : Colors.black87),
+                  ),
+                 ]
                 ),
                 const SizedBox(height: 12),
                 Row(
