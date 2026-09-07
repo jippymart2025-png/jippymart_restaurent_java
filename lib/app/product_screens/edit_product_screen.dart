@@ -19,6 +19,7 @@ class EditProductScreen extends StatefulWidget {
 class _EditProductScreenState extends State<EditProductScreen> {
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+
   final _merchantPriceCtrl = TextEditingController();
   final _imageLinkCtrl = TextEditingController();
   String? _merchantPriceError;
