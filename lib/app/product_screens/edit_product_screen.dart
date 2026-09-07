@@ -96,46 +96,46 @@ class _EditProductScreenState extends State<EditProductScreen> {
     // Load the category list separately — no dedicated "list categories"
     // endpoint exists, so this reuses the same flat product list the
     // promotion picker uses and derives unique categories from it.
-    await _loadCategories();
+    // await _loadCategories();
   }
 
-  Future<void> _loadCategories() async {
-    final outletId = _resolvedOutletId;
-    if (outletId <= 0) return;
-
-    setState(() => _isLoadingCategories = true);
-    try {
-      final result = await FireStoreUtils.getOutletProductsDetailsOnlyForPromotions(outletId: outletId);
-      if (result != null) {
-        _outletProductsFlat = result;
-
-        final Map<int, String> seen = {};
-        for (final p in result) {
-          if (p.outletCategoryId > 0) {
-            seen[p.outletCategoryId] = p.categoryName;
-          }
-        }
-
-        // Make sure the product's current category always shows up in the
-        // dropdown, even if that category currently has no other products
-        // listed in the flat fetch (edge case, but avoids an orphaned selection).
-        if (_selectedCategoryId != null && _selectedCategoryId! > 0 && !seen.containsKey(_selectedCategoryId)) {
-          seen[_selectedCategoryId!] = 'Current Category';
-        }
-
-        setState(() {
-          _availableCategories = seen.entries
-              .map((e) => _CategoryOption(id: e.key, name: e.value))
-              .toList()
-            ..sort((a, b) => a.name.compareTo(b.name));
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading categories: $e');
-    } finally {
-      setState(() => _isLoadingCategories = false);
-    }
-  }
+  // Future<void> _loadCategories() async {
+  //   final outletId = _resolvedOutletId;
+  //   if (outletId <= 0) return;
+  //
+  //   setState(() => _isLoadingCategories = true);
+  //   try {
+  //     final result = await FireStoreUtils.getOutletProductsDetailsOnlyForPromotions(outletId: outletId);
+  //     if (result != null) {
+  //       _outletProductsFlat = result;
+  //
+  //       final Map<int, String> seen = {};
+  //       for (final p in result) {
+  //         if (p.outletCategoryId > 0) {
+  //           seen[p.outletCategoryId] = p.categoryName;
+  //         }
+  //       }
+  //
+  //       // Make sure the product's current category always shows up in the
+  //       // dropdown, even if that category currently has no other products
+  //       // listed in the flat fetch (edge case, but avoids an orphaned selection).
+  //       if (_selectedCategoryId != null && _selectedCategoryId! > 0 && !seen.containsKey(_selectedCategoryId)) {
+  //         seen[_selectedCategoryId!] = 'Current Category';
+  //       }
+  //
+  //       setState(() {
+  //         _availableCategories = seen.entries
+  //             .map((e) => _CategoryOption(id: e.key, name: e.value))
+  //             .toList()
+  //           ..sort((a, b) => a.name.compareTo(b.name));
+  //       });
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error loading categories: $e');
+  //   } finally {
+  //     setState(() => _isLoadingCategories = false);
+  //   }
+  // }
 
   Future<void> _saveProduct() async {
     if (_nameCtrl.text.trim().isEmpty) {
