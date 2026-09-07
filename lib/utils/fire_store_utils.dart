@@ -111,6 +111,12 @@ class FireStoreUtils {
   static String? _lastOutletProductsError;
   static String? get lastOutletProductsError => _lastOutletProductsError;
 
+  // Resolved outlet id cache: avoids a getMerchantOutlets API call on every
+  // menu access. Cleared when the logged-in merchant/outlet session changes.
+  static int? _cachedResolvedOutletId;
+  static DateTime? _cachedResolvedOutletTime;
+  static const Duration _resolvedOutletCacheTTL = Duration(minutes: 5);
+
   // Vendor categories cache: one global list per app session, TTL 3 minutes
   static List<VendorCategoryModel>? _cachedVendorCategories;
   static DateTime? _vendorCategoriesCacheTime;
@@ -1556,6 +1562,20 @@ class FireStoreUtils {
   static Future<int?> resolveOutletIdForMenu({int? preferredId}) async {
     final loginType = Preferences.getString('loginType').trim().toUpperCase();
 
+    // Fast path: reuse the previously resolved outlet id. This avoids
+    // hitting getMerchantOutlets/fetchOutletById APIs on every menu access.
+    if (preferredId == null ||
+        preferredId == _cachedResolvedOutletId) {
+      final cached = _cachedResolvedOutletId;
+      if (cached != null &&
+          cached > 0 &&
+          _cachedResolvedOutletTime != null &&
+          DateTime.now().difference(_cachedResolvedOutletTime!) <
+              _resolvedOutletCacheTTL) {
+        return cached;
+      }
+    }
+
     if (loginType == 'MERCHANT') {
       final merchantId = int.tryParse(Preferences.getString('merchantId')) ?? 0;
       if (merchantId <= 0) {
@@ -1579,6 +1599,8 @@ class FireStoreUtils {
           if (id != null && id > 0 && id == storedId) {
             await _syncOutletPreferences(id, outletName: outlet.outletName);
             debugPrint('[resolveOutletIdForMenu] using list outletId=$id');
+            _cachedResolvedOutletId = id;
+            _cachedResolvedOutletTime = DateTime.now();
             return id;
           }
         }
@@ -1597,6 +1619,8 @@ class FireStoreUtils {
               'for outlet "$storedName"',
             );
             await _syncOutletPreferences(id, outletName: outlet.outletName);
+            _cachedResolvedOutletId = id;
+            _cachedResolvedOutletTime = DateTime.now();
             return id;
           }
         }
@@ -1623,6 +1647,8 @@ class FireStoreUtils {
       result.outletId!,
       outletName: result.outlet?.outletName,
     );
+    _cachedResolvedOutletId = result.outletId;
+    _cachedResolvedOutletTime = DateTime.now();
     return result.outletId;
   }
 
@@ -1763,6 +1789,9 @@ class FireStoreUtils {
       _outletProductCache.remove(outletId);
     } else {
       _outletProductCache.clear();
+      // Outlet session may have changed; force re-resolving the outlet id.
+      _cachedResolvedOutletId = null;
+      _cachedResolvedOutletTime = null;
     }
   }
 
