@@ -12,6 +12,13 @@ class PhoneNumberController extends GetxController {
     countryCodeEditingController.value.text = '+91';
   }
 
+  @override
+  void onClose() {
+    phoneNUmberEditingController.value.dispose();
+    countryCodeEditingController.value.dispose();
+    super.onClose();
+  }
+
   // sendCode() async {
   //   ShowToastDialog.showLoader("please wait...".tr);
   //   await FirebaseAuth.instance

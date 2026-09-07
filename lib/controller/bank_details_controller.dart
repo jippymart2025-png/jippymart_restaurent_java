@@ -68,4 +68,14 @@ class BankDetailsController extends GetxController {
     );
     isLoading.value = false;
   }
+
+  @override
+  void onClose() {
+    bankNameController.value.dispose();
+    branchNameController.value.dispose();
+    holderNameController.value.dispose();
+    accountNoController.value.dispose();
+    otherInfoController.value.dispose();
+    super.onClose();
+  }
 }

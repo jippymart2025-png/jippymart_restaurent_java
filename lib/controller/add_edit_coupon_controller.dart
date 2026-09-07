@@ -97,6 +97,15 @@ class AddEditCouponController extends GetxController {
     }
   }
 
+  @override
+  void onClose() {
+    titleController.value.dispose();
+    couponCodeController.value.dispose();
+    priceController.value.dispose();
+    selectDateController.value.dispose();
+    super.onClose();
+  }
+
   final ImagePicker _imagePicker = ImagePicker();
 
   Future pickFile({required ImageSource source}) async {

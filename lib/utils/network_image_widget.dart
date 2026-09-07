@@ -37,20 +37,35 @@ class NetworkImageWidget extends StatelessWidget {
           );
     }
 
+    final effectiveHeight = height ?? Responsive.height(8, context);
+    final effectiveWidth = width ?? Responsive.width(15, context);
+
+    // Decode the network image at roughly its rendered size instead of the
+    // full server resolution. This cuts memory usage and scroll jank with no
+    // visible change — the image is downscaled for a screen that is often
+    // 5-10x smaller than the original.
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final memCacheWidth = (effectiveWidth * dpr).round();
+    final memCacheHeight = (effectiveHeight * dpr).round();
+
     return CachedNetworkImage(
       imageUrl: imageUrl,
       cacheManager: AppImageCacheManager.instance,
       fit: fit ?? BoxFit.fitWidth,
-      height: height ?? Responsive.height(8, context),
-      width: width ?? Responsive.width(15, context),
+      height: effectiveHeight,
+      width: effectiveWidth,
       color: color,
+      memCacheWidth: memCacheWidth,
+      memCacheHeight: memCacheHeight,
+      maxWidthDiskCache: memCacheWidth,
+      maxHeightDiskCache: memCacheHeight,
       progressIndicatorBuilder: (context, url, downloadProgress) =>
           Constant.loader(),
       errorWidget: (context, url, error) =>
       errorWidget ??
           Container(
-            height: height ?? Responsive.height(8, context),
-            width: width ?? Responsive.width(15, context),
+            height: effectiveHeight,
+            width: effectiveWidth,
             color: Colors.grey[300],
             child: Icon(Icons.error_outline, color: Colors.grey),
           ),

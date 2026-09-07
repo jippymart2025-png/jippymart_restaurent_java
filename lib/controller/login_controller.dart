@@ -125,6 +125,13 @@ class LoginController extends GetxController {
 
   RxBool passwordVisible = true.obs;
 
+  @override
+  void onClose() {
+    emailEditingController.value.dispose();
+    passwordEditingController.value.dispose();
+    super.onClose();
+  }
+
 
 
 

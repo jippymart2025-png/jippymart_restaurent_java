@@ -34,6 +34,7 @@ class AppUpdateController extends GetxController {
   @override
   void onClose() {
     _updateSubscription?.cancel();
+    _updateTimer?.cancel();
     super.onClose();
   }
 

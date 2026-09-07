@@ -536,6 +536,37 @@ class EditProfileController extends GetxController {
       ShowToastDialog.showToast('${"Failed to save".tr}: $e');
     }
   }
+  @override
+  void onClose() {
+    outletNameController.value.dispose();
+    outletPhoneController.value.dispose();
+    alternatePhoneController.value.dispose();
+    fssaiNumberController.value.dispose();
+    gstNumberController.value.dispose();
+    radiusController.value.dispose();
+    buildingNumberController.value.dispose();
+    roadController.value.dispose();
+    landmarkController.value.dispose();
+    areaController.value.dispose();
+    firstNameController.value.dispose();
+    lastNameController.value.dispose();
+    emailController.value.dispose();
+    phoneNumberController.value.dispose();
+    countryCodeController.value.dispose();
+    merchantNameController.value.dispose();
+    businessTypeController.value.dispose();
+    dobController.value.dispose();
+    statusController.value.dispose();
+    accountNumberController.value.dispose();
+    ifscCodeController.value.dispose();
+    bankNameController.value.dispose();
+    accountHolderNameController.value.dispose();
+    latitudeController.dispose();
+    longitudeController.dispose();
+    locationDisplayController.dispose();
+    super.onClose();
+  }
+
   final ImagePicker _imagePicker = ImagePicker();
   RxString profileImage = "".obs;
 

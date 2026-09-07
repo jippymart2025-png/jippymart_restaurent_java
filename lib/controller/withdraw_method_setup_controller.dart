@@ -39,6 +39,16 @@ class WithdrawMethodSetupController extends GetxController {
     super.onInit();
   }
 
+  @override
+  void onClose() {
+    accountNumberFlutterWave.value.dispose();
+    bankCodeFlutterWave.value.dispose();
+    emailPaypal.value.dispose();
+    accountIdRazorPay.value.dispose();
+    accountIdStripe.value.dispose();
+    super.onClose();
+  }
+
   getPaymentMethod() async {
     isLoading.value = true;
     accountNumberFlutterWave.value.clear();

@@ -38,6 +38,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   List<ProductVariantGroupModel>? _variantGroupsOverride;
   List<PromotionOutletProductModel> _outletProductsFlat = [];
   List<_CategoryOption> _availableCategories = [];
+  static final Map<int, List<_CategoryOption>> _categoryCache = {};
+  static final Map<int, Future<void>> _categoryLoading = {};
 
   /// Same resolution order used by PromotionPlansController.outletId —
   /// this screen has no controller of its own, so it's duplicated here.
@@ -86,56 +88,134 @@ class _EditProductScreenState extends State<EditProductScreen> {
         _merchantPriceCtrl.text = data.merchantPrice?.toString() ?? '';
         _imageLinkCtrl.text = data.imageLink ?? '';
         _foodType = (data.isVeg == true) ? 'Veg' : 'Non-Veg';
-        _hasOptions = data.hasProductVariants ?? false;
+        // Only take the server's variant flag when the user hasn't edited the
+        // variants in this session. If they have, keep the local (pending) value.
+        if (_variantGroupsOverride == null) {
+          _hasOptions = data.hasProductVariants ?? false;
+        }
         _selectedCategoryId = data.outletCategoryId;
       });
     }
 
     setState(() => _isLoading = false);
-
-    // Load the category list separately — no dedicated "list categories"
-    // endpoint exists, so this reuses the same flat product list the
-    // promotion picker uses and derives unique categories from it.
-    // await _loadCategories();
+    await _loadCategories();
   }
 
-  // Future<void> _loadCategories() async {
-  //   final outletId = _resolvedOutletId;
-  //   if (outletId <= 0) return;
-  //
-  //   setState(() => _isLoadingCategories = true);
-  //   try {
-  //     final result = await FireStoreUtils.getOutletProductsDetailsOnlyForPromotions(outletId: outletId);
-  //     if (result != null) {
-  //       _outletProductsFlat = result;
-  //
-  //       final Map<int, String> seen = {};
-  //       for (final p in result) {
-  //         if (p.outletCategoryId > 0) {
-  //           seen[p.outletCategoryId] = p.categoryName;
-  //         }
-  //       }
-  //
-  //       // Make sure the product's current category always shows up in the
-  //       // dropdown, even if that category currently has no other products
-  //       // listed in the flat fetch (edge case, but avoids an orphaned selection).
-  //       if (_selectedCategoryId != null && _selectedCategoryId! > 0 && !seen.containsKey(_selectedCategoryId)) {
-  //         seen[_selectedCategoryId!] = 'Current Category';
-  //       }
-  //
-  //       setState(() {
-  //         _availableCategories = seen.entries
-  //             .map((e) => _CategoryOption(id: e.key, name: e.value))
-  //             .toList()
-  //           ..sort((a, b) => a.name.compareTo(b.name));
-  //       });
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Error loading categories: $e');
-  //   } finally {
-  //     setState(() => _isLoadingCategories = false);
-  //   }
-  // }
+  Future<void> _loadCategories() async {
+    final outletId = _resolvedOutletId;
+
+    if (outletId <= 0) return;
+
+    // Already loaded for this outlet → use cache.
+    if (_categoryCache.containsKey(outletId)) {
+      if (mounted) {
+        setState(() {
+          _availableCategories = _categoryCache[outletId]!;
+          _isLoadingCategories = false;
+        });
+      }
+      return;
+    }
+
+    // Another screen is already loading the same outlet's categories.
+    if (_categoryLoading.containsKey(outletId)) {
+      if (mounted) {
+        setState(() => _isLoadingCategories = true);
+      }
+
+      await _categoryLoading[outletId];
+
+      if (mounted) {
+        setState(() {
+          _availableCategories = _categoryCache[outletId] ?? [];
+          _isLoadingCategories = false;
+        });
+      }
+
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingCategories = true);
+    }
+
+    final future = _fetchAndCacheCategories(outletId);
+    _categoryLoading[outletId] = future;
+
+    try {
+      await future;
+
+      if (mounted) {
+        setState(() {
+          _availableCategories = _categoryCache[outletId] ?? [];
+        });
+      }
+    } finally {
+      _categoryLoading.remove(outletId);
+
+      if (mounted) {
+        setState(() => _isLoadingCategories = false);
+      }
+    }
+  }
+
+  Future<void> _fetchAndCacheCategories(int outletId) async {
+    try {
+      final result =
+      await FireStoreUtils.getOutletProductsDetailsOnlyForPromotions(
+        outletId: outletId,
+      );
+
+      if (result == null) return;
+
+      _outletProductsFlat = result;
+
+      final Map<int, String> seen = {};
+
+      for (final p in result) {
+        if (p.outletCategoryId > 0) {
+          seen[p.outletCategoryId] = p.categoryName;
+        }
+      }
+
+      final categories = seen.entries
+          .map(
+            (e) => _CategoryOption(
+          id: e.key,
+          name: e.value,
+        ),
+      )
+          .toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+
+      _categoryCache[outletId] = categories;
+    } catch (e) {
+      debugPrint('Error loading categories: $e');
+    }
+  }
+  /// Refreshes the product details without discarding the variant state the
+  /// user changed locally (so newly added variants stay marked as present).
+  Future<void> _refreshProductDetailsKeepingVariantState() async {
+    setState(() => _isLoading = true);
+
+    final data = await FireStoreUtils.getOutletSingleProductDetails(widget.productId);
+
+    if (data != null) {
+      _originalProduct = data;
+      setState(() {
+        _nameCtrl.text = data.productName ?? '';
+        _descCtrl.text = data.description ?? '';
+        _merchantPriceCtrl.text = data.merchantPrice?.toString() ?? '';
+        _imageLinkCtrl.text = data.imageLink ?? '';
+        _foodType = (data.isVeg == true) ? 'Veg' : 'Non-Veg';
+        _selectedCategoryId = data.outletCategoryId;
+        // Deliberately do NOT touch _hasOptions or _variantGroupsOverride —
+        // they hold the user's just-created variants and must be preserved.
+      });
+    }
+
+    setState(() => _isLoading = false);
+  }
 
   Future<void> _saveProduct() async {
     if (_nameCtrl.text.trim().isEmpty) {
@@ -295,11 +375,17 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   ),
                 );
                 if (variantGroups != null) {
+                  // The user just added/edited variants locally. Mark the
+                  // product as having variants so it is sent as `true` on save.
                   setState(() {
                     _variantGroupsOverride = variantGroups;
-                    _hasOptions = variantGroups.any((g) => g.options.isNotEmpty);
+                    _hasOptions = variantGroups.any(
+                        (g) => g.options.isNotEmpty);
                   });
-                  await _fetchProductDetails();
+                  // Refresh the underlying product details, but keep the
+                  // variant state the user just changed. Refetching would
+                  // otherwise overwrite it with the still-unsaved server value.
+                  await _refreshProductDetailsKeepingVariantState();
                 }
               },
             ),

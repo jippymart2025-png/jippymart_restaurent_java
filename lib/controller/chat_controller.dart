@@ -147,5 +147,12 @@ class ChatController extends GetxController {
     await refreshMessages();
   }
 
+  @override
+  void onClose() {
+    messageController.value.dispose();
+    scrollController.dispose();
+    super.onClose();
+  }
+
   final ImagePicker imagePicker = ImagePicker();
 }

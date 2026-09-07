@@ -60,6 +60,14 @@ class AddAdvertisementController extends GetxController {
     }
   }
 
+  @override
+  void onClose() {
+    advertisementTitleController.value.dispose();
+    descriptionController.value.dispose();
+    validityController.value.dispose();
+    super.onClose();
+  }
+
   final ImagePicker _imageProfilePicker = ImagePicker();
   Rx<XFile> profileImage = XFile('').obs;
   Rx<String> profileImageString = ''.obs;

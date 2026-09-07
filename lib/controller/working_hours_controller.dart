@@ -69,6 +69,5 @@ class WorkingHoursController extends GetxController {
     workingHours.removeAt(index);
     workingHours.insert(index, specialDiscountModel);
     update();
-    update();
   }
 }

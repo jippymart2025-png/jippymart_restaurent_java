@@ -649,6 +649,18 @@ class AddRestaurantController extends GetxController {
     }
   }
 
+  @override
+  void onClose() {
+    restaurantNameController.value.dispose();
+    restaurantDescriptionController.value.dispose();
+    mobileNumberController.value.dispose();
+    addressController.value.dispose();
+    chargePerKmController.value.dispose();
+    minDeliveryChargesController.value.dispose();
+    minDeliveryChargesWithinKMController.value.dispose();
+    super.onClose();
+  }
+
   // Add this method to update the UI
   void updateUI() {
     update();

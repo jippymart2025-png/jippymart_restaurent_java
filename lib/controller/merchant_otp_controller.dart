@@ -90,4 +90,12 @@ class MerchantOtpController extends GetxController {
       return resendSeconds.value > 0;
     });
   }
+
+  @override
+  void onClose() {
+    emailController.value.dispose();
+    mobileController.value.dispose();
+    otpController.value.dispose();
+    super.onClose();
+  }
 }

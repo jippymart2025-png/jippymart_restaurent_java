@@ -140,10 +140,18 @@ class AddProductController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
+    attributesValueController.value.dispose();
+    productTitleController.value.dispose();
+    productDescriptionController.value.dispose();
     regularPriceController.value.dispose();
     discountedPriceController.value.dispose();
-    super.dispose();
+    productQuantityController.value.dispose();
+    caloriesController.value.dispose();
+    gramsController.value.dispose();
+    proteinController.value.dispose();
+    fatsController.value.dispose();
+    super.onClose();
   }
   getArgument() async {
     if (Constant.userModel!.vendorID != null &&

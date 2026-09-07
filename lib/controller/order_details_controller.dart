@@ -35,21 +35,14 @@ class OrderDetailsController extends GetxController {
     dynamic argumentData = Get.arguments;
     if (argumentData != null) {
       orderModel.value = argumentData['orderModel'];
+      double sub = 0.0;
       for (var element in orderModel.value.products!) {
-        if (double.parse(element.merchant_price.toString()) <= 0) {
-          subTotal.value = subTotal.value +
-              double.parse(element.merchant_price.toString()) *
-                  double.parse(element.quantity.toString()) +
-              (double.parse(element.extrasPrice.toString()) *
-                  double.parse(element.quantity.toString()));
-        } else {
-          subTotal.value = subTotal.value +
-              double.parse(element.merchant_price.toString()) *
-                  double.parse(element.quantity.toString()) +
-              (double.parse(element.extrasPrice.toString()) *
-                  double.parse(element.quantity.toString()));
-        }
+        sub = sub + double.parse(element.merchant_price.toString()) *
+              double.parse(element.quantity.toString()) +
+            (double.parse(element.extrasPrice.toString()) *
+                double.parse(element.quantity.toString()));
       }
+      subTotal.value = sub;
 
       if (orderModel.value.specialDiscount != null &&
           orderModel.value.specialDiscount!['special_discount'] != null) {
@@ -58,8 +51,9 @@ class OrderDetailsController extends GetxController {
       }
 
       if (orderModel.value.taxSetting != null) {
+        double tax = 0.0;
         for (var element in orderModel.value.taxSetting!) {
-          taxAmount.value = taxAmount.value +
+          tax = tax +
               Constant.calculateTax(
                   amount: (subTotal.value -
                           double.parse(orderModel.value.discount.toString()) -
@@ -67,6 +61,7 @@ class OrderDetailsController extends GetxController {
                       .toString(),
                   taxModel: element);
         }
+        taxAmount.value = tax;
       }
 
       totalAmount.value = subTotal.value -

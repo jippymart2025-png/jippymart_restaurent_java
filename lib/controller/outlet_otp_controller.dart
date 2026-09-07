@@ -42,6 +42,7 @@ class OutletOtpController extends GetxController {
   void onClose() {
     _resendTimer?.cancel();
     _expiryTimer?.cancel();
+    otpController.value.dispose();
     super.onClose();
   }
 

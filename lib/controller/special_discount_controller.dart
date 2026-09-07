@@ -101,6 +101,5 @@ class SpecialDiscountController extends GetxController {
     specialDiscount.removeAt(index);
     specialDiscount.insert(index, specialDiscountModel);
     update();
-    update();
   }
 }

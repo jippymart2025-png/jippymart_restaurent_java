@@ -18,64 +18,64 @@ class GlobalSettingController extends GetxController {
   @override
   void onInit() {
     notificationInit();
-    getCurrentCurrency();
+    // getCurrentCurrency();
 
     super.onInit();
   }
 
   /// Loads active currency then settings once. Both use cache when valid; getSettings is awaited so currency + settings are ready together.
-  getCurrentCurrency() async {
-    // Smart cache (reduce server load): use cached currency for 24h.
-    try {
-      final cachedAtMs = Preferences.getInt(_currencyCacheTimeMsKey);
-      final cachedJson = Preferences.getString(_currencyCacheJsonKey);
-      if (cachedAtMs > 0 && cachedJson.isNotEmpty) {
-        final cacheAge = DateTime.now()
-            .difference(DateTime.fromMillisecondsSinceEpoch(cachedAtMs));
-        if (cacheAge < _currencyCacheTtl) {
-          final cachedMap = json.decode(cachedJson);
-          Constant.currencyModel = CurrencyModel.fromJson(cachedMap);
-          // Still refresh settings (already has its own TTL cache)
-          await FireStoreUtils.getSettings();
-          return;
-        }
-      }
-    } catch (_) {
-      // Ignore cache parse errors; fall back to network.
-    }
-
-    try {
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}settings/getActiveCurrency'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
-          Constant.currencyModel = CurrencyModel.fromJson(jsonResponse['data']);
-
-          // Persist cache for next launches.
-          await Preferences.setString(
-            _currencyCacheJsonKey,
-            jsonEncode(jsonResponse['data']),
-          );
-          await Preferences.setInt(
-            _currencyCacheTimeMsKey,
-            DateTime.now().millisecondsSinceEpoch,
-          );
-        } else {
-          _setDefaultCurrency();
-        }
-      } else {
-        _setDefaultCurrency();
-      }
-    } catch (e) {
-      _setDefaultCurrency();
-    }
-    await FireStoreUtils.getSettings();
-  }
+  // getCurrentCurrency() async {
+  //   // Smart cache (reduce server load): use cached currency for 24h.
+  //   try {
+  //     final cachedAtMs = Preferences.getInt(_currencyCacheTimeMsKey);
+  //     final cachedJson = Preferences.getString(_currencyCacheJsonKey);
+  //     if (cachedAtMs > 0 && cachedJson.isNotEmpty) {
+  //       final cacheAge = DateTime.now()
+  //           .difference(DateTime.fromMillisecondsSinceEpoch(cachedAtMs));
+  //       if (cacheAge < _currencyCacheTtl) {
+  //         final cachedMap = json.decode(cachedJson);
+  //         Constant.currencyModel = CurrencyModel.fromJson(cachedMap);
+  //         // Still refresh settings (already has its own TTL cache)
+  //         // await FireStoreUtils.getSettings();
+  //         return;
+  //       }
+  //     }
+  //   } catch (_) {
+  //     // Ignore cache parse errors; fall back to network.
+  //   }
+  //
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse('${Constant.baseUrl}settings/getActiveCurrency'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     );
+  //     if (response.statusCode == 200) {
+  //       final jsonResponse = json.decode(response.body);
+  //       if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+  //         Constant.currencyModel = CurrencyModel.fromJson(jsonResponse['data']);
+  //
+  //         // Persist cache for next launches.
+  //         await Preferences.setString(
+  //           _currencyCacheJsonKey,
+  //           jsonEncode(jsonResponse['data']),
+  //         );
+  //         await Preferences.setInt(
+  //           _currencyCacheTimeMsKey,
+  //           DateTime.now().millisecondsSinceEpoch,
+  //         );
+  //       } else {
+  //         _setDefaultCurrency();
+  //       }
+  //     } else {
+  //       _setDefaultCurrency();
+  //     }
+  //   } catch (e) {
+  //     _setDefaultCurrency();
+  //   }
+  //   // await FireStoreUtils.getSettings();
+  // }
   _setDefaultCurrency() {
     Constant.currencyModel = CurrencyModel(
       id: "664d8fc37be19",

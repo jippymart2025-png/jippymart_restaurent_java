@@ -49,6 +49,13 @@ class WalletController extends GetxController {
     super.onInit();
   }
 
+  @override
+  void onClose() {
+    amountTextFieldController.value.dispose();
+    noteTextFieldController.value.dispose();
+    super.onClose();
+  }
+
   Future<void> createAndSavePdf() async {
     // Create a new PDF document
     final PdfDocument document = PdfDocument();
@@ -113,78 +120,41 @@ class WalletController extends GetxController {
   Rx<DateTime> endDate = DateTime.now().obs;
 
   getWalletTransaction(bool isFilter) async {
-    if (isFilter) {
-      await FireStoreUtils.getFilterWalletTransaction(
-              Timestamp.fromDate(DateTime(startDate.value.year,
-                  startDate.value.month, startDate.value.day, 00, 00)),
-              Timestamp.fromDate(DateTime(endDate.value.year,
-                  endDate.value.month, endDate.value.day, 23, 59)))
-          .then(
-        (value) {
-          if (value != null) {
-            taxAmount.value = 0;
-            orderAmount.value = 0;
-            walletTransactionList.value = value;
+    final Future<List<WalletTransactionModel>?> source = isFilter
+        ? FireStoreUtils.getFilterWalletTransaction(
+            Timestamp.fromDate(DateTime(startDate.value.year,
+                startDate.value.month, startDate.value.day, 00, 00)),
+            Timestamp.fromDate(DateTime(endDate.value.year,
+                endDate.value.month, endDate.value.day, 23, 59)))
+        : FireStoreUtils.getWalletTransaction();
 
-            walletTransactionList
-                .where((element) => element.paymentMethod == "tax")
-                .toList();
-            walletTransactionList.forEach(
-              (element) {
-                if (element.paymentMethod == "tax") {
-                  if (element.isTopup == false) {
-                    taxAmount.value -= double.parse(element.amount.toString());
-                  } else {
-                    taxAmount.value += double.parse(element.amount.toString());
-                  }
-                } else {
-                  if (element.isTopup == false) {
-                    orderAmount.value -=
-                        double.parse(element.amount.toString());
-                  } else {
-                    orderAmount.value +=
-                        double.parse(element.amount.toString());
-                  }
-                }
-              },
-            );
-          }
-        },
-      );
-    } else {
-      await FireStoreUtils.getWalletTransaction().then(
-        (value) {
-          if (value != null) {
-            taxAmount.value = 0;
-            orderAmount.value = 0;
-            walletTransactionList.value = value;
+    await source.then(
+      (value) {
+        if (value != null) {
+          walletTransactionList.value = value;
 
-            walletTransactionList
-                .where((element) => element.paymentMethod == "tax")
-                .toList();
-            walletTransactionList.forEach(
-              (element) {
-                if (element.paymentMethod == "tax") {
-                  if (element.isTopup == false) {
-                    taxAmount.value -= double.parse(element.amount.toString());
-                  } else {
-                    taxAmount.value += double.parse(element.amount.toString());
-                  }
-                } else {
-                  if (element.isTopup == false) {
-                    orderAmount.value -=
-                        double.parse(element.amount.toString());
-                  } else {
-                    orderAmount.value +=
-                        double.parse(element.amount.toString());
-                  }
-                }
-              },
-            );
+          double tax = 0.0;
+          double orders = 0.0;
+          for (final element in value) {
+            if (element.paymentMethod == "tax") {
+              if (element.isTopup == false) {
+                tax -= double.parse(element.amount.toString());
+              } else {
+                tax += double.parse(element.amount.toString());
+              }
+            } else {
+              if (element.isTopup == false) {
+                orders -= double.parse(element.amount.toString());
+              } else {
+                orders += double.parse(element.amount.toString());
+              }
+            }
           }
-        },
-      );
-    }
+          taxAmount.value = tax;
+          orderAmount.value = orders;
+        }
+      },
+    );
 
     await FireStoreUtils.getWithdrawHistory().then(
       (value) {

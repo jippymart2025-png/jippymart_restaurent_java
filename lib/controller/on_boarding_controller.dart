@@ -28,4 +28,10 @@ class OnBoardingController extends GetxController {
     isLoading.value = false;
     update();
   }
+
+  @override
+  void onClose() {
+    pageController.dispose();
+    super.onClose();
+  }
 }

@@ -182,8 +182,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.paused) {
       AudioPlayerService.initAudio();
     }
     getCurrentAppTheme();

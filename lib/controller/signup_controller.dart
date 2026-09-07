@@ -424,6 +424,41 @@ class SignupController extends GetxController {
       ShowToastDialog.closeLoader();
     }
   }
+  @override
+  void onClose() {
+    firstNameEditingController.value.dispose();
+    lastNameEditingController.value.dispose();
+    emailEditingController.value.dispose();
+    phoneNUmberEditingController.value.dispose();
+    countryCodeEditingController.value.dispose();
+    usernameController.value.dispose();
+    passwordEditingController.value.dispose();
+    dobController.value.dispose();
+    outletTypeController.value.dispose();
+    panController.value.dispose();
+    aadhaarController.value.dispose();
+    fssaiController.value.dispose();
+    gstController.value.dispose();
+    accountNumberController.value.dispose();
+    ifscController.value.dispose();
+    bankLocationController.value.dispose();
+    accountHolderController.value.dispose();
+    outletNameController.value.dispose();
+    merchantIdController.value.dispose();
+    cuisineTypeController.value.dispose();
+    outletPhoneController.value.dispose();
+    buildingNumberController.value.dispose();
+    roadController.value.dispose();
+    landmarkController.value.dispose();
+    stateNameController.value.dispose();
+    cityController.value.dispose();
+    areaNameController.value.dispose();
+    latitudeController.value.dispose();
+    longitudeController.value.dispose();
+    locationDisplayController.dispose();
+    super.onClose();
+  }
+
   // signUpWithEmailAndPassword() async {
   //   signUp();
   // }

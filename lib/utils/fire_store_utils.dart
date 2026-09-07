@@ -117,6 +117,10 @@ class FireStoreUtils {
   static DateTime? _cachedResolvedOutletTime;
   static const Duration _resolvedOutletCacheTTL = Duration(minutes: 5);
 
+  // In-flight guard: if two callers request the same merchant's outlets while
+  // a request is already running, they share one network call instead of two.
+  static final Map<int, Future<List<OutletModel>>> _merchantOutletsInFlight = {};
+
   // Vendor categories cache: one global list per app session, TTL 3 minutes
   static List<VendorCategoryModel>? _cachedVendorCategories;
   static DateTime? _vendorCategoriesCacheTime;
@@ -240,7 +244,7 @@ class FireStoreUtils {
         headers: {
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         log(" getUserProfileresponse body ${response.body}");
@@ -249,12 +253,12 @@ class FireStoreUtils {
           final userModel = UserModel.fromJson(userData);
           Constant.userModel = userModel;
           debugPrint(" getUserProfile  ${  Constant.userModel?.toJson()} ");
-          
+
           // Performance Optimization: Cache the result
           _cachedUserProfile = userModel;
           _cachedUserProfileUuid = uuid;
           _userProfileCacheTime = DateTime.now();
-          
+
           return userModel;
         } else {
           log("API returned error: ${responseData['message']}");
@@ -289,7 +293,7 @@ class FireStoreUtils {
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 30));
 
       debugPrint("Status Code: ${response.statusCode}");
       debugPrint("Response Body: ${response.body}");
@@ -413,7 +417,23 @@ class FireStoreUtils {
   }
   // end
   // THIS IS THE CODE OF JAVA GETTING THE LIST OF OUTLETS BY USING THE MERCHANT ID
-  static Future<List<OutletModel>> getMerchantOutlets(int merchantId,) async {
+  static Future<List<OutletModel>> getMerchantOutlets(int merchantId) async {
+    // Share one network call between concurrent callers for the same merchant.
+    final inFlight = _merchantOutletsInFlight[merchantId];
+    if (inFlight != null) return inFlight;
+
+    final future = _getMerchantOutlets(merchantId);
+    _merchantOutletsInFlight[merchantId] = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_merchantOutletsInFlight[merchantId], future)) {
+        _merchantOutletsInFlight.remove(merchantId);
+      }
+    }
+  }
+
+  static Future<List<OutletModel>> _getMerchantOutlets(int merchantId) async {
     try {
       //final token = Preferences.getString('authToken');
       final headers = await getHeaders();
@@ -426,7 +446,7 @@ class FireStoreUtils {
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 30));
 
       debugPrint("Status Code: ${response.statusCode}");
       debugPrint("Response Body: ${response.body}");
@@ -494,7 +514,7 @@ class FireStoreUtils {
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 30));
 
       debugPrint("Status Code: ${response.statusCode}");
       debugPrint("Response Body: ${response.body}");
@@ -902,163 +922,163 @@ class FireStoreUtils {
     }
   }
 
-  static Future<void> getSettings({bool forceRefresh = false}) async {
-    try {
-      // Performance Optimization: Check cache first (transparent to caller)
-      if (!forceRefresh && _settingsCacheTime != null) {
-        final cacheAge = DateTime.now().difference(_settingsCacheTime!);
-        if (cacheAge < _settingsCacheTTL) {
-          log("getSettings: Returning cached data (age: ${cacheAge.inSeconds}s)");
-          return; // Use cached settings (Constants already set)
-        }
-      }
-
-      final response = await http.get(Uri.parse('${Constant.baseUrl}settings/mobile'));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body)['data'];
-        final Map<String, dynamic> documents = data['documents'];
-        final Map<String, dynamic> derived = data['derived'];
-        // Global Settings
-        final globalSettings = documents['globalSettings'] ?? {};
-        Constant.orderRingtoneUrl = globalSettings['order_ringtone_url'] ?? '';
-        Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
-        if (globalSettings['app_restaurant_color'] != null) {
-          AppThemeData.secondary300 = Color(int.parse(
-              globalSettings['app_restaurant_color'].replaceFirst("#", "0xff")));
-        }
-        Constant.isEnableAdsFeature = globalSettings['isEnableAdsFeature'] ?? false;
-        Constant.isSelfDeliveryFeature = globalSettings['isSelfDelivery'] ?? false;
-
-        if (Constant.orderRingtoneUrl.isNotEmpty) {
-          await AudioPlayerService.initAudio();
-        }
-
-        // Schedule Order Notification
-        final scheduleOrder = documents['scheduleOrderNotification'] ?? {};
-        if (scheduleOrder.isNotEmpty) {
-          Constant.scheduleOrderTime = scheduleOrder["notifyTime"];
-          Constant.scheduleOrderTimeType = scheduleOrder["timeUnit"];
-        }
-
-        // Dine-in Settings
-        final dineInSettings = documents['DineinForRestaurant'] ?? {};
-        if (dineInSettings.isNotEmpty) {
-          Constant.isDineInEnable = dineInSettings["isEnabled"];
-        }
-
-        // Restaurant Settings
-        final restaurantSettings = documents['restaurant'] ?? {};
-        Constant.autoApproveRestaurant = restaurantSettings['auto_approve_restaurant'] ?? false;
-        // App Store compliance: Subscription model disabled - app is 100% free
-        Constant.isSubscriptionModelApplied = false; // Override server: restaurantSettings['subscription_model'] ?? false;
-
-        // Admin Commission
-        final adminCommission = documents['AdminCommission'] ?? {};
-        if (adminCommission.isNotEmpty) {
-          Constant.adminCommission = AdminCommission.fromJson(adminCommission);
-        }
-
-        // Google Map Key
-        final googleMapSettings = documents['googleMapKey'] ?? {};
-        Constant.mapAPIKey = googleMapSettings["key"] ?? '';
-        Constant.placeHolderImage = googleMapSettings["placeHolderImage"] ?? '';
-
-        // Story Settings
-        final storySettings = documents['story'] ?? {};
-        Constant.storyEnable = storySettings['isEnabled'] ?? false;
-
-        // Placeholder Image
-        final placeholderSettings = documents['placeHolderImage'] ?? {};
-        Constant.placeholderImage = placeholderSettings['image'] ?? '';
-
-        // Version Settings
-        final versionSettings = documents['Version'] ?? {};
-        Constant.googlePlayLink = versionSettings["googlePlayLink"] ?? '';
-        Constant.appStoreLink = versionSettings["appStoreLink"] ?? '';
-        Constant.appVersion = versionSettings["app_version"] ?? '';
-        Constant.storeUrl = versionSettings["storeUrl"] ?? '';
-
-        // Restaurant Nearby
-        final restaurantNearby = documents['RestaurantNearBy'] ?? {};
-        if (restaurantNearby.isNotEmpty) {
-          Constant.distanceType = restaurantNearby["distanceType"];
-        }
-
-        // Special Discount Offer
-        final specialDiscount = documents['specialDiscountOffer'] ?? {};
-        if (specialDiscount.isNotEmpty) {
-          Constant.specialDiscountOfferEnable = specialDiscount["isEnable"];
-        }
-
-        // Email Settings
-        final emailSettings = documents['emailSetting'] ?? {};
-        if (emailSettings.isNotEmpty) {
-          Constant.mailSettings = MailSettings.fromJson(emailSettings);
-        }
-
-        // Contact Us
-        final contactSettings = documents['ContactUs'] ?? {};
-        if (contactSettings.isNotEmpty) {
-          Constant.adminEmail = contactSettings["Email"];
-        }
-
-        // Driver Nearby
-        final driverNearby = documents['DriverNearBy'] ?? {};
-        if (driverNearby.isNotEmpty) {
-          Constant.selectedMapType = driverNearby["selectedMapType"];
-          Constant.singleOrderReceive = driverNearby['singleOrderReceive'];
-        }
-
-        // Notification Settings
-        final notificationSettings = documents['notification_setting'] ?? {};
-        Constant.senderId = notificationSettings["projectId"];
-        Constant.jsonNotificationFileURL = notificationSettings["serviceJson"];
-
-        // Document Verification
-        final docVerification = documents['document_verification_settings'] ?? {};
-        Constant.isRestaurantVerification = docVerification['isRestaurantVerification'] ?? false;
-
-        // Privacy Policy
-        final privacyPolicy = documents['privacyPolicy'] ?? {};
-        if (privacyPolicy.isNotEmpty) {
-          Constant.privacyPolicy = privacyPolicy["privacy_policy"];
-        }
-
-        // Terms and Conditions
-        final termsConditions = documents['termsAndConditions'] ?? {};
-        if (termsConditions.isNotEmpty) {
-          Constant.termsAndConditions = termsConditions["termsAndConditions"];
-        }
-
-        // Also set derived values for consistency
-        // App Store compliance: Subscription model disabled - app is 100% free
-        Constant.isSubscriptionModelApplied = false; // Override: derived['isSubscriptionModelApplied'] ?? false;
-        Constant.autoApproveRestaurant = derived['autoApproveRestaurant'] ?? false;
-        Constant.isEnableAdsFeature = derived['isEnableAdsFeature'] ?? false;
-        Constant.isSelfDeliveryFeature = derived['isSelfDeliveryFeature'] ?? false;
-        Constant.mapAPIKey = derived['mapAPIKey'] ?? Constant.mapAPIKey;
-        Constant.placeHolderImage = derived['placeHolderImage'] ?? Constant.placeHolderImage;
-        Constant.senderId = derived['senderId'] ?? Constant.senderId;
-        Constant.jsonNotificationFileURL = derived['jsonNotificationFileURL'] ?? Constant.jsonNotificationFileURL;
-        Constant.privacyPolicy = derived['privacyPolicy'] ?? Constant.privacyPolicy;
-        Constant.termsAndConditions = derived['termsAndConditions'] ?? Constant.termsAndConditions;
-        Constant.googlePlayLink = derived['googlePlayLink'] ?? Constant.googlePlayLink;
-        Constant.appStoreLink = derived['appStoreLink'] ?? Constant.appStoreLink;
-        Constant.appVersion = derived['appVersion'] ?? Constant.appVersion;
-        Constant.storyEnable = derived['storyEnable'] ?? Constant.storyEnable;
-        Constant.placeholderImage = derived['placeholderImage'] ?? Constant.placeholderImage;
-        Constant.specialDiscountOfferEnable = derived['specialDiscountOffer'] ?? Constant.specialDiscountOfferEnable;
-
-        // Performance Optimization: Cache the settings load time
-        _settingsCacheTime = DateTime.now();
-
-      } else {
-        throw Exception('Failed to load settings: ${response.statusCode}');
-      }
-    } catch (e) {
-      log(e.toString());
-    }
-  }
+  // static Future<void> getSettings({bool forceRefresh = false}) async {
+  //   try {
+  //     // Performance Optimization: Check cache first (transparent to caller)
+  //     if (!forceRefresh && _settingsCacheTime != null) {
+  //       final cacheAge = DateTime.now().difference(_settingsCacheTime!);
+  //       if (cacheAge < _settingsCacheTTL) {
+  //         log("getSettings: Returning cached data (age: ${cacheAge.inSeconds}s)");
+  //         return; // Use cached settings (Constants already set)
+  //       }
+  //     }
+  //
+  //     final response = await http.get(Uri.parse('${Constant.baseUrl}settings/mobile'));
+  //     if (response.statusCode == 200) {
+  //       final Map<String, dynamic> data = json.decode(response.body)['data'];
+  //       final Map<String, dynamic> documents = data['documents'];
+  //       final Map<String, dynamic> derived = data['derived'];
+  //       // Global Settings
+  //       final globalSettings = documents['globalSettings'] ?? {};
+  //       Constant.orderRingtoneUrl = globalSettings['order_ringtone_url'] ?? '';
+  //       Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
+  //       if (globalSettings['app_restaurant_color'] != null) {
+  //         AppThemeData.secondary300 = Color(int.parse(
+  //             globalSettings['app_restaurant_color'].replaceFirst("#", "0xff")));
+  //       }
+  //       Constant.isEnableAdsFeature = globalSettings['isEnableAdsFeature'] ?? false;
+  //       Constant.isSelfDeliveryFeature = globalSettings['isSelfDelivery'] ?? false;
+  //
+  //       if (Constant.orderRingtoneUrl.isNotEmpty) {
+  //         await AudioPlayerService.initAudio();
+  //       }
+  //
+  //       // Schedule Order Notification
+  //       final scheduleOrder = documents['scheduleOrderNotification'] ?? {};
+  //       if (scheduleOrder.isNotEmpty) {
+  //         Constant.scheduleOrderTime = scheduleOrder["notifyTime"];
+  //         Constant.scheduleOrderTimeType = scheduleOrder["timeUnit"];
+  //       }
+  //
+  //       // Dine-in Settings
+  //       final dineInSettings = documents['DineinForRestaurant'] ?? {};
+  //       if (dineInSettings.isNotEmpty) {
+  //         Constant.isDineInEnable = dineInSettings["isEnabled"];
+  //       }
+  //
+  //       // Restaurant Settings
+  //       final restaurantSettings = documents['restaurant'] ?? {};
+  //       Constant.autoApproveRestaurant = restaurantSettings['auto_approve_restaurant'] ?? false;
+  //       // App Store compliance: Subscription model disabled - app is 100% free
+  //       Constant.isSubscriptionModelApplied = false; // Override server: restaurantSettings['subscription_model'] ?? false;
+  //
+  //       // Admin Commission
+  //       final adminCommission = documents['AdminCommission'] ?? {};
+  //       if (adminCommission.isNotEmpty) {
+  //         Constant.adminCommission = AdminCommission.fromJson(adminCommission);
+  //       }
+  //
+  //       // Google Map Key
+  //       final googleMapSettings = documents['googleMapKey'] ?? {};
+  //       Constant.mapAPIKey = googleMapSettings["key"] ?? '';
+  //       Constant.placeHolderImage = googleMapSettings["placeHolderImage"] ?? '';
+  //
+  //       // Story Settings
+  //       final storySettings = documents['story'] ?? {};
+  //       Constant.storyEnable = storySettings['isEnabled'] ?? false;
+  //
+  //       // Placeholder Image
+  //       final placeholderSettings = documents['placeHolderImage'] ?? {};
+  //       Constant.placeholderImage = placeholderSettings['image'] ?? '';
+  //
+  //       // Version Settings
+  //       final versionSettings = documents['Version'] ?? {};
+  //       Constant.googlePlayLink = versionSettings["googlePlayLink"] ?? '';
+  //       Constant.appStoreLink = versionSettings["appStoreLink"] ?? '';
+  //       Constant.appVersion = versionSettings["app_version"] ?? '';
+  //       Constant.storeUrl = versionSettings["storeUrl"] ?? '';
+  //
+  //       // Restaurant Nearby
+  //       final restaurantNearby = documents['RestaurantNearBy'] ?? {};
+  //       if (restaurantNearby.isNotEmpty) {
+  //         Constant.distanceType = restaurantNearby["distanceType"];
+  //       }
+  //
+  //       // Special Discount Offer
+  //       final specialDiscount = documents['specialDiscountOffer'] ?? {};
+  //       if (specialDiscount.isNotEmpty) {
+  //         Constant.specialDiscountOfferEnable = specialDiscount["isEnable"];
+  //       }
+  //
+  //       // Email Settings
+  //       final emailSettings = documents['emailSetting'] ?? {};
+  //       if (emailSettings.isNotEmpty) {
+  //         Constant.mailSettings = MailSettings.fromJson(emailSettings);
+  //       }
+  //
+  //       // Contact Us
+  //       final contactSettings = documents['ContactUs'] ?? {};
+  //       if (contactSettings.isNotEmpty) {
+  //         Constant.adminEmail = contactSettings["Email"];
+  //       }
+  //
+  //       // Driver Nearby
+  //       final driverNearby = documents['DriverNearBy'] ?? {};
+  //       if (driverNearby.isNotEmpty) {
+  //         Constant.selectedMapType = driverNearby["selectedMapType"];
+  //         Constant.singleOrderReceive = driverNearby['singleOrderReceive'];
+  //       }
+  //
+  //       // Notification Settings
+  //       final notificationSettings = documents['notification_setting'] ?? {};
+  //       Constant.senderId = notificationSettings["projectId"];
+  //       Constant.jsonNotificationFileURL = notificationSettings["serviceJson"];
+  //
+  //       // Document Verification
+  //       final docVerification = documents['document_verification_settings'] ?? {};
+  //       Constant.isRestaurantVerification = docVerification['isRestaurantVerification'] ?? false;
+  //
+  //       // Privacy Policy
+  //       final privacyPolicy = documents['privacyPolicy'] ?? {};
+  //       if (privacyPolicy.isNotEmpty) {
+  //         Constant.privacyPolicy = privacyPolicy["privacy_policy"];
+  //       }
+  //
+  //       // Terms and Conditions
+  //       final termsConditions = documents['termsAndConditions'] ?? {};
+  //       if (termsConditions.isNotEmpty) {
+  //         Constant.termsAndConditions = termsConditions["termsAndConditions"];
+  //       }
+  //
+  //       // Also set derived values for consistency
+  //       // App Store compliance: Subscription model disabled - app is 100% free
+  //       Constant.isSubscriptionModelApplied = false; // Override: derived['isSubscriptionModelApplied'] ?? false;
+  //       Constant.autoApproveRestaurant = derived['autoApproveRestaurant'] ?? false;
+  //       Constant.isEnableAdsFeature = derived['isEnableAdsFeature'] ?? false;
+  //       Constant.isSelfDeliveryFeature = derived['isSelfDeliveryFeature'] ?? false;
+  //       Constant.mapAPIKey = derived['mapAPIKey'] ?? Constant.mapAPIKey;
+  //       Constant.placeHolderImage = derived['placeHolderImage'] ?? Constant.placeHolderImage;
+  //       Constant.senderId = derived['senderId'] ?? Constant.senderId;
+  //       Constant.jsonNotificationFileURL = derived['jsonNotificationFileURL'] ?? Constant.jsonNotificationFileURL;
+  //       Constant.privacyPolicy = derived['privacyPolicy'] ?? Constant.privacyPolicy;
+  //       Constant.termsAndConditions = derived['termsAndConditions'] ?? Constant.termsAndConditions;
+  //       Constant.googlePlayLink = derived['googlePlayLink'] ?? Constant.googlePlayLink;
+  //       Constant.appStoreLink = derived['appStoreLink'] ?? Constant.appStoreLink;
+  //       Constant.appVersion = derived['appVersion'] ?? Constant.appVersion;
+  //       Constant.storyEnable = derived['storyEnable'] ?? Constant.storyEnable;
+  //       Constant.placeholderImage = derived['placeholderImage'] ?? Constant.placeholderImage;
+  //       Constant.specialDiscountOfferEnable = derived['specialDiscountOffer'] ?? Constant.specialDiscountOfferEnable;
+  //
+  //       // Performance Optimization: Cache the settings load time
+  //       _settingsCacheTime = DateTime.now();
+  //
+  //     } else {
+  //       throw Exception('Failed to load settings: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     log(e.toString());
+  //   }
+  // }
   static Future<bool?> checkReferralCodeValidOrNot(String referralCode) async {
     bool? isExist;
     try {
@@ -1512,7 +1532,7 @@ class FireStoreUtils {
         headers: {
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 30));
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
         if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
@@ -1704,7 +1724,7 @@ class FireStoreUtils {
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 30));
 
       debugPrint('getOutletProducts status => ${response.statusCode}');
       debugPrint('getOutletProducts body => ${response.body}');
@@ -1881,6 +1901,7 @@ class FireStoreUtils {
   //     return false;
   //   }
   // }
+
   static Future<List<PromotionOutletProductModel>?> getOutletProductsDetailsOnlyForPromotions({required int outletId}) async {
     try {
       final headers = await getHeaders();
@@ -2707,7 +2728,7 @@ class FireStoreUtils {
         final response = await http.get(
           Uri.parse('${Constant.baseUrl}restaurant/vendors/$vendorId'),
           headers: {'Content-Type': 'application/json'},
-        );
+        ).timeout(const Duration(seconds: 30));
         if (response.statusCode == 200) {
           debugPrint("getVendorById  ${response.body}");
           final Map<String, dynamic> responseData = jsonDecode(response.body);

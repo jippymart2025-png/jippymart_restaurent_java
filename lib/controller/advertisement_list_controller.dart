@@ -116,6 +116,12 @@ class AdvertisementListController extends GetxController {
   }
 
   Rx<TextEditingController> pauseNote = TextEditingController().obs;
+
+  @override
+  void onClose() {
+    pauseNote.value.dispose();
+    super.onClose();
+  }
   void pauseAdvertisement(AdvertisementModel model, int index,
       BuildContext context, bool isDarkModel) async {
     showDialog(
