@@ -5,18 +5,18 @@ import 'package:get/get.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jippymart_restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
-import 'package:jippymart_restaurant/app/on_boarding_screen.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
+import 'package:jippymart_restaurant/utils/common.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-
 import '../app/landing_screen.dart';
 
 class AppUpdateService {
+  static const String appTypeMerchant = 'merchant';
+
   static bool _hasCheckedForUpdate = false;
 
   /// Check if a version is older than another version
@@ -129,77 +129,96 @@ class AppUpdateService {
   static String getPlatformUpdateUrl(Map<String, dynamic> versionInfo) {
     String platformUrl = '';
     if (Platform.isAndroid) {
-      String androidUrl = versionInfo['android_update_url'] ?? '';
-      if (androidUrl.isNotEmpty && 
-          androidUrl != "update_url" && 
+      String androidUrl = versionInfo['android_update_url'] ??
+          versionInfo['googlePlayLink']?.toString() ?? '';
+      if (androidUrl.isNotEmpty &&
+          androidUrl != "update_url" &&
           androidUrl.startsWith('http')) {
         platformUrl = androidUrl;
-        print('[UPDATE DEBUG]   Using android_update_url: "$androidUrl"');
+        print('[UPDATE DEBUG]   Using android_update_url/googlePlayLink: "$androidUrl"');
       } else {
-        platformUrl = versionInfo['update_url'] ?? 
-               "https://play.google.com/store/apps/details?id=com.jippymart.restaurant";
-        print('[UPDATE DEBUG]   android_update_url is placeholder, using update_url: "$platformUrl"');
+        platformUrl = versionInfo['googlePlayLink']?.toString() ??
+            Constant.googlePlayLink;
+        print('[UPDATE DEBUG]   No valid android url, using googlePlayLink: "$platformUrl"');
       }
-      print('[UPDATE DEBUG]   android_update_url from Firestore: "${versionInfo['android_update_url']}"');
-      print('[UPDATE DEBUG]   update_url from Firestore: "${versionInfo['update_url']}"');
     } else if (Platform.isIOS) {
-      String iosUrl = versionInfo['ios_update_url'] ?? '';
-      if (iosUrl.isNotEmpty && 
-          iosUrl != "update_url" && 
+      String iosUrl = versionInfo['ios_update_url'] ??
+          versionInfo['appStoreLink']?.toString() ?? '';
+      if (iosUrl.isNotEmpty &&
+          iosUrl != "update_url" &&
           iosUrl.startsWith('http')) {
         platformUrl = iosUrl;
-        print('[UPDATE DEBUG]   Using ios_update_url: "$iosUrl"');
+        print('[UPDATE DEBUG]   Using ios_update_url/appStoreLink: "$iosUrl"');
       } else {
-        platformUrl = versionInfo['update_url'] ?? 
-               "https://apps.apple.com/app/jippy-mart/id123456789";
-        print('[UPDATE DEBUG]   ios_update_url is placeholder, using update_url: "$platformUrl"');
+        platformUrl = versionInfo['appStoreLink']?.toString() ??
+            Constant.appStoreLink;
+        print('[UPDATE DEBUG]   No valid ios url, using appStoreLink: "$platformUrl"');
       }
-      print('[UPDATE DEBUG]   ios_update_url from Firestore: "${versionInfo['ios_update_url']}"');
-      print('[UPDATE DEBUG]   update_url from Firestore: "${versionInfo['update_url']}"');
     } else {
-      platformUrl = versionInfo['update_url'] ?? 
-             "https://play.google.com/store/apps/details?id=com.jippymart.restaurant";
-      print('[UPDATE DEBUG]   update_url from Firestore: "${versionInfo['update_url']}"');
+      platformUrl = versionInfo['googlePlayLink']?.toString() ??
+          Constant.googlePlayLink;
     }
     print('[UPDATE DEBUG]   Selected platform URL: "$platformUrl"');
     return platformUrl;
   }
 
-  static Future<Map<String, dynamic>?> getLatestVersionInfo() async {
+  static Future<Map<String, dynamic>?> getLatestVersionInfo({
+    String appType = appTypeMerchant,
+  }) async {
     try {
       print('[UPDATE DEBUG] Fetching version info from API...');
-      print('[UPDATE DEBUG] Endpoint: {{baseURL}}restaurant/version');
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/version'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
+      final endpoint =
+          '${Constant.baseUrl}fm/app-settings/getApplicationVersionByAppType?appType=$appType';
+      print('[UPDATE DEBUG] Endpoint: $endpoint');
+      final response = await http
+          .get(Uri.parse(endpoint), headers: await getHeaders())
+          .timeout(const Duration(seconds: 12));
 
       print('[UPDATE DEBUG] API response status: ${response.statusCode}');
       print('[UPDATE DEBUG] API response body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
+      if (response.statusCode != 200) {
+        print('[UPDATE DEBUG] API request failed with status: ${response.statusCode}');
+        return null;
+      }
 
-        if (responseData['success'] == true) {
-          print('[UPDATE DEBUG] API request successful!');
+      dynamic decoded;
+      try {
+        decoded = json.decode(response.body);
+      } catch (e) {
+        print('[UPDATE DEBUG] Invalid JSON response: $e');
+        return null;
+      }
+      if (decoded is! Map) {
+        print('[UPDATE DEBUG] API response is not a JSON object');
+        return null;
+      }
+
+      final Map<String, dynamic> responseData = Map<String, dynamic>.from(decoded);
+
+      // Support both a direct object and a { success: true, data: {...} } envelope.
+      dynamic body = responseData['data'];
+      if (body is Map) {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(body);
+        if (data.isNotEmpty) {
+          print('[UPDATE DEBUG] API returned {success, data} envelope');
           print('[UPDATE DEBUG] Version data:');
-
-          final Map<String, dynamic> data = responseData['data'];
           data.forEach((key, value) {
             print('[UPDATE DEBUG]   $key: "$value" (${value.runtimeType})');
           });
           return data;
-        } else {
-          print('[UPDATE DEBUG] API returned success: false');
-          print('[UPDATE DEBUG] Message: ${responseData['message']}');
-          return null;
         }
-      } else {
-        print('[UPDATE DEBUG] API request failed with status: ${response.statusCode}');
+      } else if (responseData['success'] == false) {
+        print('[UPDATE DEBUG] API returned success: false');
+        print('[UPDATE DEBUG] Message: ${responseData['message']}');
         return null;
       }
+
+      print('[UPDATE DEBUG] Version data:');
+      responseData.forEach((key, value) {
+        print('[UPDATE DEBUG]   $key: "$value" (${value.runtimeType})');
+      });
+      return responseData;
     } catch (e) {
       print('[UPDATE] Error fetching version info: $e');
       return null;
