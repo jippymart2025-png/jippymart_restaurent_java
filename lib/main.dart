@@ -28,22 +28,7 @@ import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/notification/notification_service.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 
-// Old initialization code
-/*
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await FirebaseAppCheck.instance.activate(
-    webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
-    androidProvider: AndroidProvider.playIntegrity,
-    appleProvider: AppleProvider.appAttest,
-  );
-  await Preferences.initPref();
-  runApp(const MyApp());
-}
-*/
+
 
 Future<void> initializeFirebase() async {
   try {
