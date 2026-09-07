@@ -20,10 +20,6 @@ class _VariantBuilderSheetScreenState
   List<VariantGroupModel> _allGroups = [];
   final Map<int, List<VariantGroupValueModel>> _valuesByGroup = {};
 
-  /// What actually exists on the server right now — used as the diff
-  /// baseline when Save is pressed.
-  List<StagedVariantGroup> _original = [];
-
   /// What the merchant is currently editing.
   List<StagedVariantGroup> _groups = [];
 
@@ -70,7 +66,6 @@ class _VariantBuilderSheetScreenState
 
     setState(() {
       _allGroups = groups;
-      _original = existing;
       _groups = existing.isEmpty
           ? [_emptyGroup()]
           : existing
@@ -187,32 +182,11 @@ class _VariantBuilderSheetScreenState
     if (!_canSave || _saving) return;
     setState(() => _saving = true);
 
-    final originalIds = _original
-        .expand((g) => g.options)
-        .map((o) => o.productVariantOptionsId)
-        .where((id) => id != 0)
-        .toSet();
-    final currentIds = _groups
-        .expand((g) => g.options)
-        .map((o) => o.productVariantOptionsId)
-        .where((id) => id != 0)
-        .toSet();
+    final payload = _buildVariantGroupsPayload();
+    debugPrint('[VariantSave] returning payload groups=${payload.length}');
 
-    debugPrint('[VariantSave] originalIds=$originalIds');
-    debugPrint('[VariantSave] currentIds=$currentIds');
-    debugPrint('[VariantSave] toDelete=${originalIds.difference(currentIds)}');
-
-    var ok = true;
-
-    for (final id in originalIds.difference(currentIds)) {
-      debugPrint('[VariantSave] calling deleteProductVariantOption id=$id');
-      final success = await FireStoreUtils.deleteProductVariantOption(
-        productId: widget.productId,
-        optionId: id,
-      );
-      debugPrint('[VariantSave] delete result for id=$id -> $success');
-      ok = ok && success;
-    }
+    setState(() => _saving = false);
+    Navigator.pop(context, payload);
   }
 
   @override
