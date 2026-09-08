@@ -245,68 +245,68 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                           // Delivery Man Information Section
-                          Visibility(
-                            visible: false,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 20),
-                                Text(
-                                  "Delivery Man Information".tr,
-                                  style: TextStyle(
-                                    color: themeChange.getThem()
-                                        ? AppThemeData.grey400
-                                        : AppThemeData.grey500,
-                                    fontFamily: AppThemeData.semiBold,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Container(
-                                  width: Responsive.width(100, context),
-                                  decoration: ShapeDecoration(
-                                    color: themeChange.getThem()
-                                        ? AppThemeData.grey900
-                                        : AppThemeData.grey50,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                    child: Column(children: [
-                                      cardDecoration(
-                                        themeChange,
-                                        controller,
-                                        Container(
-                                          width: 44,
-                                          height: 44,
-                                          decoration: ShapeDecoration(
-                                            color: themeChange.getThem()
-                                                ? AppThemeData.secondary600
-                                                : AppThemeData.goldenrodDark.withAlpha(30),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(120),
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(12),
-                                            child: SvgPicture.asset(
-                                              "assets/icons/ic_manage_delivery_man.svg",
-                                              colorFilter: ColorFilter.mode(AppThemeData.goldenrodDark, BlendMode.srcIn),
-                                            ),
-                                          ),
-                                        ),
-                                        "Manage Delivery Man",
-                                        () {
-                                          Get.to(DriverListScreen());
-                                        },
-                                      )
-                                    ]),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
+                          // Visibility(
+                          //   visible: false,
+                          //   child: Column(
+                          //     crossAxisAlignment: CrossAxisAlignment.start,
+                          //     children: [
+                          //       const SizedBox(height: 20),
+                          //       Text(
+                          //         "Delivery Man Information".tr,
+                          //         style: TextStyle(
+                          //           color: themeChange.getThem()
+                          //               ? AppThemeData.grey400
+                          //               : AppThemeData.grey500,
+                          //           fontFamily: AppThemeData.semiBold,
+                          //           fontWeight: FontWeight.w500,
+                          //         ),
+                          //       ),
+                          //       const SizedBox(height: 10),
+                          //       Container(
+                          //         width: Responsive.width(100, context),
+                          //         decoration: ShapeDecoration(
+                          //           color: themeChange.getThem()
+                          //               ? AppThemeData.grey900
+                          //               : AppThemeData.grey50,
+                          //           shape: RoundedRectangleBorder(
+                          //               borderRadius: BorderRadius.circular(12)),
+                          //         ),
+                          //         child: Padding(
+                          //           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          //           child: Column(children: [
+                          //             cardDecoration(
+                          //               themeChange,
+                          //               controller,
+                          //               Container(
+                          //                 width: 44,
+                          //                 height: 44,
+                          //                 decoration: ShapeDecoration(
+                          //                   color: themeChange.getThem()
+                          //                       ? AppThemeData.secondary600
+                          //                       : AppThemeData.goldenrodDark.withAlpha(30),
+                          //                   shape: RoundedRectangleBorder(
+                          //                     borderRadius: BorderRadius.circular(120),
+                          //                   ),
+                          //                 ),
+                          //                 child: Padding(
+                          //                   padding: const EdgeInsets.all(12),
+                          //                   child: SvgPicture.asset(
+                          //                     "assets/icons/ic_manage_delivery_man.svg",
+                          //                     colorFilter: ColorFilter.mode(AppThemeData.goldenrodDark, BlendMode.srcIn),
+                          //                   ),
+                          //                 ),
+                          //               ),
+                          //               "Manage Delivery Man",
+                          //               // () {
+                          //               //   Get.to(DriverListScreen());
+                          //               // },
+                          //             )
+                          //           ]),
+                          //         ),
+                          //       )
+                          //     ],
+                          //   ),
+                          // ),
                           // Offers & Discounts Section
                           // Visibility(
                           //   visible: true,

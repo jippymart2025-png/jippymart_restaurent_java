@@ -1010,8 +1010,8 @@ class WalletScreen extends StatelessWidget {
                                                 : "stripe",
                               );
                               String userId = await FireStoreUtils.getCurrentUid();
-                              await FireStoreUtils.withdrawWalletAmount(
-                                  withdrawHistory);
+                              // await FireStoreUtils.withdrawWalletAmount(
+                              //     withdrawHistory);
                               await FireStoreUtils.updateUserWallet(
                                       amount:
                                           "-${controller.amountTextFieldController.value.text}",

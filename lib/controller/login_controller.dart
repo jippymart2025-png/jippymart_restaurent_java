@@ -35,7 +35,7 @@ class LoginController extends GetxController {
         return;
       }
 
-      FireStoreUtils.getAvalibleDrivers();
+      // FireStoreUtils.getAvalibleDrivers();
 
       bool isLogin = await FireStoreUtils.isLogin();
       if (!isLogin) {

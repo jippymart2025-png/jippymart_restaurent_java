@@ -12,7 +12,6 @@ import 'package:jippymart_restaurant/app/chat_screens/ChatVideoContainer.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/models/AttributesModel.dart';
-import 'package:jippymart_restaurant/models/admin_commission.dart';
 import 'package:jippymart_restaurant/models/advertisement_model.dart';
 import 'package:jippymart_restaurant/models/conversation_model.dart';
 import 'package:jippymart_restaurant/models/document_model.dart';
@@ -20,7 +19,6 @@ import 'package:jippymart_restaurant/models/driver_document_model.dart';
 import 'package:jippymart_restaurant/models/email_template_model.dart';
 import 'package:jippymart_restaurant/models/coupon_model.dart';
 import 'package:jippymart_restaurant/models/inbox_model.dart';
-import 'package:jippymart_restaurant/models/mail_setting.dart';
 import 'package:jippymart_restaurant/models/notification_model.dart';
 import 'package:jippymart_restaurant/models/on_boarding_model.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
@@ -50,8 +48,6 @@ import 'package:jippymart_restaurant/models/wallet_transaction_model.dart';
 import 'package:jippymart_restaurant/models/withdraw_method_model.dart';
 import 'package:jippymart_restaurant/models/withdrawal_model.dart';
 import 'package:jippymart_restaurant/models/zone_model.dart';
-import 'package:jippymart_restaurant/service/audio_player_service.dart';
-import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
@@ -69,11 +65,6 @@ import '../models/outlet_product_model.dart';
 import '../models/promotion_models.dart';
 import '../models/variant_group_model.dart';
 import 'common.dart';
-final headers = {
-  "Accept": "application/json",
-  "Content-Type": "application/json",
-  "User-Agent": "Flutter-App",
-};
 
 class _ProductCacheEntry {
   final List<ProductModel> list;
@@ -865,7 +856,7 @@ class FireStoreUtils {
     try {
       final response = await http.get(
         Uri.parse('${Constant.baseUrl}onboarding/restaurantApp'),
-        headers: headers
+        headers: await getHeaders()
       );
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -893,7 +884,7 @@ class FireStoreUtils {
     try {
       // Convert Timestamps to JSON-serializable format before encoding
       Map<String, dynamic> transactionJson = _convertTimestampsToJson(walletTransactionModel.toJson());
-      
+
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
         headers: {
