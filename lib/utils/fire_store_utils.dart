@@ -160,8 +160,8 @@ class FireStoreUtils {
   // }
 
   static Future<String> getCurrentUid() async {
-    final firebaseId = await getFirebaseId() ?? '';
-    if (firebaseId.isNotEmpty) return firebaseId;
+    // final firebaseId = await getFirebaseId() ?? '';
+    // if (firebaseId.isNotEmpty) return firebaseId;
 
     final userId = Preferences.getInt('userId');
     if (userId > 0) return userId.toString();
@@ -181,10 +181,6 @@ class FireStoreUtils {
       return true;
     }
 
-    final userId = await getFirebaseId() ?? '';
-    if (userId.isNotEmpty) {
-      return await userExistOrNot(userId);
-    }
     return false;
   }
 
@@ -732,8 +728,8 @@ class FireStoreUtils {
   static Future<bool> updateUser(UserModel userModel) async {
     bool isUpdate = false;
     try {
-      String? userId = await getFirebaseId();
-      userModel.id = userId;
+      // String? userId = await getFirebaseId();
+      // userModel.id = userId;
       debugPrint("updateUser  ${ userModel.toJson()}");
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/updateUser'),
@@ -1328,7 +1324,7 @@ class FireStoreUtils {
 
     for (var element in orderModel.products!) {
       final discountPrice = double.tryParse(element.discountPrice?.toString() ?? '0') ?? 0.0;
-      
+
       if (discountPrice <= 0) {
         subTotal = subTotal +
             (double.tryParse(element.price?.toString() ?? '0') ?? 0) *
@@ -1362,7 +1358,7 @@ class FireStoreUtils {
 
     double basePrice = 0;
     final discount = double.tryParse(orderModel.discount?.toString() ?? '0') ?? 0.0;
-    
+
     // var totalamount = (subTotal + taxAmount) - discount - specialDiscount;
     if (Constant.adminCommission != null && Constant.adminCommission!.isEnabled == true) {
       final adminCommissionPercent = double.tryParse(orderModel.adminCommission?.toString() ?? '0') ?? 0.0;
@@ -1386,7 +1382,7 @@ class FireStoreUtils {
     // }
     // Performance Optimization: Handle null vendor case (can happen when running in parallel)
     String? vendorAuthorId;
-    
+
     // if (orderModel.vendor != null && orderModel.vendor!.author != null) {
     //   vendorAuthorId = orderModel.vendor!.author.toString();
     // } else if (orderModel.vendorID != null) {
@@ -1408,7 +1404,7 @@ class FireStoreUtils {
     //     log("Error fetching vendor for wallet transaction: $e");
     //   }
     // }
-    
+
     if (vendorAuthorId == null || vendorAuthorId.isEmpty) {
       log("Warning: Cannot determine vendor author ID, skipping wallet transaction. Order ID: ${orderModel.id}");
       // Don't throw error - order update should still succeed
@@ -1452,7 +1448,7 @@ class FireStoreUtils {
     try {
       // Convert Timestamps to JSON-serializable format before encoding
       Map<String, dynamic> transactionJson = _convertTimestampsToJson(historyModel.toJson());
-      
+
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
         headers: {
@@ -2943,8 +2939,8 @@ class FireStoreUtils {
     DeliveryCharge? deliveryCharge;
     try {
       // Performance Optimization: Check cache first (transparent to caller)
-      if (!forceRefresh && 
-          _cachedDeliveryCharge != null && 
+      if (!forceRefresh &&
+          _cachedDeliveryCharge != null &&
           _deliveryChargeCacheTime != null) {
         final cacheAge = DateTime.now().difference(_deliveryChargeCacheTime!);
         if (cacheAge < _deliveryChargeCacheTTL) {
@@ -2961,7 +2957,7 @@ class FireStoreUtils {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         if (responseData['success'] == true && responseData['data'] != null) {
           deliveryCharge = DeliveryCharge.fromJson(responseData['data']);
-          
+
           // Performance Optimization: Cache the result
           _cachedDeliveryCharge = deliveryCharge;
           _deliveryChargeCacheTime = DateTime.now();
@@ -3259,16 +3255,16 @@ class FireStoreUtils {
 
   static Future<DriverDocumentModel?> getDocumentOfDriver() async {
     try {
-      String? userId = await getFirebaseId();
+      // String? userId = await getFirebaseId();
    String url =    '${Constant.baseUrl}documents/driver';
-      debugPrint("getDocumentOfDriver userId: $userId  $url");
+      // debugPrint("getDocumentOfDriver userId: $userId  $url");
       final response = await http.post(
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          "userId": userId,
+          // "userId": userId,
         }),
       );
       debugPrint("API Status Code: ${response.statusCode}");
@@ -4420,8 +4416,8 @@ class FireStoreUtils {
   static Future<List<UserModel>> getAvalibleDrivers({String? zoneId}) async {
     List<UserModel> driverList = [];
     try {
-      String? userId = await getFirebaseId();
-      log("getAvalibleDrivers :: 22  $userId");
+      // String? userId = await getFirebaseId();
+      // log("getAvalibleDrivers :: 22  $userId");
       // Make API call
       String url = "";
       if(zoneId==null){
