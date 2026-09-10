@@ -857,13 +857,21 @@ class LoginController extends GetxController {
     final username = usernameController.text.trim();
     final password = passwordController.text.trim();
 
+    // ------------------------------------------------------------
+    // Validation
+    // ------------------------------------------------------------
+
     if (username.isEmpty) {
-      ShowToastDialog.showToast('Please enter valid username'.tr);
+      ShowToastDialog.showToast(
+        'Please enter valid username'.tr,
+      );
       return;
     }
 
     if (password.isEmpty) {
-      ShowToastDialog.showToast('Please enter valid password'.tr);
+      ShowToastDialog.showToast(
+        'Please enter valid password'.tr,
+      );
       return;
     }
 
@@ -871,15 +879,29 @@ class LoginController extends GetxController {
     ShowToastDialog.showLoader('Please wait.'.tr);
 
     try {
+      // ----------------------------------------------------------
+      // STEP 1: Login API
+      // ----------------------------------------------------------
+
       final response = await loginWithUserNameAndPasswordApi(
         username: username,
         password: password,
       );
 
+      // ----------------------------------------------------------
+      // STEP 2: Check login response
+      // ----------------------------------------------------------
+
       if (response['success'] == false) {
-        ShowToastDialog.showToast(response['message'] ?? 'Login failed'.tr);
+        ShowToastDialog.showToast(
+          response['message'] ?? 'Login failed'.tr,
+        );
         return;
       }
+
+      // ----------------------------------------------------------
+      // STEP 3: Get JWT token
+      // ----------------------------------------------------------
 
       final token = response['jwt']?.toString().trim();
 
@@ -890,18 +912,63 @@ class LoginController extends GetxController {
         return;
       }
 
+      debugPrint('[Login] JWT token received');
+
+      // ----------------------------------------------------------
+      // STEP 4: Get user information
+      // ----------------------------------------------------------
+
       final userId = _parseInt(response['userId']) ?? 0;
 
       final role = _getRole(response);
 
-      final loginType = _resolveLoginType(role: role, response: response);
+      final loginType = _resolveLoginType(
+        role: role,
+        response: response,
+      );
+
+      debugPrint(
+        '[Login] '
+            'userId=$userId '
+            'role=$role '
+            'loginType=$loginType',
+      );
+
+      // ----------------------------------------------------------
+      // STEP 5: Validate login type
+      // ----------------------------------------------------------
 
       if (loginType.isEmpty) {
         await clearSession();
 
-        ShowToastDialog.showToast('Unknown user role'.tr);
+        ShowToastDialog.showToast(
+          'Unknown user role'.tr,
+        );
         return;
       }
+
+      // ----------------------------------------------------------
+      // STEP 6: SAVE TOKEN FIRST
+      //
+      // This MUST happen before getMerchantProfile()
+      // ----------------------------------------------------------
+
+      await _saveLoginSession(
+        userId: userId,
+        token: token,
+        role: role,
+        loginType: loginType,
+      );
+
+      debugPrint(
+        '[Login] Session/token saved successfully',
+      );
+
+      // ----------------------------------------------------------
+      // STEP 7: Now initialize Merchant / Outlet session
+      //
+      // getMerchantProfile() will now have access to authToken
+      // ----------------------------------------------------------
 
       final sessionResult = await _initializeLoginSession(
         loginType: loginType,
@@ -910,6 +977,10 @@ class LoginController extends GetxController {
         token: token,
         role: role,
       );
+
+      // ----------------------------------------------------------
+      // STEP 8: Check session initialization
+      // ----------------------------------------------------------
 
       if (!sessionResult) {
         await clearSession();
@@ -920,21 +991,26 @@ class LoginController extends GetxController {
         return;
       }
 
-      await _saveLoginSession(
-        userId: userId,
-        token: token,
-        role: role,
-        loginType: loginType,
+      // ----------------------------------------------------------
+      // STEP 9: Login successful
+      // ----------------------------------------------------------
+
+      ShowToastDialog.showToast(
+        'Login Successful'.tr,
       );
 
-      ShowToastDialog.showToast('Login Successful'.tr);
+      // ----------------------------------------------------------
+      // STEP 10: Navigate to dashboard
+      // ----------------------------------------------------------
 
       await _navigateToDashboard();
     } catch (e, stackTrace) {
       debugPrint('[Login] error=$e');
       debugPrint('[Login] stackTrace=$stackTrace');
 
-      ShowToastDialog.showToast(_getLoginErrorMessage(e));
+      ShowToastDialog.showToast(
+        _getLoginErrorMessage(e),
+      );
     } finally {
       isLoading.value = false;
       ShowToastDialog.closeLoader();
