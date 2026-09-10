@@ -702,20 +702,20 @@ class SignupScreen extends StatelessWidget {
                 );
               }),
               const SizedBox(height: 12),
-              InkWell(
-                onTap: () => _openLocationPicker(context, controller),
-                child: IgnorePointer(
-                  child: TextField(
-                    controller: controller.locationDisplayController,
-                    decoration: const InputDecoration(
-                      labelText: "Outlet Location",
-                      hintText: "Tap to select on map",
-                      suffixIcon: Icon(Icons.location_on),
-                    ),
-                    maxLines: 2,
-                  ),
-                ),
-              ),
+              // InkWell(
+              //   onTap: () => _openLocationPicker(context, controller),
+              //   child: IgnorePointer(
+              //     child: TextField(
+              //       controller: controller.locationDisplayController,
+              //       decoration: const InputDecoration(
+              //         labelText: "Outlet Location",
+              //         hintText: "Tap to select on map",
+              //         suffixIcon: Icon(Icons.location_on),
+              //       ),
+              //       maxLines: 2,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
