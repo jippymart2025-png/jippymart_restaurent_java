@@ -277,65 +277,65 @@ class SignupScreen extends StatelessWidget {
   //   );
   // }
 
-  void _openLocationPicker(BuildContext context, SignupController controller) {
-    Constant.checkPermission(
-      context: context,
-      onTap: () async {
-        try {
-          // 1. Check if location services are enabled on the device
-          bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-          if (!serviceEnabled) {
-            ShowToastDialog.showToast("Please enable location services".tr);
-            return;
-          }
-
-          // 2. Check current permission status
-          LocationPermission permission = await Geolocator.checkPermission();
-
-          if (permission == LocationPermission.denied) {
-            // 3. Ask for permission if not granted yet
-            permission = await Geolocator.requestPermission();
-            if (permission == LocationPermission.denied) {
-              ShowToastDialog.showToast("Location permission denied".tr);
-              return;
-            }
-          }
-
-          if (permission == LocationPermission.deniedForever) {
-            ShowToastDialog.showToast(
-              "Location permission permanently denied, please enable it from app settings".tr,
-            );
-            return;
-          }
-
-          // 4. Permission granted — fetch current location
-          ShowToastDialog.showLoader("Getting location...".tr);
-          final position = await Geolocator.getCurrentPosition();
-          ShowToastDialog.closeLoader();
-
-          // Always use the real GPS position (MapPickerPage only renders GoogleMap)
-          final initialPosition = LatLng(position.latitude, position.longitude);
-
-          final result = await Get.to(
-                () => MapPickerPage(initialPosition: initialPosition),
-            fullscreenDialog: Constant.selectedMapType != 'osm',
-          );
-
-          if (result != null) {
-            final data = result as Map<String, dynamic>;
-            final LatLng selectedLatLng = data['location'] as LatLng;
-            final String selectedAddress = data['address'] as String? ?? '';
-            controller.latitudeController.value.text = selectedLatLng.latitude.toString();
-            controller.longitudeController.value.text = selectedLatLng.longitude.toString();
-            controller.locationDisplayController.text = selectedAddress;
-          }
-        } catch (e) {
-          ShowToastDialog.closeLoader();
-          ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
-        }
-      },
-    );
-  }  // call site, inside build():
+  // void _openLocationPicker(BuildContext context, SignupController controller) {
+  //   Constant.checkPermission(
+  //     context: context,
+  //     onTap: () async {
+  //       try {
+  //         // 1. Check if location services are enabled on the device
+  //         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //         if (!serviceEnabled) {
+  //           ShowToastDialog.showToast("Please enable location services".tr);
+  //           return;
+  //         }
+  //
+  //         // 2. Check current permission status
+  //         LocationPermission permission = await Geolocator.checkPermission();
+  //
+  //         if (permission == LocationPermission.denied) {
+  //           // 3. Ask for permission if not granted yet
+  //           permission = await Geolocator.requestPermission();
+  //           if (permission == LocationPermission.denied) {
+  //             ShowToastDialog.showToast("Location permission denied".tr);
+  //             return;
+  //           }
+  //         }
+  //
+  //         if (permission == LocationPermission.deniedForever) {
+  //           ShowToastDialog.showToast(
+  //             "Location permission permanently denied, please enable it from app settings".tr,
+  //           );
+  //           return;
+  //         }
+  //
+  //         // 4. Permission granted — fetch current location
+  //         ShowToastDialog.showLoader("Getting location...".tr);
+  //         final position = await Geolocator.getCurrentPosition();
+  //         ShowToastDialog.closeLoader();
+  //
+  //         // Always use the real GPS position (MapPickerPage only renders GoogleMap)
+  //         final initialPosition = LatLng(position.latitude, position.longitude);
+  //
+  //         final result = await Get.to(
+  //               () => MapPickerPage(initialPosition: initialPosition),
+  //           fullscreenDialog: Constant.selectedMapType != 'osm',
+  //         );
+  //
+  //         if (result != null) {
+  //           final data = result as Map<String, dynamic>;
+  //           final LatLng selectedLatLng = data['location'] as LatLng;
+  //           final String selectedAddress = data['address'] as String? ?? '';
+  //           controller.latitudeController.value.text = selectedLatLng.latitude.toString();
+  //           controller.longitudeController.value.text = selectedLatLng.longitude.toString();
+  //           controller.locationDisplayController.text = selectedAddress;
+  //         }
+  //       } catch (e) {
+  //         ShowToastDialog.closeLoader();
+  //         ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
+  //       }
+  //     },
+  //   );
+  // }  // call site, inside build():
   //merchantForm(controller, themeChange, context),
   Widget merchantForm(
       SignupController controller,
@@ -702,20 +702,20 @@ class SignupScreen extends StatelessWidget {
                 );
               }),
               const SizedBox(height: 12),
-              InkWell(
-                onTap: () => _openLocationPicker(context, controller),
-                child: IgnorePointer(
-                  child: TextField(
-                    controller: controller.locationDisplayController,
-                    decoration: const InputDecoration(
-                      labelText: "Outlet Location",
-                      hintText: "Tap to select on map",
-                      suffixIcon: Icon(Icons.location_on),
-                    ),
-                    maxLines: 2,
-                  ),
-                ),
-              ),
+              // InkWell(
+              //   onTap: () => _openLocationPicker(context, controller),
+              //   child: IgnorePointer(
+              //     child: TextField(
+              //       controller: controller.locationDisplayController,
+              //       decoration: const InputDecoration(
+              //         labelText: "Outlet Location",
+              //         hintText: "Tap to select on map",
+              //         suffixIcon: Icon(Icons.location_on),
+              //       ),
+              //       maxLines: 2,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
