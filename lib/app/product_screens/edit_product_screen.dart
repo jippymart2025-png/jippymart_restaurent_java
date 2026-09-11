@@ -388,8 +388,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
                 if (variantGroups != null) {
                   setState(() {
-                    // Update your variant groups here
-                    // _variantGroups = variantGroups;
+                    _variantGroupsOverride = variantGroups;
+                    _hasOptions = variantGroups.isNotEmpty;
                   });
                 }
               },            ),
