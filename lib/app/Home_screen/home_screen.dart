@@ -1,6 +1,3 @@
-
-
-
 import 'dart:convert';
 
 import 'package:bottom_picker/resources/extensions.dart';
