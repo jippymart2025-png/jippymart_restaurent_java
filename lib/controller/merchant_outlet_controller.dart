@@ -24,6 +24,21 @@ class MerchantOutletController extends GetxController {
   final RxString errorMessage = ''.obs;
   final Rxn<MerchantModel> merchantProfile = Rxn<MerchantModel>();
 
+  /// Persists the backend `isApproved` of the current session so the UI can
+  /// gate the dashboard behind document verification (merchant or outlet).
+  static Future<void> persistApprovalState(bool? isApproved) async {
+    await Preferences.setString(
+      'isCurrentSessionApproved',
+      isApproved == false ? 'false' : 'true',
+    );
+  }
+
+  /// True when the current merchant/outlet is backend-approved.
+  /// Defaults to approved so a missing value never locks a user out.
+  static bool get isCurrentSessionApproved =>
+      Preferences.getString('isCurrentSessionApproved',
+          defaultValue: 'true') != 'false';
+
   Future<void>? _sessionFuture;
   int? _resolvedMerchantId;
 
@@ -133,6 +148,8 @@ class MerchantOutletController extends GetxController {
     debugPrint("=========================================");
 
     merchantProfile.value = profile;
+
+    await persistApprovalState(profile.isApproved);
 
     final resolvedId = profile.merchantId?.toString().trim().isNotEmpty == true
         ? profile.merchantId.toString()
@@ -272,6 +289,10 @@ class MerchantOutletController extends GetxController {
     } else if (_resolveMerchantIdString().isEmpty) {
       debugPrint('[MerchantSession] enterOutletDashboard — merchantId missing');
       return false;
+    }
+
+    if (result.outlet != null) {
+      await persistApprovalState(result.outlet!.isApproved);
     }
 
     await Preferences.setInt('outletId', resolvedOutletId);

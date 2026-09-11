@@ -215,9 +215,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ── Body ──────────────────────────────────────────────────────────────────
   Widget _buildBody(DarkThemeProvider themeChange, HomeController ctrl,
       BuildContext context) {
-    // Not verified
-    if (Constant.isRestaurantVerification == true &&
-        ctrl.userModel.value.isDocumentVerify == false) {
+    // Not verified — backend merchant/outlet approval takes priority
+    if (!MerchantOutletController.isCurrentSessionApproved ||
+        (Constant.isRestaurantVerification == true &&
+            ctrl.userModel.value.isDocumentVerify == false)) {
       return _EmptyStateView(
         icon: 'assets/icons/ic_document.svg',
         title: 'Document Verification in Pending'.tr,

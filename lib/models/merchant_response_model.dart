@@ -25,6 +25,10 @@ class MerchantModel {
   // User type
   String? userType;
 
+  // Document URLs (verification)
+  String? aadhaarNumberUrl;
+  String? panNumberUrl;
+
   MerchantModel({
     this.merchantId,
     this.merchantName,
@@ -45,6 +49,8 @@ class MerchantModel {
     this.accountNumber,
     this.ifscCode,
     this.userType,
+    this.aadhaarNumberUrl,
+    this.panNumberUrl,
   });
 
   factory MerchantModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +74,9 @@ class MerchantModel {
       accountNumber: json['accountNumber'],
       ifscCode: json['ifscCode'],
       userType: json['userType'],
+      aadhaarNumberUrl:
+          json['aadhaarNumberUrl'] ?? json['aadharNumberUrl'],
+      panNumberUrl: json['panNumberUrl'],
     );
   }
 
@@ -92,6 +101,8 @@ class MerchantModel {
       "accountNumber": accountNumber,
       "ifscCode": ifscCode,
       "userType": userType,
+      "aadhaarNumberUrl": aadhaarNumberUrl,
+      "panNumberUrl": panNumberUrl,
     };
   }
 

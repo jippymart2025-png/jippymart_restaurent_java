@@ -1904,7 +1904,7 @@ class FireStoreUtils {
   static Future<OutletSingleProductModel?> getOutletSingleProductDetails(int productId) async {
     try {
       final headers = await getHeaders();
-      final url = '${Constant.baseUrl}fm/products/$productId';
+      final url = '${Constant.baseUrl}fm/products/getCompleteProductDetails/$productId';
 
       debugPrint('getOutletSingleProductDetails => $url');
       final response = await http.get(Uri.parse(url), headers: headers);
@@ -3655,6 +3655,87 @@ class FireStoreUtils {
       debugPrint("uploadOutletImage Error: $e");
       print(st);
       return null;
+    }
+  }
+//ENDED
+  /// POST /api/fm/outlets/saveOrUpdateDocuments — uploads verification
+  /// documents (Aadhaar/PAN for a merchant, FSSAI/GST for an outlet) via
+  /// multipart/form-data. Only the provided files are attached.
+  static Future<bool> saveOrUpdateDocuments({
+    required int entityId,
+    required String entityType,
+    File? aadharFile,
+    File? panFile,
+    File? fssaiFile,
+    File? gstFile,
+    File? rcCopyFile,
+    File? drivingLicenseFile,
+  }) async {
+    try {
+      if (entityId <= 0) {
+        debugPrint("saveOrUpdateDocuments: invalid entityId");
+        return false;
+      }
+
+      final token = await getAuthToken();
+      final url = '${Constant.baseUrl}fm/outlets/saveOrUpdateDocuments';
+
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers['Accept'] = 'application/json';
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = token;
+      }
+
+      request.fields['entityId'] = entityId.toString();
+      request.fields['entityType'] = entityType;
+
+      Future<void> attach(String field, File? file) async {
+        if (file == null || !file.existsSync()) return;
+        final mimeType = lookupMimeType(file.path) ?? 'image/jpeg';
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            field,
+            file.path,
+            filename: file.path.split('/').last,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
+
+      await attach('aadharFile', aadharFile)
+          .then((_) => attach('panFile', panFile))
+          .then((_) => attach('fssaiFile', fssaiFile))
+          .then((_) => attach('gstFile', gstFile))
+          .then((_) => attach('rcCopyFile', rcCopyFile))
+          .then((_) => attach('drivingLicenseFile', drivingLicenseFile));
+
+      debugPrint("saveOrUpdateDocuments URL: $url");
+      debugPrint(
+          "saveOrUpdateDocuments entityId=$entityId entityType=$entityType files=${request.files.length}");
+
+      final streamed =
+          await request.send().timeout(const Duration(seconds: 60));
+      final response = await http.Response.fromStream(streamed);
+
+      debugPrint("saveOrUpdateDocuments Status: ${response.statusCode}");
+      debugPrint("saveOrUpdateDocuments Body: ${response.body}");
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final body =
+            response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+        if (body.isNotEmpty) {
+          try {
+            final json = jsonDecode(body);
+            if (json is Map && json['success'] == true) return true;
+          } catch (_) {}
+        }
+        return true;
+      }
+      return false;
+    } catch (e, st) {
+      debugPrint("saveOrUpdateDocuments Error: $e");
+      print(st);
+      return false;
     }
   }
 //ENDED

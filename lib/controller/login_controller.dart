@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:jippymart_restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:jippymart_restaurant/app/landing_screen.dart';
+import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/service/audio_player_service.dart';
@@ -1165,6 +1166,10 @@ class LoginController extends GetxController {
 
     await Preferences.setString(_keyMerchantId, merchantId.toString());
 
+    await MerchantOutletController.persistApprovalState(
+      result.outlet?.isApproved,
+    );
+
     debugPrint(
       '[OutletSession] '
           'outletId=$resolvedOutletId '
@@ -1272,7 +1277,7 @@ class LoginController extends GetxController {
           return;
       }
 
-      _goToDashboard();
+      await _goToDashboardOrVerification();
     } catch (e, stackTrace) {
       debugPrint('[SessionRestore] error=$e');
       debugPrint('[SessionRestore] stackTrace=$stackTrace');
@@ -1309,6 +1314,53 @@ class LoginController extends GetxController {
   // ---------------------------------------------------------------------------
 
   Future<void> _navigateToDashboard() async {
+    await _goToDashboardOrVerification();
+  }
+
+  /// True when the current merchant/outlet is approved by the backend.
+  /// Fails open (returns true) so a fetch error never locks a user out.
+  Future<bool> _isSessionApproved() async {
+    final loginType = Preferences.getString(_keyLoginType);
+    try {
+      if (loginType == 'OUTLET') {
+        final outletId = Preferences.getInt(_keyOutletId) > 0
+            ? Preferences.getInt(_keyOutletId)
+            : Preferences.getInt(_keySelectedOutletId);
+        if (outletId <= 0) return true;
+        final result = await FireStoreUtils.fetchOutletById(outletId);
+        return result.outlet?.isApproved ?? true;
+      }
+
+      if (Get.isRegistered<MerchantOutletController>()) {
+        final profile = Get.find<MerchantOutletController>()
+            .merchantProfile
+            .value;
+        if (profile != null) return profile.isApproved ?? true;
+      }
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('[Session] approval check failed: $e');
+      debugPrint('$stackTrace');
+      return true;
+    }
+  }
+
+  /// Routes an unapproved merchant/outlet to the document-verification
+  /// screen and everyone else to the dashboard.
+  Future<void> _goToDashboardOrVerification() async {
+    final approved = await _isSessionApproved();
+    await MerchantOutletController.persistApprovalState(approved);
+
+    if (!approved) {
+      debugPrint('[Session] Not approved — showing verification screen');
+      Get.offAll(
+        () => const VerificationScreen(),
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 400),
+      );
+      return;
+    }
+
     if (Get.isRegistered<DashBoardController>()) {
       Get.delete<DashBoardController>(force: true);
     }

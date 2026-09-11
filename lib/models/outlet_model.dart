@@ -39,6 +39,11 @@ class OutletModel {
   final String? fssaiNumber;
   final String? gstNumber;
   final bool? isGstApplied;
+  // Document URLs (verification)
+  final String? aadhaarNumberUrl;
+  final String? panNumberUrl;
+  final String? fssaiNumberUrl;
+  final String? gstNumberUrl;
 
   OutletModel({
     this.outletId,
@@ -79,6 +84,10 @@ class OutletModel {
     this.ifscCode,
     this.bankName,
     this.accountHolderName,
+    this.aadhaarNumberUrl,
+    this.panNumberUrl,
+    this.fssaiNumberUrl,
+    this.gstNumberUrl,
   });
 
   factory OutletModel.fromJson(Map<String, dynamic> json) =>
@@ -126,7 +135,10 @@ class OutletModel {
         outletPicUrl: sanitized['outletPicUrl']?.toString(),
         latitude: parseDoubleSafe(sanitized['latitude']),
         longitude: parseDoubleSafe(sanitized['longitude']),
-
+        aadhaarNumberUrl: sanitized['aadhaarNumberUrl']?.toString(),
+        panNumberUrl: sanitized['panNumberUrl']?.toString(),
+        fssaiNumberUrl: sanitized['fssaiNumberUrl']?.toString(),
+        gstNumberUrl: sanitized['gstNumberUrl']?.toString(),
       );
     } catch (e, stackTrace) {
       debugPrint('[OutletModel] fromJsonSafe fallback — $e\n$stackTrace');
