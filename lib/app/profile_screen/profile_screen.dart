@@ -34,7 +34,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../utils/const/image_const.dart';
 import '../promotions/promotion_plan_types_screen.dart';
-import '../subscriptions/subscription_plans_screen.dart';
+import '../subscriptions/screens/subscription_plans_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
