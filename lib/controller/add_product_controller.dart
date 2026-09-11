@@ -510,7 +510,7 @@ class AddProductController extends GetxController {
       } else {
         productModel.value.availableTimings = null;
       }
-      await FireStoreUtils.updateProduct(productModel.value);
+      // await FireStoreUtils.updateProduct(productModel.value);
       ShowToastDialog.closeLoader();
       ShowToastDialog.showToast("Product saved successfully".tr);
       Get.back(result: true);

@@ -1148,69 +1148,7 @@ class _SelectedProductForm extends StatelessWidget {
     );
   }
 }
-// class _VariantsButton extends StatelessWidget {
-//   const _VariantsButton({
-//     required this.id,
-//     required this.variantGroups,
-//     required this.isDark,
-//     required this.onSaved,
-//   });
-//
-//   final String id;
-//   final List<StagedVariantGroup> variantGroups;
-//   final bool isDark;
-//   final ValueChanged<List<StagedVariantGroup>> onSaved;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final count = variantGroups.length;
-//     return GestureDetector(
-//       onTap: () async {
-//         final result = await showModalBottomSheet<List<StagedVariantGroup>>(
-//           context: context,
-//           isScrollControlled: true,
-//           builder: (_) => VariantBuilderSheet(initialGroups: variantGroups),
-//         );
-//         if (result != null) onSaved(result);
-//       },
-//       child: Container(
-//         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-//         decoration: BoxDecoration(
-//           color: count > 0
-//               ? ColorConst.orange.withOpacity(0.08)
-//               : (isDark ? AppThemeData.grey700 : Colors.white),
-//           borderRadius: BorderRadius.circular(10),
-//           border: Border.all(
-//             color: count > 0
-//                 ? ColorConst.orange.withOpacity(0.4)
-//                 : (isDark ? AppThemeData.grey600 : Colors.grey.shade300),
-//           ),
-//         ),
-//         child: Row(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Icon(Icons.tune_rounded,
-//                 size: 15,
-//                 color: count > 0
-//                     ? ColorConst.orange
-//                     : (isDark ? AppThemeData.grey400 : AppThemeData.grey600)),
-//             const SizedBox(width: 6),
-//             Text(
-//               count > 0 ? '$count variant group(s)' : 'Add variants',
-//               style: TextStyle(
-//                 fontSize: 12,
-//                 fontFamily: AppThemeData.medium,
-//                 color: count > 0
-//                     ? ColorConst.orange
-//                     : (isDark ? AppThemeData.grey400 : AppThemeData.grey600),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Switch row — replaces ToggleChip; cleaner for publish/available
 // ─────────────────────────────────────────────────────────────────────────────

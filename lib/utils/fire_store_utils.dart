@@ -2286,7 +2286,6 @@ class FireStoreUtils {
 
   static Future<CreateMasterProductResponse?> createMasterProduct(CreateMasterProductRequest request,) async {
     try {
-      //final token = Preferences.getString('authToken');
       final headers = await getHeaders();
       final response = await http.post(
         Uri.parse(
@@ -2308,33 +2307,33 @@ class FireStoreUtils {
       return null;
     }
   }
-  static Future<bool> updateProduct(ProductModel productModel) async {
-    bool isUpdate = false;
-    try {
-      log("updateProduct ${productModel.toJson()} ");
-      debugPrint("updateProduct url  ${productModel.id} ");
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/products'
-            // '/${productModel.id}'
-        ),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(productModel.toJson()),
-      );
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        isUpdate = true;
-        invalidateProductCache(Constant.userModel?.vendorID);
-      } else {
-        debugPrint("Failed to update product: ${response.statusCode} - ${response.body}");
-        isUpdate = false;
-      }
-    } catch (error) {
-      debugPrint("Failed to update productss: $error");
-      isUpdate = false;
-    }
-    return isUpdate;
-  }
+  // static Future<bool> updateProduct(ProductModel productModel) async {
+  //   bool isUpdate = false;
+  //   try {
+  //     log("updateProduct ${productModel.toJson()} ");
+  //     debugPrint("updateProduct url  ${productModel.id} ");
+  //     final response = await http.post(
+  //       Uri.parse('${Constant.baseUrl}restaurant/products'
+  //           // '/${productModel.id}'
+  //       ),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: json.encode(productModel.toJson()),
+  //     );
+  //     if (response.statusCode >= 200 && response.statusCode < 300) {
+  //       isUpdate = true;
+  //       invalidateProductCache(Constant.userModel?.vendorID);
+  //     } else {
+  //       debugPrint("Failed to update product: ${response.statusCode} - ${response.body}");
+  //       isUpdate = false;
+  //     }
+  //   } catch (error) {
+  //     debugPrint("Failed to update productss: $error");
+  //     isUpdate = false;
+  //   }
+  //   return isUpdate;
+  // }
 
   /// Updates a master product via the Java API PUT endpoint.
   static Future<bool> updateMasterProduct(int masterProductId, Map<String, dynamic> payload) async {

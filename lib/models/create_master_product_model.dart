@@ -9,6 +9,7 @@ class CreateMasterProductRequest {
   final bool isVeg;
   final String foodType;
   final String cuisineType;
+  final String productType;
 
   CreateMasterProductRequest({
     required this.categoryId,
@@ -21,6 +22,7 @@ class CreateMasterProductRequest {
     required this.isVeg,
     this.foodType = "",
     this.cuisineType = "",
+    this.productType = "",
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class CreateMasterProductRequest {
       "isVeg": isVeg,
       "foodType": foodType,
       "cuisineType": cuisineType,
+      "productType" : "p"
     };
   }
 }

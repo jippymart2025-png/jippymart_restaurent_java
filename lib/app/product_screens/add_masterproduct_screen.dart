@@ -102,12 +102,12 @@ class AddMasterProductScreen extends StatelessWidget {
                     textInputType: TextInputType.multiline,
                     textInputAction: TextInputAction.newline,
                   ),
-                  TextFieldWidget(
-                    title: 'Food Type'.tr,
-                    hintText: 'e.g. VEG OR NON-VEG'.tr,
-                    controller: controller.foodTypeController,
-                    textInputAction: TextInputAction.next,
-                  ),
+                  // TextFieldWidget(
+                  //   title: 'Food Type'.tr,
+                  //   hintText: 'e.g. VEG OR NON-VEG'.tr,
+                  //   controller: controller.foodTypeController,
+                  //   textInputAction: TextInputAction.next,
+                  // ),
                   TextFieldWidget(
                     title: 'Cuisine Type'.tr,
                     hintText: 'e.g. Indian'.tr,
@@ -361,56 +361,6 @@ class _FormCard extends StatelessWidget {
   }
 }
 
-class _VegToggle extends StatelessWidget {
-  const _VegToggle({
-    required this.controller,
-    required this.isDark,
-  });
-
-  final AddMasterProductController controller;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(
-      () => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: isDark ? AppThemeData.grey900 : AppThemeData.grey50,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              controller.isVeg.value ? Icons.eco : Icons.restaurant,
-              color: controller.isVeg.value ? Colors.green : Colors.red,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                controller.isVeg.value ? 'Vegetarian'.tr : 'Non-Vegetarian'.tr,
-                style: TextStyle(
-                  fontFamily: AppThemeData.medium,
-                  fontSize: 14,
-                  color: isDark
-                      ? AppThemeData.grey100
-                      : AppThemeData.grey900,
-                ),
-              ),
-            ),
-            Switch(
-              value: controller.isVeg.value,
-              activeColor: Colors.green,
-              onChanged: (v) => controller.isVeg.value = v,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _PickerOption extends StatelessWidget {
   const _PickerOption({
     required this.icon,
@@ -434,6 +384,72 @@ class _PickerOption extends StatelessWidget {
             Icon(icon, size: 32, color: ColorConst.orange),
             const SizedBox(height: 6),
             Text(label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VegToggle extends StatelessWidget {
+  const _VegToggle({
+    required this.controller,
+    required this.isDark,
+  });
+
+  final AddMasterProductController controller;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+          () => Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppThemeData.grey900
+              : AppThemeData.grey50,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              controller.isVeg.value
+                  ? Icons.eco
+                  : Icons.restaurant,
+              color: controller.isVeg.value
+                  ? Colors.green
+                  : Colors.red,
+              size: 20,
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Text(
+                controller.isVeg.value
+                    ? 'Vegetarian'.tr
+                    : 'Non-Vegetarian'.tr,
+                style: TextStyle(
+                  fontFamily: AppThemeData.medium,
+                  fontSize: 14,
+                  color: isDark
+                      ? AppThemeData.grey100
+                      : AppThemeData.grey900,
+                ),
+              ),
+            ),
+
+            Switch(
+              value: controller.isVeg.value,
+              activeColor: Colors.green,
+              onChanged: (value) {
+                controller.updateFoodType(value);
+              },
+            ),
           ],
         ),
       ),
