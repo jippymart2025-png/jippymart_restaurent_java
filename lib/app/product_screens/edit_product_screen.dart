@@ -193,30 +193,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
       debugPrint('Error loading categories: $e');
     }
   }
-  /// Refreshes the product details without discarding the variant state the
-  /// user changed locally (so newly added variants stay marked as present).
-  Future<void> _refreshProductDetailsKeepingVariantState() async {
-    setState(() => _isLoading = true);
-
-    final data = await FireStoreUtils.getOutletSingleProductDetails(widget.productId);
-
-    if (data != null) {
-      _originalProduct = data;
-      setState(() {
-        _nameCtrl.text = data.productName ?? '';
-        _descCtrl.text = data.description ?? '';
-        _merchantPriceCtrl.text = data.merchantPrice?.toString() ?? '';
-        _imageLinkCtrl.text = data.imageLink ?? '';
-        _foodType = (data.isVeg == true) ? 'Veg' : 'Non-Veg';
-        _selectedCategoryId = data.outletCategoryId;
-        // Deliberately do NOT touch _hasOptions or _variantGroupsOverride —
-        // they hold the user's just-created variants and must be preserved.
-      });
-    }
-
-    setState(() => _isLoading = false);
-  }
-
   Future<void> _saveProduct() async {
     if (_nameCtrl.text.trim().isEmpty) {
       Get.snackbar('Error', 'Product name cannot be empty', snackPosition: SnackPosition.BOTTOM);

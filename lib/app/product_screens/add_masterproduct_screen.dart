@@ -21,6 +21,8 @@ class AddMasterProductScreen extends StatelessWidget {
     this.categoryName,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<DarkThemeProvider>(context);
