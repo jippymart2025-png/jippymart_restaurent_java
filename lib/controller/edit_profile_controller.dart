@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/models/outlet_model.dart';
@@ -41,6 +42,7 @@ class EditProfileController extends GetxController {
 
   RxBool isLoading = true.obs;
   Rx<UserModel> userModel = UserModel().obs;
+  Rxn<MerchantModel> merchantModel = Rxn<MerchantModel>();
 
   Rx<TextEditingController> firstNameController = TextEditingController().obs;
   Rx<TextEditingController> lastNameController = TextEditingController().obs;
@@ -392,8 +394,8 @@ class EditProfileController extends GetxController {
     print("merchantId = $merchantId");
     print("merchantName = ${value?.merchantName}");
     print("businessType = ${value?.merchantBusinessType}");
-    print("email = ${value?.email}");
-    print("phone = ${value?.phoneNumber}");
+    print("email = ${value?.merchantEmail}");
+    print("phone = ${value?.merchantPhone}");
     print("bankName = ${value?.bankName}");
     print("bankNameController = ${bankNameController.value.text}");
     print("accountNumberController = ${accountNumberController.value.text}");
@@ -402,14 +404,13 @@ class EditProfileController extends GetxController {
 
     //
     if (value != null) {
-      userModel.value = value;
+      merchantModel.value = value;
       // firstNameController.value.text = value.firstName ?? '';
       // lastNameController.value.text = value.lastName ?? '';
 
-      emailController.value.text = value.email ?? '';
-      phoneNumberController.value.text = value.phoneNumber ?? '';
-      countryCodeController.value.text = value.countryCode ?? '+91';
-      profileImage.value = value.profilePictureURL ?? '';
+      emailController.value.text = value.merchantEmail ?? '';
+      phoneNumberController.value.text = value.merchantPhone ?? '';
+      countryCodeController.value.text = '+91';
 
       // New fields
       merchantNameController.value.text = value.merchantName ?? '';
@@ -454,20 +455,21 @@ class EditProfileController extends GetxController {
         );
       }
 
-      userModel.value.merchantName = merchantNameController.value.text;
-      userModel.value.merchantBusinessType = businessTypeController.value.text;
-      userModel.value.profilePictureURL = profileImage.value;
-      userModel.value.accountNumber = accountNumberController.value.text;
-      userModel.value.ifscCode = ifscCodeController.value.text;
-      userModel.value.bankName = bankNameController.value.text;
-      userModel.value.accountHolderName = accountHolderNameController.value.text;
+      merchantModel.value ??= MerchantModel();
+      merchantModel.value!.merchantName = merchantNameController.value.text;
+      merchantModel.value!.merchantBusinessType = businessTypeController.value.text;
+      merchantModel.value!.accountNumber = accountNumberController.value.text;
+      merchantModel.value!.ifscCode = ifscCodeController.value.text;
+      merchantModel.value!.bankName = bankNameController.value.text;
+      merchantModel.value!.accountHolderName = accountHolderNameController.value.text;
+      merchantModel.value!.status = statusController.value.text;
 
-      String merchantId = userModel.value.merchantId ??
+      String merchantId = merchantModel.value?.merchantId?.toString() ??
           Preferences.getString('merchantId');
 
       final success = await FireStoreUtils.updateMerchantProfile(
         merchantId,
-        userModel.value,
+        merchantModel.value!,
       );
       if (success) {
         Get.back(result: true);

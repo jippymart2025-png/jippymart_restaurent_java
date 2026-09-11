@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/merchant_outlet_controller.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
@@ -16,6 +17,7 @@ class ProfileController extends GetxController {
   RxBool isLoading = true.obs;
 
   Rx<UserModel> userModel = UserModel().obs;
+  Rxn<MerchantModel> merchantModel = Rxn<MerchantModel>();
 
   @override
   void onInit() {
@@ -80,8 +82,12 @@ class ProfileController extends GetxController {
         final cached =
             Get.find<MerchantOutletController>().merchantProfile.value;
         if (cached != null) {
-          userModel.value = cached;
-          Constant.userModel = cached;
+          merchantModel.value = cached;
+          Constant.merchantModel = cached;
+          // Map merchant display fields into userModel for existing UI.
+          userModel.value.email = cached.merchantEmail ?? cached.merchantName ?? '';
+          userModel.value.phoneNumber = cached.merchantPhone;
+          Constant.userModel = userModel.value;
           debugPrint('[Profile] Using cached merchant profile (no API call)');
           isLoading.value = false;
           return;
@@ -91,8 +97,13 @@ class ProfileController extends GetxController {
       String merchantId = Preferences.getString('merchantId');
       final value = await FireStoreUtils.getMerchantProfile(merchantId);
       if (value != null) {
-        userModel.value = value;
-        Constant.userModel = value;
+        merchantModel.value = value;
+        Constant.merchantModel = value;
+        // Map merchant display fields into userModel for existing UI.
+        userModel.value.email = value.merchantEmail ?? value.merchantName ?? '';
+        userModel.value.phoneNumber = value.merchantPhone;
+        userModel.value.walletAmount = 0;
+        Constant.userModel = userModel.value;
       }
     } catch (e) {
       debugPrint('getUserProfile error: $e');

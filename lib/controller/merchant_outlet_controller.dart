@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/outlet_model.dart';
-import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 
@@ -22,7 +22,7 @@ class MerchantOutletController extends GetxController {
       MerchantSessionState.initial.obs;
 
   final RxString errorMessage = ''.obs;
-  final Rxn<UserModel> merchantProfile = Rxn<UserModel>();
+  final Rxn<MerchantModel> merchantProfile = Rxn<MerchantModel>();
 
   Future<void>? _sessionFuture;
   int? _resolvedMerchantId;
@@ -133,10 +133,9 @@ class MerchantOutletController extends GetxController {
     debugPrint("=========================================");
 
     merchantProfile.value = profile;
-    Constant.userModel = profile;
 
-    final resolvedId = profile.merchantId?.trim().isNotEmpty == true
-        ? profile.merchantId!
+    final resolvedId = profile.merchantId?.toString().trim().isNotEmpty == true
+        ? profile.merchantId.toString()
         : merchantIdStr;
 
     if (resolvedId.isNotEmpty) {
@@ -210,8 +209,7 @@ class MerchantOutletController extends GetxController {
       if (userId > 0) return userId.toString();
     }
 
-    return merchantProfile.value?.merchantId?.trim() ??
-        Constant.userModel?.merchantId?.trim() ??
+    return merchantProfile.value?.merchantId?.toString() ??
         '';
   }
   Future<void> selectOutlet(OutletModel outlet) async {

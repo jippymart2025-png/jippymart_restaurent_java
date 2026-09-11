@@ -13,6 +13,7 @@ import 'package:jippymart_restaurant/models/coupon_model.dart';
 import 'package:jippymart_restaurant/models/currency_model.dart';
 import 'package:jippymart_restaurant/models/language_model.dart';
 import 'package:jippymart_restaurant/models/mail_setting.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/tax_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/zone_model.dart';
@@ -31,11 +32,13 @@ import 'package:video_player/video_player.dart';
 
 class Constant {
    // static String baseUrl  = "https://web.jippymart.in/api/";
-  static String baseUrl = "http://187.127.156.147:8084/api/";
+   static String baseUrl  = "http://192.168.0.13:8084/api/";
+  // static String baseUrl = "http://187.127.156.147:8084/api/";
   static String userRoleDriver = 'driver';
   static String userRoleCustomer = 'customer';
   static String userRoleMerchant = 'MERCHANT';
   static UserModel? userModel;
+  static MerchantModel? merchantModel;
   static const globalUrl = "https://jippymart.in/";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";
   static bool isZoneAvailable = false;

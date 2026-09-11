@@ -1178,7 +1178,7 @@ class LoginController extends GetxController {
       );
 
       if (profile != null) {
-        Constant.userModel = profile;
+        Constant.merchantModel = profile;
       } else {
         debugPrint('[OutletSession] Merchant profile not found');
       }
@@ -1300,7 +1300,7 @@ class LoginController extends GetxController {
     final profile = await FireStoreUtils.getMerchantProfile(merchantId);
 
     if (profile != null) {
-      Constant.userModel = profile;
+      Constant.merchantModel = profile;
     }
   }
 

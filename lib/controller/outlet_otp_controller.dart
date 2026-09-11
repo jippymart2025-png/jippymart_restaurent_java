@@ -63,8 +63,8 @@ class OutletOtpController extends GetxController {
 
     isResolvingEmail.value = true;
 
-    if (Constant.userModel?.email != null && Constant.userModel!.email!.isNotEmpty) {
-      merchantEmail = Constant.userModel!.email!;
+    if (Constant.merchantModel?.merchantEmail != null && Constant.merchantModel!.merchantEmail!.isNotEmpty) {
+      merchantEmail = Constant.merchantModel!.merchantEmail!;
     } else {
       final cached = Preferences.getString('merchantEmail');
       if (cached.isNotEmpty) {
@@ -72,8 +72,8 @@ class OutletOtpController extends GetxController {
       } else {
         try {
           final profile = await FireStoreUtils.getMerchantProfile(merchantId.toString());
-          if (profile?.email != null && profile!.email!.isNotEmpty) {
-            merchantEmail = profile.email!;
+          if (profile?.merchantEmail != null && profile!.merchantEmail!.isNotEmpty) {
+            merchantEmail = profile.merchantEmail!;
             await Preferences.setString('merchantEmail', merchantEmail);
           }
         } catch (e) {

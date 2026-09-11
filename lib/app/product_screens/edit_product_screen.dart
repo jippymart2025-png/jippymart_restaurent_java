@@ -367,28 +367,32 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 minimumSize: const Size.fromHeight(48),
               ),
               onPressed: () async {
+                if (_originalProduct == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Product information is not available yet.'),
+                    ),
+                  );
+                  return;
+                }
+
                 final variantGroups =
-                    await Navigator.of(context).push<List<ProductVariantGroupModel>>(
+                await Navigator.of(context).push<List<ProductVariantGroupModel>>(
                   MaterialPageRoute(
-                    builder: (_) => VariantBuilderSheetScreen(productId: widget.productId,
-                      originalProduct: _originalProduct!, ),
+                    builder: (_) => VariantBuilderSheetScreen(
+                      productId: widget.productId,
+                      originalProduct: _originalProduct!,
+                    ),
                   ),
                 );
+
                 if (variantGroups != null) {
-                  // The user just added/edited variants locally. Mark the
-                  // product as having variants so it is sent as `true` on save.
                   setState(() {
-                    _variantGroupsOverride = variantGroups;
-                    _hasOptions = variantGroups.any(
-                        (g) => g.options.isNotEmpty);
+                    // Update your variant groups here
+                    // _variantGroups = variantGroups;
                   });
-                  // Refresh the underlying product details, but keep the
-                  // variant state the user just changed. Refetching would
-                  // otherwise overwrite it with the still-unsaved server value.
-                  await _refreshProductDetailsKeepingVariantState();
                 }
-              },
-            ),
+              },            ),
             const SizedBox(height: 30),
             ElevatedButton(
               style: ElevatedButton.styleFrom(

@@ -261,21 +261,16 @@ class FireStoreUtils {
     }
   }
 
-  // ADD this new method below existing getUserProfile()
-  static Future<UserModel?> getMerchantProfile(String merchantId) async {
+  static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     try {
       if (merchantId.trim().isEmpty) {
         debugPrint("Merchant ID is empty");
         return null;
       }
 
-      final prefs = await SharedPreferences.getInstance();
-      //final token = prefs.getString('authToken') ?? '';
       final headers = await getHeaders();
       final url =
           '${Constant.baseUrl}fm/merchants/getMerchantProfile?merchantId=$merchantId';
-
-
 
       final response = await http.get(
         Uri.parse(url),
@@ -296,9 +291,8 @@ class FireStoreUtils {
             : Map<String, dynamic>.from(jsonData as Map);
 
         print(profileData);
-        return UserModel.fromJson(profileData);
+        return MerchantModel.fromJson(profileData);
       }
-
 
       debugPrint(
         "Failed to fetch profile. Status: ${response.statusCode}",
@@ -310,13 +304,10 @@ class FireStoreUtils {
       return null;
     }
   }
-  //(end)
 
 
-  static Future<bool> updateMerchantProfile(String merchantId, UserModel userModel) async {
+  static Future<bool> updateMerchantProfile(String merchantId, MerchantModel merchant) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('headers') ?? '';
       final headers = await getHeaders();
       final parsedMerchantId = int.tryParse(merchantId);
       if (parsedMerchantId == null) {
@@ -326,17 +317,17 @@ class FireStoreUtils {
 
       final Map<String, dynamic> body = {
         'merchantId': parsedMerchantId,
-        'merchantName': userModel.merchantName,
-        'businessType': userModel.merchantBusinessType,
-        'status': userModel.status,
-        'merchantEmail': userModel.email,
-        'merchantPhone': userModel.phoneNumber,
-        'bankId': userModel.bankId,
-        'recipientId': userModel.recipientId,
-        'accountNumber': userModel.accountNumber,
-        'ifscCode': userModel.ifscCode,
-        'bankName': userModel.bankName,
-        'accountHolderName': userModel.accountHolderName,
+        'merchantName': merchant.merchantName,
+        'businessType': merchant.merchantBusinessType,
+        'status': merchant.status,
+        'merchantEmail': merchant.merchantEmail,
+        'merchantPhone': merchant.merchantPhone,
+        'bankId': merchant.bankId,
+        'recipientId': merchant.recipientId,
+        'accountNumber': merchant.accountNumber,
+        'ifscCode': merchant.ifscCode,
+        'bankName': merchant.bankName,
+        'accountHolderName': merchant.accountHolderName,
         'userType': 'MERCHANT',
       };
 

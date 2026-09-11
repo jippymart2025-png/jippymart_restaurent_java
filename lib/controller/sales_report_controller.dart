@@ -121,7 +121,7 @@ class SalesReportController extends GetxController {
     final userId = Preferences.getInt('userId');
     if (userId > 0) return userId;
 
-    return int.tryParse(Constant.userModel?.merchantId?.trim() ?? '') ?? 0;
+    return int.tryParse(Constant.merchantModel?.merchantId?.toString() ?? '') ?? 0;
   }
 
   int _resolveActiveOutletId() {
