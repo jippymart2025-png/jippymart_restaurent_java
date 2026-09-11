@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
-import '../../../controller/add_from_catalog_controller.dart';
+import '../controllers/add_from_catalog_controller.dart';
 import '../../../models/master_product_model.dart';
 import '../../../models/selected_product_model.dart';
 import '../../../themes/app_them_data.dart';

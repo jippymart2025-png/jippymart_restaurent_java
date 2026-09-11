@@ -595,7 +595,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:jippymart_restaurant/widget/osm_map/map_picker_page.dart' hide MapPickerPage;
-import 'add_restaurant_screen/locationselection.dart';
+import '../widget/locationselection.dart';
 import '../constant/constant.dart';       // adjust to your actual path
 import '../constant/show_toast_dialog.dart'; // already imported if used elsewhere
 import 'package:flutter/material.dart';

@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:latlong2/latlong.dart' as latlong;
 
-import '../../themes/app_them_data.dart';
-import '../../themes/round_button_fill.dart';
-import '../../widget/osm_map/map_controller.dart';
+import '../themes/app_them_data.dart';
+import '../themes/round_button_fill.dart';
+import 'osm_map/map_controller.dart';
 
 class MapPickerPage extends StatefulWidget {
   final LatLng initialPosition;
@@ -17,44 +17,42 @@ class MapPickerPage extends StatefulWidget {
 }
 
 class _MapPickerPageState extends State<MapPickerPage> {
-  // Use Get.find with fallback to Get.put if not already initialized
-  late OSMMapController osmController;
-  late GoogleMapController _mapController;
-  LatLng _currentPosition = const LatLng(20.5937, 78.9629);
+  final OSMMapController osmController = Get.find<OSMMapController>();
+  GoogleMapController? _mapController;
+  late LatLng _currentPosition;
   Set<Marker> _markers = {};
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Initialize controller safely
-    try {
-      osmController = Get.find<OSMMapController>();
-    } catch (e) {
-      // If not found, put it first
-      osmController = Get.put(OSMMapController());
-    }
 
+    // Always start from the position passed in (current GPS location),
+    // never from a stale pickedPlace left over from a previous session.
     _currentPosition = widget.initialPosition;
-    _initializeMarker();
+
+    // Show a marker immediately so the map isn't empty on open.
+    _markers = {
+      Marker(
+        markerId: const MarkerId('selected_location'),
+        position: _currentPosition,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ),
+    };
+
+    // Clear any stale previous selection, then seed the controller with the
+    // current location so Confirm works even if the user doesn't tap/search.
+    osmController.pickedPlace.value = null;
+    _seedInitialLocation();
   }
 
-  void _initializeMarker() {
-    if (osmController.pickedPlace.value != null) {
-      final place = osmController.pickedPlace.value!;
-      final latLng = LatLng(
-        place.coordinates.latitude,
-        place.coordinates.longitude,
-      );
-      _currentPosition = latLng;
-      _markers.add(
-        Marker(
-          markerId: const MarkerId('selected_location'),
-          position: latLng,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        ),
-      );
-    }
+  Future<void> _seedInitialLocation() async {
+    final latlongCoords = latlong.LatLng(
+      _currentPosition.latitude,
+      _currentPosition.longitude,
+    );
+    // This should reverse-geocode and set osmController.pickedPlace
+     osmController.addLatLngOnly(latlongCoords);
   }
 
   @override
@@ -107,6 +105,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
             left: 16,
             right: 16,
             child: Container(
+              constraints: const BoxConstraints(maxHeight: 280),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -121,36 +120,44 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 shrinkWrap: true,
                 itemCount: osmController.searchResults.length,
                 itemBuilder: (context, index) {
-                  final place = osmController.searchResults[index];
+                  final place =
+                  osmController.searchResults[index] as Map<String, dynamic>;
                   return ListTile(
-                    title: Text(place['display_name'] ?? ''),
+                    title: Text(
+                      place['display_name'] ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     onTap: () {
                       osmController.selectSearchResult(place);
-                      final lat = double.parse(place['lat']);
-                      final lng = double.parse(place['lon']);
+                      final lat = double.parse(place['lat'].toString());
+                      final lng = double.parse(place['lon'].toString());
                       final newPosition = LatLng(lat, lng);
-                      _markers.clear();
-                      _markers.add(
-                        Marker(
-                          markerId: const MarkerId('selected_location'),
-                          position: newPosition,
-                          icon: BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueRed,
+                      setState(() {
+                        _currentPosition = newPosition;
+                        _markers = {
+                          Marker(
+                            markerId: const MarkerId('selected_location'),
+                            position: newPosition,
+                            icon: BitmapDescriptor.defaultMarkerWithHue(
+                              BitmapDescriptor.hueRed,
+                            ),
                           ),
-                        ),
-                      );
-                      _mapController.animateCamera(
+                        };
+                        _searchController.text =
+                            place['display_name'] ?? '';
+                        osmController.searchResults.clear();
+                      });
+                      _mapController?.animateCamera(
                         CameraUpdate.newLatLngZoom(newPosition, 15),
                       );
-                      setState(() {});
-                      _searchController.text = place['display_name'] ?? '';
                     },
                   );
                 },
               ),
             ),
           )
-              : const SizedBox()),
+              : const SizedBox.shrink()),
         ],
       ),
       bottomNavigationBar: Container(
@@ -199,6 +206,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     onPress: () {
                       final place = osmController.pickedPlace.value;
                       if (place != null) {
+                        // Use the resolved place (has address from reverse geocoding)
                         Get.back(result: {
                           'location': LatLng(
                             place.coordinates.latitude,
@@ -207,20 +215,16 @@ class _MapPickerPageState extends State<MapPickerPage> {
                           'address': place.address,
                         });
                       } else {
-                        Get.back();
+                        // Fallback: pickedPlace hasn't resolved yet (e.g. geocoding
+                        // still in flight) — still return the current map position
+                        // instead of returning null and dropping the selection.
+                        Get.back(result: {
+                          'location': _currentPosition,
+                          'address': '',
+                        });
                       }
                     },
                   ),
-                ),
-                const SizedBox(width: 10),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    osmController.clearAll();
-                    setState(() {
-                      _markers.clear();
-                    });
-                  },
                 ),
               ],
             ),
@@ -233,29 +237,29 @@ class _MapPickerPageState extends State<MapPickerPage> {
   void _handleLocationTap(LatLng position) {
     setState(() {
       _currentPosition = position;
-      _markers.clear();
-      _markers.add(
+      _markers = {
         Marker(
           markerId: const MarkerId('selected_location'),
           position: position,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         ),
-      );
+      };
     });
 
-    // Update the OSM controller
+    // Update the OSM controller (reverse-geocodes + sets pickedPlace)
     final latlongCoords = latlong.LatLng(position.latitude, position.longitude);
     osmController.addLatLngOnly(latlongCoords);
 
     // Center map on tapped location
-    _mapController.animateCamera(
+    _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(position, 15),
     );
   }
 
   @override
   void dispose() {
-    _mapController.dispose();
+    _searchController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 }

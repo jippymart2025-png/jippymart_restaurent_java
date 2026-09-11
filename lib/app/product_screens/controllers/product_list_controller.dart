@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/config/app_config.dart';
@@ -9,7 +8,7 @@ import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/inventory_unavailability_flow.dart';
-import '../utils/preferences.dart';
+import '../../../utils/preferences.dart';
 
 class ProductListController extends GetxController {
   // ── Observables ────────────────────────────────────────────────────────────

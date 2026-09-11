@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
-import 'package:jippymart_restaurant/controller/add_from_catalog_controller.dart';
+import 'package:jippymart_restaurant/app/product_screens/controllers/add_from_catalog_controller.dart';
 import 'package:jippymart_restaurant/models/master_product_model.dart';
 import 'package:jippymart_restaurant/models/selected_product_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';

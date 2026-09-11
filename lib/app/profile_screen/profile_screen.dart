@@ -3,24 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:jippymart_restaurant/app/profile_screen/promotions/promotion_plan_types_screen.dart';
 import 'package:jippymart_restaurant/controller/login_controller.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/app/add_advertisement_screen/advertisement_list_screen.dart';
-import 'package:jippymart_restaurant/app/add_restaurant_screen/add_restaurant_screen.dart';
 import 'package:jippymart_restaurant/app/add_story_screen/add_story_screen.dart';
 import 'package:jippymart_restaurant/app/change%20langauge/change_language_screen.dart';
-import 'package:jippymart_restaurant/app/dine_in_screen/dine_in_create_screen.dart';
-import 'package:jippymart_restaurant/app/driver_screens/driver_list_screen.dart';
 import 'package:jippymart_restaurant/app/edit_profile_screen/edit_profile_screen.dart';
 import 'package:jippymart_restaurant/app/special_discount_screen/special_discount_screen.dart';
 
-import 'package:jippymart_restaurant/app/profile_screen/subscriptions/subscription_plans_screen.dart';
 import 'package:jippymart_restaurant/app/terms_and_condition/terms_and_condition_screen.dart';
 import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/app/withdraw_method_setup_screens/withdraw_method_setup_screen.dart';
-import 'package:jippymart_restaurant/app/working_hours_screen/working_hours_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
@@ -39,6 +33,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../utils/const/image_const.dart';
+import '../promotions/promotion_plan_types_screen.dart';
+import '../subscriptions/subscription_plans_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/app/Home_screen/home_screen.dart';
@@ -8,14 +7,12 @@ import 'package:jippymart_restaurant/app/profile_screen/profile_screen.dart';
 import 'package:jippymart_restaurant/config/app_config.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/app_update_controller.dart';
-import 'package:jippymart_restaurant/controller/product_list_controller.dart';
+import 'package:jippymart_restaurant/app/product_screens/controllers/product_list_controller.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
-import 'package:jippymart_restaurant/app/profile_screen/promotions/promotion_plans_screen.dart';
 import '../app/merchant_outlet_list_screen.dart';
-import '../app/profile_screen/promotions/promotion_plan_types_screen.dart';
-import '../app/profile_screen/subscriptions/subscription_plans_screen.dart';
+import '../app/promotions/promotion_plan_types_screen.dart';
 import '../utils/const/image_const.dart';
 import 'merchant_outlet_controller.dart';
 import 'sales_report_controller.dart';

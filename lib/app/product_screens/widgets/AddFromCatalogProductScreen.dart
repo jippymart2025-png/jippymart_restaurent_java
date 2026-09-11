@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:provider/provider.dart';
 import '../../../constant/show_toast_dialog.dart';
-import '../../../controller/add_from_catalog_controller.dart';
+import '../controllers/add_from_catalog_controller.dart';
 import '../../../themes/app_them_data.dart';
 import '../../../utils/const/color_const.dart';
 import '../../../utils/dark_theme_provider.dart';

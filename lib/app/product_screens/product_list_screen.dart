@@ -4,12 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:provider/provider.dart';
-import 'package:jippymart_restaurant/app/add_restaurant_screen/add_restaurant_screen.dart';
 import 'package:jippymart_restaurant/app/product_screens/add_from_catalog_screen.dart';
 import 'package:jippymart_restaurant/app/product_screens/add_product_screen.dart';
 import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
-import 'package:jippymart_restaurant/controller/product_list_controller.dart';
+import 'package:jippymart_restaurant/app/product_screens/controllers/product_list_controller.dart';
 import 'package:jippymart_restaurant/controller/merchant_outlet_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/responsive.dart';
@@ -350,8 +349,8 @@ class ProductListScreen extends GetView<ProductListController> {
             .tr,
         buttonLabel: 'Add Restaurant'.tr,
         onTap: () async {
-          final result = await Get.to(const AddRestaurantScreen());
-          if (result == true) await controller.getUserProfile();
+          // final result = await Get.to(const AddRestaurantScreen());
+          // if (result == true) await controller.getUserProfile();
         },
         themeChange: themeChange,
       );

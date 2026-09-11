@@ -14,7 +14,7 @@ import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
-import '../add_restaurant_screen/locationselection.dart';
+import '../../widget/locationselection.dart';
 import '../../constant/show_toast_dialog.dart';
 
 class EditProfileScreen extends StatelessWidget {

@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
-import 'package:jippymart_restaurant/controller/verification_details_upload_controller.dart';
+import 'package:jippymart_restaurant/app/verification_screen/controller/verification_details_upload_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/responsive.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';

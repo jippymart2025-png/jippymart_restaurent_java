@@ -16,10 +16,9 @@ import 'package:jippymart_restaurant/app/splash_screen.dart';
 import 'package:jippymart_restaurant/firebase_options.dart';
 import 'package:jippymart_restaurant/widget/osm_map/map_controller.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
-import 'package:jippymart_restaurant/controller/product_list_controller.dart';
+import 'package:jippymart_restaurant/app/product_screens/controllers/product_list_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
-import 'package:jippymart_restaurant/controller/global_setting_controller.dart';
 import 'package:jippymart_restaurant/models/language_model.dart';
 import 'package:jippymart_restaurant/service/audio_player_service.dart';
 import 'package:jippymart_restaurant/service/localization_service.dart';
@@ -217,12 +216,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               final appChild = child != null ? SafeArea(child: child) : child;
               return EasyLoading.init()(context, appChild);
             },
-            home: GetBuilder<GlobalSettingController>(
-              init: GlobalSettingController(),
-              builder: (context) {
-                return const SplashScreen();
-              },
-            ),
+             home: const SplashScreen(),
           );
         },
       ),

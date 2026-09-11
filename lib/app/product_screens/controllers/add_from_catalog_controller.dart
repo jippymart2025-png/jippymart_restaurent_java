@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:jippymart_restaurant/controller/product_list_controller.dart';
+import 'package:jippymart_restaurant/app/product_screens/controllers/product_list_controller.dart';
 
 import 'package:jippymart_restaurant/models/master_product_model.dart';
 import 'package:jippymart_restaurant/models/product_model.dart';
@@ -14,8 +14,8 @@ import 'package:jippymart_restaurant/service/food_api_service.dart'
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/pricing_calculator.dart';
 
-import '../models/addproduct_from _masterproduct.dart';
-import '../models/variant_group_model.dart';
+import '../../../models/addproduct_from _masterproduct.dart';
+import '../../../models/variant_group_model.dart';
 
 class AddFromCatalogController extends GetxController {
   final TextEditingController categorySearchController = TextEditingController();

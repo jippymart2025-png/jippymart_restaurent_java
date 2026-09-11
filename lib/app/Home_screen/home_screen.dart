@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:bottom_picker/resources/extensions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +9,6 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-
-import 'package:jippymart_restaurant/app/add_restaurant_screen/add_restaurant_screen.dart';
 import 'package:jippymart_restaurant/app/product_rating_view_screen/product_rating_view_screen.dart';
 import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
@@ -30,7 +27,6 @@ import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/widget/my_separator.dart';
-
 import '../../controller/merchant_outlet_controller.dart';
 import '../../utils/preferences.dart';
 
@@ -245,29 +241,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     //     themeChange: themeChange,
     //   );
     // }
-    final outletId = Preferences.getInt('outletId');
-    if (ctrl.outletList.isEmpty && outletId <= 0) {
-      return _EmptyStateView(
-        icon: 'assets/icons/ic_building_two.svg',
-        title: 'Add Your First Outlet'.tr,
-        subtitle:
-        'Get started by adding your outlet details to manage your menu, orders, and reservations.'
-            .tr,
-        buttonLabel: 'Add Outlet'.tr,
-        onTap: () async {
-          final result = await Get.to(
-            const AddRestaurantScreen(),
-          );
-
-          if (result == true) {
-            if (Get.isRegistered<MerchantOutletController>()) {
-              await Get.find<MerchantOutletController>().refreshOutletsOnly();
-            }
-          }
-        },
-        themeChange: themeChange,
-      );
-    }
+    // final outletId = Preferences.getInt('outletId');
+    // if (ctrl.outletList.isEmpty && outletId <= 0) {
+    //   return _EmptyStateView(
+    //     icon: 'assets/icons/ic_building_two.svg',
+    //     title: 'Add Your First Outlet'.tr,
+    //     subtitle:
+    //     'Get started by adding your outlet details to manage your menu, orders, and reservations.'
+    //         .tr,
+    //     buttonLabel: 'Add Outlet'.tr,
+    //     onTap: () async {
+    //       // final result = await Get.to(
+    //         // const AddRestaurantScreen(),
+    //       // );
+    //
+    //       if (result == true) {
+    //         if (Get.isRegistered<MerchantOutletController>()) {
+    //           await Get.find<MerchantOutletController>().refreshOutletsOnly();
+    //         }
+    //       }
+    //     },
+    //     themeChange: themeChange,
+    //   );
+    // }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

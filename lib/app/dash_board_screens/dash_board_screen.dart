@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
-import 'package:jippymart_restaurant/controller/product_list_controller.dart';
+import 'package:jippymart_restaurant/app/product_screens/controllers/product_list_controller.dart';
 import 'package:jippymart_restaurant/controller/sales_report_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';

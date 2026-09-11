@@ -9,7 +9,7 @@ import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/models/create_master_product_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
-import '../themes/app_them_data.dart';
+import '../../../themes/app_them_data.dart';
 
 class AddMasterProductController extends GetxController {
   AddMasterProductController({

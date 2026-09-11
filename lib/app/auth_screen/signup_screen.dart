@@ -15,7 +15,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../constant/constant.dart';
 import '../../models/location_model.dart';
  // ADD THIS
-import '../add_restaurant_screen/locationselection.dart';
+import '../../widget/locationselection.dart';
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
