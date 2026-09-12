@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:jippymart_restaurant/app/auth_screen/signup_screen.dart';
 import 'package:jippymart_restaurant/app/forgot_password_screen/forgot_password_screen.dart';
-import 'package:jippymart_restaurant/controller/login_controller.dart';
+import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';

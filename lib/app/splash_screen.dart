@@ -1,6 +1,6 @@
 import 'package:flutter_svg/svg.dart';
 import 'package:jippymart_restaurant/app/landing_screen.dart';
-import 'package:jippymart_restaurant/controller/login_controller.dart';
+import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
 import 'package:jippymart_restaurant/utils/const/image_const.dart';
 import 'package:jippymart_restaurant/utils/const/text_style_const.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';

@@ -17,7 +17,7 @@ import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/controller/home_controller.dart';
-import 'package:jippymart_restaurant/controller/login_controller.dart';
+import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
 import 'package:jippymart_restaurant/app/profile_screen/controller/profile_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/custom_dialog_box.dart';

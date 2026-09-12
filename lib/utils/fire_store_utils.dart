@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:jippymart_restaurant/controller/login_controller.dart';
+import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
 import 'package:mime/mime.dart';
 import 'package:jippymart_restaurant/app/chat_screens/ChatVideoContainer.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
