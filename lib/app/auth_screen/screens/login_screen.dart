@@ -1,11 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-
 import 'package:jippymart_restaurant/app/auth_screen/screens/signup_screen.dart';
 import 'package:jippymart_restaurant/app/forgot_password_screen/forgot_password_screen.dart';
 import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
