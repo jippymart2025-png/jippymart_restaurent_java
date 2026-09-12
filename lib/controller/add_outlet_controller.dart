@@ -587,6 +587,42 @@ class AddOutletController extends GetxController {
     return true;
   }
 
+
+  // ============================================================
+// TIME PICKER HELPERS (Add these to AddOutletController)
+// ============================================================
+
+  /// Pick time and update common slot
+  Future<void> pickCommonOpeningTime(BuildContext context, int slotIndex) async {
+    final time = await pickTime(context);
+    if (time != null) {
+      updateCommonOpeningTime(slotIndex, time);
+    }
+  }
+
+  Future<void> pickCommonClosingTime(BuildContext context, int slotIndex) async {
+    final time = await pickTime(context);
+    if (time != null) {
+      updateCommonClosingTime(slotIndex, time);
+    }
+  }
+
+  /// Pick time and update day-specific slot
+  Future<void> pickOpeningTime(
+      BuildContext context, int dayIndex, int slotIndex) async {
+    final time = await pickTime(context);
+    if (time != null) {
+      updateOpeningTime(dayIndex, slotIndex, time);
+    }
+  }
+
+  Future<void> pickClosingTime(
+      BuildContext context, int dayIndex, int slotIndex) async {
+    final time = await pickTime(context);
+    if (time != null) {
+      updateClosingTime(dayIndex, slotIndex, time);
+    }
+  }
   // ============================================================
   // BUILD OPERATING DAYS API REQUEST
   // ============================================================

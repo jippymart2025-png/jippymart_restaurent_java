@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:jippymart_restaurant/app/add_outlet_screen.dart';
+import 'package:jippymart_restaurant/app/add_outlet_screen/add_outlet_screen.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/controller/merchant_outlet_controller.dart';
