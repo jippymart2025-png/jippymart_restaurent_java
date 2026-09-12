@@ -4965,8 +4965,6 @@ class FireStoreUtils {
 
       debugPrint('===== GET PROMOTION PLAN TYPES =====');
       debugPrint('Request URL: $url');
-      debugPrint('Headers: $headers');
-
       final response = await http.get(Uri.parse(url), headers: headers);
 
       debugPrint('Status Code: ${response.statusCode}');

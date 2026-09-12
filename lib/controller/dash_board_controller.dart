@@ -16,7 +16,7 @@ import '../app/promotions/promotion_plan_types_screen.dart';
 import '../utils/const/image_const.dart';
 import 'merchant_outlet_controller.dart';
 import 'sales_report_controller.dart';
-import 'package:jippymart_restaurant/controller/profile_controller.dart';
+import 'package:jippymart_restaurant/app/profile_screen/controller/profile_controller.dart';
 import 'package:jippymart_restaurant/models/bottom_nav_item.dart';
 /// Closure duration the restaurant owner selects when closing.
 enum RestaurantCloseOption { today, threeDays, sevenDays, untilReopened, tomorrow, custom }
