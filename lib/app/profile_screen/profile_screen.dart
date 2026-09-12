@@ -6,8 +6,6 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:jippymart_restaurant/controller/login_controller.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:provider/provider.dart';
-import 'package:jippymart_restaurant/app/add_advertisement_screen/advertisement_list_screen.dart';
-import 'package:jippymart_restaurant/app/add_story_screen/add_story_screen.dart';
 import 'package:jippymart_restaurant/app/change%20langauge/change_language_screen.dart';
 import 'package:jippymart_restaurant/app/edit_profile_screen/edit_profile_screen.dart';
 import 'package:jippymart_restaurant/app/special_discount_screen/special_discount_screen.dart';
@@ -208,7 +206,7 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               "Add Story",
                               () {
-                                Get.to(const AddStoryScreen());
+                                // Get.to(const AddStoryScreen());
                               },
                             ),
                           ),
@@ -236,7 +234,7 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               "Advertisement",
                               () {
-                                Get.to(const AdvertisementListScreen());
+                                // Get.to(const AdvertisementListScreen());
                               },
                             ),
                           ),
