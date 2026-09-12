@@ -216,7 +216,7 @@ class EditProfileScreen extends StatelessWidget {
                                             controller: controller.fssaiNumberController.value,
                                             hintText: 'FSSAI Number'.tr,
                                             textInputType: TextInputType.number,
-                                            enable: false,
+                                            enable: true,
                                           ),
                                           TextFieldWidget(
                                             title: 'GST Number'.tr,
@@ -230,13 +230,23 @@ class EditProfileScreen extends StatelessWidget {
                                                 .map((c) => c.cuisineTypeName)
                                                 .join(", ");
 
+                                            // return InkWell(
+                                            //   onTap: () => _showCuisinePicker(context, controller),
+                                            //   child: TextFieldWidget(
+                                            //     title: 'Cuisine Type'.tr,
+                                            //     controller: TextEditingController(text: selectedNames),
+                                            //     hintText: 'Select Cuisine Types'.tr,
+                                            //     //enable: false,
+                                            //   ),
+                                            // );
                                             return InkWell(
                                               onTap: () => _showCuisinePicker(context, controller),
-                                              child: TextFieldWidget(
-                                                title: 'Cuisine Type'.tr,
-                                                controller: TextEditingController(text: selectedNames),
-                                                hintText: 'Select Cuisine Types'.tr,
-                                                //enable: false,
+                                              child: IgnorePointer(
+                                                child: TextFieldWidget(
+                                                  title: 'Cuisine Type'.tr,
+                                                  controller: TextEditingController(text: selectedNames),
+                                                  hintText: 'Select Cuisine Types'.tr,
+                                                ),
                                               ),
                                             );
                                           }),
@@ -529,21 +539,30 @@ class EditProfileScreen extends StatelessWidget {
                                             controller.landmarkController.value,
                                             hintText: 'Landmark'.tr,
                                           ),
-                                          InkWell(
-                                            onTap: () => _openLocationPickerForEdit(context, controller),
-                                            child: IgnorePointer(
-                                              child: TextField(
-                                                controller: controller.locationDisplayController,
-                                                decoration: InputDecoration(
-                                                  labelText: 'Outlet Location'.tr,
-                                                  hintText: 'Tap to select on map',
-                                                  suffixIcon: const Icon(Icons.location_on),
-                                                ),
-                                                maxLines: 2,
-                                              ),
+                                          // InkWell(
+                                          //   onTap: () => _openLocationPickerForEdit(context, controller),
+                                          //   child: IgnorePointer(
+                                          //     child: TextField(
+                                          //       controller: controller.locationDisplayController,
+                                          //       decoration: InputDecoration(
+                                          //         labelText: 'Outlet Location'.tr,
+                                          //         hintText: 'Tap to select on map',
+                                          //         suffixIcon: const Icon(Icons.location_on),
+                                          //       ),
+                                          //       maxLines: 2,
+                                          //     ),
+                                          //   ),
+                                          // ),
+                                          TextField(
+                                            controller: controller.locationDisplayController,
+                                            readOnly: true,
+                                            decoration: InputDecoration(
+                                              labelText: 'Outlet Location'.tr,
+                                              hintText: 'Outlet location',
+                                              suffixIcon: const Icon(Icons.location_on),
                                             ),
+                                            maxLines: 2,
                                           ),
-
 
                                           // STATE DROPDOWN WILL COME HERE
 
@@ -695,6 +714,49 @@ class EditProfileScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
+
+                            const SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppThemeData.secondary300, width: 1.5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12, top: 10, bottom: 4),
+                                    child: Text(
+                                      'documents'.tr,
+                                      style: TextStyle(
+                                        color: AppThemeData.secondary300,
+                                        fontFamily: AppThemeData.semiBold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Column(
+                                      children: [
+                                        TextFieldWidget(
+                                          title: 'aadhar number'.tr,
+                                          controller: controller.aadharController.value,
+                                          hintText: 'aadhar number'.tr,
+                                        ),
+                                        TextFieldWidget(
+                                          title: 'pan Number'.tr,
+                                          controller: controller.panController.value,
+                                          hintText: 'pan Number'.tr,
+                                        ),
+                                        const SizedBox(height: 8),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
                             const SizedBox(height: 16),
                             Container(
                               decoration: BoxDecoration(

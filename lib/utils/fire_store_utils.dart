@@ -319,7 +319,7 @@ class FireStoreUtils {
         'merchantId': parsedMerchantId,
         'merchantName': merchant.merchantName,
         'businessType': merchant.merchantBusinessType,
-        'status': merchant.status,
+        //'status': merchant.status,
         'merchantEmail': merchant.merchantEmail,
         'merchantPhone': merchant.merchantPhone,
         'bankId': merchant.bankId,
@@ -329,6 +329,8 @@ class FireStoreUtils {
         'bankName': merchant.bankName,
         'accountHolderName': merchant.accountHolderName,
         'userType': 'MERCHANT',
+        'aadharNumber' : merchant.addharNumber,
+        'panNumber' : merchant.panNumber,
       };
 
       debugPrint("===== UPDATE MERCHANT REQUEST =====");

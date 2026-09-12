@@ -56,6 +56,8 @@ class EditProfileController extends GetxController {
   Rx<TextEditingController> accountNumberController = TextEditingController().obs;
   Rx<TextEditingController> ifscCodeController = TextEditingController().obs;
   Rx<TextEditingController> bankNameController = TextEditingController().obs;
+  Rx<TextEditingController> aadharController = TextEditingController().obs;
+  Rx<TextEditingController> panController = TextEditingController().obs;
   Rx<TextEditingController> accountHolderNameController = TextEditingController().obs;
   final latitudeController = TextEditingController();
   final longitudeController = TextEditingController();
@@ -422,6 +424,8 @@ class EditProfileController extends GetxController {
       ifscCodeController.value.text = value.ifscCode ?? '';
       bankNameController.value.text = value.bankName ?? '';
       accountHolderNameController.value.text = value.accountHolderName ?? '';
+      panController.value.text =value.panNumber ?? "";
+      aadharController.value.text = value.addharNumber ?? "";
       print("===== CONTROLLERS =====");
       print(bankNameController.value.text);
       print(accountNumberController.value.text);
@@ -463,6 +467,9 @@ class EditProfileController extends GetxController {
       merchantModel.value!.bankName = bankNameController.value.text;
       merchantModel.value!.accountHolderName = accountHolderNameController.value.text;
       merchantModel.value!.status = statusController.value.text;
+      merchantModel.value!.addharNumber = aadharController.value.text;
+      merchantModel.value!.panNumber = panController.value.text;
+
 
       String merchantId = merchantModel.value?.merchantId?.toString() ??
           Preferences.getString('merchantId');
