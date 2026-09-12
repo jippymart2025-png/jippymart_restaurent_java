@@ -174,8 +174,62 @@ class ProductCard extends StatelessWidget {
   }
 }
 
+// class _CatalogImage extends StatelessWidget {
+//   const _CatalogImage({required this.url, required this.isDark});
+//   final String? url;
+//   final bool isDark;
+//
+//   bool get _hasImage {
+//     final u = url?.trim() ?? '';
+//     return u.isNotEmpty && u != 'null';
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return ClipRRect(
+//       borderRadius: BorderRadius.circular(10),
+//       child: _hasImage
+//           ? NetworkImageWidget(
+//         imageUrl: url!,
+//         width: 72,
+//         height: 72,
+//         fit: BoxFit.cover,
+//       )
+//           : Container(
+//         width: 72,
+//         height: 72,
+//         color: isDark ? AppThemeData.grey700 : AppThemeData.grey200,
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             Icon(Icons.fastfood_rounded,
+//                 size: 26,
+//                 color: isDark
+//                     ? AppThemeData.grey500
+//                     : AppThemeData.grey400),
+//             const SizedBox(height: 2),
+//             Text(
+//               'No Image',
+//               style: TextStyle(
+//                 fontSize: 9,
+//                 color: isDark
+//                     ? AppThemeData.grey500
+//                     : AppThemeData.grey400,
+//                 fontFamily: AppThemeData.regular,
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 class _CatalogImage extends StatelessWidget {
-  const _CatalogImage({required this.url, required this.isDark});
+  const _CatalogImage({
+    required this.url,
+    required this.isDark,
+  });
+
   final String? url;
   final bool isDark;
 
@@ -186,44 +240,81 @@ class _CatalogImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = url?.trim() ?? '';
+
+    debugPrint('CATALOG IMAGE URL: $imageUrl');
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: _hasImage
-          ? NetworkImageWidget(
-        imageUrl: url!,
+      child: SizedBox(
         width: 72,
         height: 72,
-        fit: BoxFit.cover,
-      )
-          : Container(
-        width: 72,
-        height: 72,
-        color: isDark ? AppThemeData.grey700 : AppThemeData.grey200,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.fastfood_rounded,
+        child: _hasImage
+            ? Image.network(
+          imageUrl,
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('IMAGE ERROR: $error');
+
+            return Container(
+              color: isDark
+                  ? AppThemeData.grey700
+                  : AppThemeData.grey200,
+              child: const Icon(
+                Icons.broken_image,
+                size: 30,
+              ),
+            );
+          },
+          loadingBuilder: (
+              context,
+              child,
+              loadingProgress,
+              ) {
+            if (loadingProgress == null) {
+              return child;
+            }
+
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
+        )
+            : Container(
+          color: isDark
+              ? AppThemeData.grey700
+              : AppThemeData.grey200,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.fastfood_rounded,
                 size: 26,
                 color: isDark
                     ? AppThemeData.grey500
-                    : AppThemeData.grey400),
-            const SizedBox(height: 2),
-            Text(
-              'No Image',
-              style: TextStyle(
-                fontSize: 9,
-                color: isDark
-                    ? AppThemeData.grey500
                     : AppThemeData.grey400,
-                fontFamily: AppThemeData.regular,
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                'No Image',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: isDark
+                      ? AppThemeData.grey500
+                      : AppThemeData.grey400,
+                  fontFamily: AppThemeData.regular,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
 
 void _showAvailabilitySheet(
     BuildContext context,

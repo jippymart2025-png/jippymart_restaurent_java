@@ -21,6 +21,8 @@ class MerchantModel {
   String? accountHolderName;
   String? accountNumber;
   String? ifscCode;
+  String? addharNumber;
+  String? panNumber;
 
   // User type
   String? userType;
@@ -48,6 +50,8 @@ class MerchantModel {
     this.accountHolderName,
     this.accountNumber,
     this.ifscCode,
+    this.addharNumber,
+    this.panNumber,
     this.userType,
     this.aadhaarNumberUrl,
     this.panNumberUrl,
@@ -73,6 +77,8 @@ class MerchantModel {
       accountHolderName: json['accountHolderName'],
       accountNumber: json['accountNumber'],
       ifscCode: json['ifscCode'],
+      addharNumber:json['aadharNumber'],
+      panNumber: json['panNumber'],
       userType: json['userType'],
       aadhaarNumberUrl:
           json['aadhaarNumberUrl'] ?? json['aadharNumberUrl'],
@@ -103,6 +109,8 @@ class MerchantModel {
       "userType": userType,
       "aadhaarNumberUrl": aadhaarNumberUrl,
       "panNumberUrl": panNumberUrl,
+      "addharNumber" : addharNumber,
+      "panNumber" : panNumber
     };
   }
 
@@ -121,6 +129,8 @@ class MerchantModel {
       "bankName": bankName,
       "accountHolderName": accountHolderName,
       "userType": userType ?? "MERCHANT",
+      "addharNumber" : addharNumber,
+      "panNumber" : panNumber
     };
   }
 }
