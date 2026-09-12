@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
+import 'package:jippymart_restaurant/app/auth_screen/screens/login_screen.dart';
 import 'package:jippymart_restaurant/app/dash_board_screens/app_not_access_screen.dart';
 import 'package:jippymart_restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
@@ -14,11 +14,11 @@ import 'package:get/get.dart';
 import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/merchant_request_model.dart';
 
-import '../models/location_model.dart';
-import '../models/outlet_model.dart';
-import '../service/location_api_service.dart';
-import '../utils/fire_store_utils.dart';
-import '../utils/preferences.dart';
+import '../../../models/location_model.dart';
+import '../../../models/outlet_model.dart';
+import '../../../service/location_api_service.dart';
+import '../../../utils/fire_store_utils.dart';
+import '../../../utils/preferences.dart';
 class SignupController extends GetxController {
   Rx<TextEditingController> firstNameEditingController =
       TextEditingController().obs;

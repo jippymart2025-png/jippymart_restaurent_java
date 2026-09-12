@@ -6,7 +6,7 @@ import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jippymart_restaurant/app/dash_board_screens/dash_board_screen.dart';
-import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
+import 'package:jippymart_restaurant/app/auth_screen/screens/login_screen.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/common.dart';

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
+import 'package:jippymart_restaurant/app/auth_screen/screens/login_screen.dart';
 import 'package:jippymart_restaurant/app/guest_browse_screen.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 
-import 'auth_screen/email_verification_screen.dart';
+import 'auth_screen/screens/email_verification_screen.dart';
 
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});

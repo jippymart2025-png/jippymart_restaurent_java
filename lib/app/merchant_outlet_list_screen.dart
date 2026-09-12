@@ -11,7 +11,7 @@ import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../utils/preferences.dart';
-import 'auth_screen/outlet_otp_verification_screen.dart';
+import 'auth_screen/screens/outlet_otp_verification_screen.dart';
 import 'dash_board_screens/dash_board_screen.dart';
 
 /// Merchant-only outlet list. Never used for outlet login sessions.

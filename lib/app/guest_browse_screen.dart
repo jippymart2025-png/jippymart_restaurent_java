@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:jippymart_restaurant/app/auth_screen/login_screen.dart';
-import 'package:jippymart_restaurant/app/auth_screen/signup_screen.dart';
+import 'package:jippymart_restaurant/app/auth_screen/screens/login_screen.dart';
+import 'package:jippymart_restaurant/app/auth_screen/screens/signup_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';

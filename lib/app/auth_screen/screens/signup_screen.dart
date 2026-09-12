@@ -1,7 +1,7 @@
 
 import 'package:flutter/services.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
-import 'package:jippymart_restaurant/controller/signup_controller.dart';
+import 'package:jippymart_restaurant/app/auth_screen/controllers/signup_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';
@@ -12,10 +12,10 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../constant/constant.dart';
-import '../../models/location_model.dart';
+import '../../../constant/constant.dart';
+import '../../../models/location_model.dart';
  // ADD THIS
-import '../../widget/locationselection.dart';
+import '../../../widget/locationselection.dart';
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
