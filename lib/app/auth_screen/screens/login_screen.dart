@@ -5,7 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/app/auth_screen/screens/phone_number_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:jippymart_restaurant/app/auth_screen/screens/signup_screen.dart';
 import 'package:jippymart_restaurant/app/forgot_password_screen/forgot_password_screen.dart';
 import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';

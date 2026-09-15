@@ -1,4 +1,3 @@
-
 import 'package:flutter/services.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/app/auth_screen/controllers/signup_controller.dart';
@@ -16,6 +15,8 @@ import '../../../constant/constant.dart';
 import '../../../models/location_model.dart';
  // ADD THIS
 import '../../../widget/locationselection.dart';
+
+
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
