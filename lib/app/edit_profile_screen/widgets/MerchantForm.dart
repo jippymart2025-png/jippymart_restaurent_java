@@ -66,36 +66,63 @@ class MerchantForm extends StatelessWidget {
 }
 
 class SectionCard extends StatelessWidget {
-  const SectionCard({required this.title, required this.children});
+  const SectionCard({
+    super.key,
+    required this.title,
+    required this.children,
+    this.icon,
+  });
+
   final String title;
   final List<Widget> children;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppThemeData.secondary300, width: 1.5),
+        border: Border.all(
+          color: AppThemeData.secondary300,
+          width: 1.5,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:
-            const EdgeInsets.only(left: 12, top: 10, bottom: 4),
-            child: Text(
-              title.tr,
-              style: TextStyle(
-                color: AppThemeData.secondary300,
-                fontFamily: AppThemeData.semiBold,
-                fontSize: 14,
-              ),
+            padding: const EdgeInsets.only(
+              left: 12,
+              top: 10,
+              bottom: 4,
+            ),
+            child: Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: AppThemeData.secondary300,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  title.tr,
+                  style: TextStyle(
+                    color: AppThemeData.secondary300,
+                    fontFamily: AppThemeData.semiBold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(children: children),
+            child: Column(
+              children: children,
+            ),
           ),
           const SizedBox(height: 8),
         ],

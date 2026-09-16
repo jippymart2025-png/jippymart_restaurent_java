@@ -15,20 +15,17 @@ import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/pricing_calculator.dart';
 
 import '../../../models/addproduct_from _masterproduct.dart';
-import '../../../models/variant_group_model.dart';
 
 class AddFromCatalogController extends GetxController {
   final TextEditingController categorySearchController = TextEditingController();
   final RxString categorySearchText = ''.obs;
-  AddFromCatalogController({
-    this.initialCategory,
-  });
+
+  AddFromCatalogController({this.initialCategory});
 
   // ---------------------------------------------------------------------------
   // INITIAL CATEGORY
   // ---------------------------------------------------------------------------
 
-  /// If provided, category selection screen is skipped.
   final VendorCategoryModel? initialCategory;
 
   // ---------------------------------------------------------------------------
@@ -43,34 +40,26 @@ class AddFromCatalogController extends GetxController {
   // CATEGORIES
   // ---------------------------------------------------------------------------
 
-  final RxList<VendorCategoryModel> categoryList =
-      <VendorCategoryModel>[].obs;
+  final RxList<VendorCategoryModel> categoryList = <VendorCategoryModel>[].obs;
 
-  /// Categories displayed after applying the search text.
   List<VendorCategoryModel> get filteredCategories {
     final search = categorySearchText.value.trim().toLowerCase();
 
-    // If search box is empty, show all categories.
-    if (search.isEmpty) {
-      return categoryList.toList();
-    }
+    if (search.isEmpty) return categoryList.toList();
 
-    // Otherwise filter categories locally.
     return categoryList.where((category) {
       final categoryName = category.title ?? '';
-
       return categoryName.toLowerCase().contains(search);
     }).toList();
   }
-  final Rx<VendorCategoryModel?> selectedCategory =
-  Rx<VendorCategoryModel?>(null);
+
+  final Rx<VendorCategoryModel?> selectedCategory = Rx<VendorCategoryModel?>(null);
 
   // ---------------------------------------------------------------------------
   // MASTER PRODUCTS
   // ---------------------------------------------------------------------------
 
-  final RxList<MasterProductModel> masterProducts =
-      <MasterProductModel>[].obs;
+  final RxList<MasterProductModel> masterProducts = <MasterProductModel>[].obs;
 
   final RxInt currentPage = 1.obs;
   final RxInt lastPage = 1.obs;
@@ -79,15 +68,13 @@ class AddFromCatalogController extends GetxController {
   static const int perPage = 10;
 
   final RxString searchQuery = ''.obs;
-  final TextEditingController productSearchController =
-  TextEditingController();
+  final TextEditingController productSearchController = TextEditingController();
   Timer? _searchDebounce;
+
   // ---------------------------------------------------------------------------
   // SELECTED PRODUCTS
   // ---------------------------------------------------------------------------
 
-  /// Key = master product ID
-  /// Value = selected product data
   final RxMap<String, SelectedProductModel> selectedProducts =
       <String, SelectedProductModel>{}.obs;
 
@@ -96,11 +83,8 @@ class AddFromCatalogController extends GetxController {
   // ---------------------------------------------------------------------------
 
   final RxBool hasSubscription = false.obs;
-
   final RxString planType = 'commission'.obs;
-
   final RxInt applyPercentage = 30.obs;
-
   final RxBool gstAgreed = false.obs;
 
   // ---------------------------------------------------------------------------
@@ -116,21 +100,21 @@ class AddFromCatalogController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
     if (initialCategory != null) {
       selectCategory(initialCategory);
     } else {
       loadCategories();
     }
   }
+
+  @override
   void onClose() {
     _searchDebounce?.cancel();
-
     categorySearchController.dispose();
     productSearchController.dispose();
-
     super.onClose();
   }
+
   // ---------------------------------------------------------------------------
   // LOAD CATEGORIES
   // ---------------------------------------------------------------------------
@@ -140,7 +124,6 @@ class AddFromCatalogController extends GetxController {
 
     try {
       final outletCategoryMap = await _loadOutletCategoryIdMap();
-
       final list = await FireStoreUtils.getAllMasterCategories();
 
       if (list == null || list.isEmpty) {
@@ -150,7 +133,6 @@ class AddFromCatalogController extends GetxController {
 
       categoryList.value = list.map((cat) {
         final categoryId = cat.id?.toString() ?? '';
-
         final outletCatId = outletCategoryMap[categoryId];
 
         if (outletCatId != null && outletCatId > 0) {
@@ -171,51 +153,34 @@ class AddFromCatalogController extends GetxController {
       }).toList();
     } catch (e) {
       print("loadCategories error: $e");
-
       categoryList.clear();
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // LOAD OUTLET CATEGORY ID MAP
-  // ---------------------------------------------------------------------------
-
   Future<Map<String, int>> _loadOutletCategoryIdMap() async {
     final outletId = FireStoreUtils.resolveActiveOutletId();
-
-    if (outletId <= 0) {
-      return {};
-    }
+    if (outletId <= 0) return {};
 
     try {
-      final outletResult = await FireStoreUtils.getOutletDetailsWithProducts(
-        outletId: outletId,
-      );
+      final outletResult =
+      await FireStoreUtils.getOutletDetailsWithProducts(outletId: outletId);
 
-      if (outletResult == null) {
-        return {};
-      }
+      if (outletResult == null) return {};
 
       final map = <String, int>{};
-
       for (final cat in outletResult.categories) {
         final categoryId = cat.id?.toString() ?? '';
-
         final outletCatId = cat.outletCategoryId;
 
-        if (categoryId.isNotEmpty &&
-            outletCatId != null &&
-            outletCatId > 0) {
+        if (categoryId.isNotEmpty && outletCatId != null && outletCatId > 0) {
           map[categoryId] = outletCatId;
         }
       }
-
       return map;
     } catch (e) {
       print("_loadOutletCategoryIdMap error: $e");
-
       return {};
     }
   }
@@ -227,17 +192,11 @@ class AddFromCatalogController extends GetxController {
   int resolveOutletCategoryIdForSave() {
     final cat = selectedCategory.value;
 
-    // First preference:
-    // outletCategoryId
-    if (cat?.outletCategoryId != null &&
-        cat!.outletCategoryId! > 0) {
+    if (cat?.outletCategoryId != null && cat!.outletCategoryId! > 0) {
       return cat.outletCategoryId!;
     }
 
-    // Second preference:
-    // selected category ID
     final categoryId = cat?.id?.toString() ?? '';
-
     if (categoryId.isNotEmpty) {
       for (final item in categoryList) {
         if (item.id == categoryId &&
@@ -248,22 +207,13 @@ class AddFromCatalogController extends GetxController {
       }
 
       final parsed = int.tryParse(categoryId);
-
-      if (parsed != null && parsed > 0) {
-        return parsed;
-      }
+      if (parsed != null && parsed > 0) return parsed;
     }
 
-    // Third preference:
-    // selected product category ID
     if (selectedProducts.isNotEmpty) {
-      final fromProduct = int.tryParse(
-        selectedProducts.values.first.categoryId ?? '',
-      );
-
-      if (fromProduct != null && fromProduct > 0) {
-        return fromProduct;
-      }
+      final fromProduct =
+      int.tryParse(selectedProducts.values.first.categoryId ?? '');
+      if (fromProduct != null && fromProduct > 0) return fromProduct;
     }
 
     return 0;
@@ -273,49 +223,7 @@ class AddFromCatalogController extends GetxController {
   // SELECT CATEGORY
   // ---------------------------------------------------------------------------
 
-  // Future<void> selectCategory(
-  //     VendorCategoryModel? category,
-  //     ) async {
-  //   selectedCategory.value = category;
-  //
-  //   masterProducts.clear();
-  //
-  //   selectedProducts.clear();
-  //
-  //   if (category?.id?.isNotEmpty != true) {
-  //     return;
-  //   }
-  //
-  //   // If outletCategoryId isn't already available,
-  //   // try to resolve it from outlet categories.
-  //   if (category!.outletCategoryId == null ||
-  //       category.outletCategoryId! <= 0) {
-  //     final map = await _loadOutletCategoryIdMap();
-  //
-  //     final outletCatId = map[category.id!];
-  //
-  //     if (outletCatId != null && outletCatId > 0) {
-  //       selectedCategory.value = VendorCategoryModel(
-  //         id: category.id,
-  //         title: category.title,
-  //         photo: category.photo,
-  //         description: category.description,
-  //         reviewAttributes: category.reviewAttributes,
-  //         isActive: category.isActive,
-  //         categoryType: category.categoryType,
-  //         categoryImageUrl: category.categoryImageUrl,
-  //         outletCategoryId: outletCatId,
-  //       );
-  //     }
-  //   }
-  //
-  //   currentPage.value = 1;
-  //
-  //   await loadMasterProducts();
-  // }
-  Future<void> selectCategory(
-      VendorCategoryModel? category,
-      ) async {
+  Future<void> selectCategory(VendorCategoryModel? category) async {
     selectedCategory.value = category;
 
     masterProducts.clear();
@@ -324,27 +232,21 @@ class AddFromCatalogController extends GetxController {
     searchQuery.value = '';
     productSearchController.clear();
 
-    if (category?.id?.isNotEmpty != true) {
-      return;
-    }
+    if (category?.id?.isNotEmpty != true) return;
 
     currentPage.value = 1;
 
-    // Start product loading without waiting.
     loadMasterProducts();
 
-    // Resolve outlet category separately.
     if (category!.outletCategoryId == null ||
         category.outletCategoryId! <= 0) {
       _resolveOutletCategoryId(category);
     }
   }
-  Future<void> _resolveOutletCategoryId(
-      VendorCategoryModel category,
-      ) async {
+
+  Future<void> _resolveOutletCategoryId(VendorCategoryModel category) async {
     try {
       final map = await _loadOutletCategoryIdMap();
-
       final outletCatId = map[category.id!];
 
       if (outletCatId != null && outletCatId > 0) {
@@ -364,6 +266,7 @@ class AddFromCatalogController extends GetxController {
       print('Resolve outlet category ID error: $e');
     }
   }
+
   // ---------------------------------------------------------------------------
   // CREATE CATEGORY
   // ---------------------------------------------------------------------------
@@ -374,9 +277,7 @@ class AddFromCatalogController extends GetxController {
     required String categoryImageUrl,
     required int createdBy,
   }) async {
-    if (categoryName.trim().isEmpty) {
-      return;
-    }
+    if (categoryName.trim().isEmpty) return;
 
     final success = await FireStoreUtils.createCategory(
       categoryName: categoryName.trim(),
@@ -387,11 +288,7 @@ class AddFromCatalogController extends GetxController {
 
     if (success) {
       await loadCategories();
-
-      Get.snackbar(
-        "Success",
-        "Category Created",
-      );
+      Get.snackbar("Success", "Category Created");
     }
   }
 
@@ -399,27 +296,18 @@ class AddFromCatalogController extends GetxController {
   // LOAD MASTER PRODUCTS
   // ---------------------------------------------------------------------------
 
-  Future<void> loadMasterProducts({
-    bool append = false,
-  }) async {
+  Future<void> loadMasterProducts({bool append = false}) async {
     final cat = selectedCategory.value;
+    if (cat?.id == null) return;
 
-    if (cat?.id == null) {
-      return;
-    }
-
-    if (!append) {
-      isLoadingProducts.value = true;
-    }
+    if (!append) isLoadingProducts.value = true;
 
     try {
       final res = await FoodApiService.getMasterProductsByCategoryId(
         cat!.id!,
         page: currentPage.value,
         perPage: perPage,
-        search: searchQuery.value.isEmpty
-            ? null
-            : searchQuery.value,
+        search: searchQuery.value.isEmpty ? null : searchQuery.value,
       );
 
       if (res != null) {
@@ -429,17 +317,11 @@ class AddFromCatalogController extends GetxController {
           masterProducts.addAll(res.products);
         }
 
-        // Java API currently does not return pagination.
         totalProducts.value = res.products.length;
-
-        print(
-          "Loaded Products Count => ${res.products.length}",
-        );
+        print("Loaded Products Count => ${res.products.length}");
       }
     } catch (e) {
-      print(
-        "loadMasterProducts Error => $e",
-      );
+      print("loadMasterProducts Error => $e");
     } finally {
       isLoadingProducts.value = false;
     }
@@ -448,35 +330,29 @@ class AddFromCatalogController extends GetxController {
   // ---------------------------------------------------------------------------
   // SEARCH
   // ---------------------------------------------------------------------------
+
   void setCategorySearch(String query) {
     categorySearchText.value = query;
   }
 
   void setSearch(String query) {
     searchQuery.value = query;
-
-    // Cancel the previous timer.
     _searchDebounce?.cancel();
 
-    // If search is empty, reload all products immediately.
     if (query.trim().isEmpty) {
       currentPage.value = 1;
       loadMasterProducts();
       return;
     }
 
-    // Wait until the user stops typing.
-    _searchDebounce = Timer(
-      const Duration(milliseconds: 100),
-          () {
-        currentPage.value = 1;
-        loadMasterProducts();
-      },
-    );
+    _searchDebounce = Timer(const Duration(milliseconds: 100), () {
+      currentPage.value = 1;
+      loadMasterProducts();
+    });
   }
+
   Future<void> searchProducts() async {
     currentPage.value = 1;
-
     await loadMasterProducts();
   }
 
@@ -485,12 +361,8 @@ class AddFromCatalogController extends GetxController {
   // ---------------------------------------------------------------------------
 
   void goToPage(int page) {
-    if (page < 1 || page > lastPage.value) {
-      return;
-    }
-
+    if (page < 1 || page > lastPage.value) return;
     currentPage.value = page;
-
     loadMasterProducts();
   }
 
@@ -498,18 +370,11 @@ class AddFromCatalogController extends GetxController {
   // PRODUCT SELECTION
   // ---------------------------------------------------------------------------
 
-  bool isSelected(String id) {
-    return selectedProducts.containsKey(id);
-  }
+  bool isSelected(String id) => selectedProducts.containsKey(id);
 
-  void toggleSelection(
-      MasterProductModel product,
-      ) {
+  void toggleSelection(MasterProductModel product) {
     final id = product.id;
-
-    if (id == null) {
-      return;
-    }
+    if (id == null) return;
 
     if (selectedProducts.containsKey(id)) {
       selectedProducts.remove(id);
@@ -523,9 +388,7 @@ class AddFromCatalogController extends GetxController {
   // BUILD SELECTED PRODUCT
   // ---------------------------------------------------------------------------
 
-  SelectedProductModel _buildSelection(
-      MasterProductModel product,
-      ) {
+  SelectedProductModel _buildSelection(MasterProductModel product) {
     final id = product.id!;
 
     // -------------------------------------------------------------------------
@@ -534,41 +397,30 @@ class AddFromCatalogController extends GetxController {
 
     if (product.isExisting == true) {
       final addons = <AddonItem>[];
-
       final titles = product.vendorAddOnsTitle ?? [];
-
       final prices = product.vendorAddOnsPrice ?? [];
 
-      for (int i = 0;
-      i < titles.length && i < prices.length;
-      i++) {
-        addons.add(
-          AddonItem(
-            title: titles[i],
-            price: prices[i],
-          ),
-        );
+      for (int i = 0; i < titles.length && i < prices.length; i++) {
+        addons.add(AddonItem(title: titles[i], price: prices[i]));
       }
 
       final timings = <String, List<TimeRangeItem>>{};
-
       for (final t in product.vendorAvailableTimings ?? []) {
         if (t.day != null && t.timeslot != null) {
           final slots = t.timeslot!
               .map<TimeRangeItem>(
-                (s) => TimeRangeItem(productAvailableTimingId: s.productAvailableTimingId ?? 0,
+                (s) => TimeRangeItem(
+              productAvailableTimingId: s.productAvailableTimingId ?? 0,
               from: s.from ?? '',
               to: s.to ?? '',
             ),
           )
               .toList();
-
           timings[t.day!] = slots;
         }
       }
 
-      final options =
-      (product.vendorOptions ?? [])
+      final options = (product.vendorOptions ?? [])
           .map(
             (o) => OptionItem(
           id: o.id ?? '',
@@ -576,60 +428,34 @@ class AddFromCatalogController extends GetxController {
           price: o.price ?? '0',
           originalPrice: o.price ?? '0',
           isAvailable: o.isAvailable ?? true,
+          productVariantOptionsId: int.tryParse(o.id ?? '') ?? 0,
+          productVariantGroupValuesId: 0,
+          productVariantGroupsId: 0,
         ),
       )
           .toList();
 
-      final merchant =
-          double.tryParse(
-            product.vendorMerchantPrice ?? '',
-          ) ??
-              (product.suggestedPrice ?? 0);
+      final merchant = double.tryParse(product.vendorMerchantPrice ?? '') ??
+          (product.suggestedPrice ?? 0);
 
       return SelectedProductModel(
         masterProductId: id,
-
         productName: product.name,
-
         description: product.description,
-
-        categoryId:
-        product.categoryId ??
-            selectedCategory.value?.id,
-
+        categoryId: product.categoryId ?? selectedCategory.value?.id,
+        categoryName: product.categoryName ?? selectedCategory.value?.title,
+        imageLink: product.photo,
         isVeg: product.veg ?? false,
-
+        hasProductVariants: options.isNotEmpty,
         vendorProductId: product.vendorProductId,
-
         merchantPrice: merchant,
-
-        onlinePrice:
-        double.tryParse(
-          product.vendorPrice ?? '',
-        ) ??
-            merchant,
-
-        discountPrice:
-        double.tryParse(
-          product.vendorDisPrice ?? '',
-        ) ??
-            0,
-
-        publish:
-        product.vendorPublish ?? true,
-
-        isAvailable:
-        product.vendorIsAvailable ?? true,
-
+        onlinePrice: double.tryParse(product.vendorPrice ?? '') ?? merchant,
+        discountPrice: double.tryParse(product.vendorDisPrice ?? '') ?? 0,
+        publish: product.vendorPublish ?? true,
+        isAvailable: product.vendorIsAvailable ?? true,
         addons: addons,
-
-        availableDays:
-        List.from(
-          product.vendorAvailableDays ?? [],
-        ),
-
+        availableDays: List.from(product.vendorAvailableDays ?? []),
         availableTimings: timings,
-
         options: options,
       );
     }
@@ -638,11 +464,9 @@ class AddFromCatalogController extends GetxController {
     // NEW PRODUCT FROM MASTER CATALOG
     // -------------------------------------------------------------------------
 
-    final merchant =
-        product.suggestedPrice ?? 0;
+    final merchant = product.suggestedPrice ?? 0;
 
-    final online =
-    PricingCalculator.calculateOnlinePrice(
+    final online = PricingCalculator.calculateOnlinePrice(
       merchantPrice: merchant,
       hasSubscription: hasSubscription.value,
       planType: planType.value,
@@ -650,51 +474,39 @@ class AddFromCatalogController extends GetxController {
       gstAgreed: gstAgreed.value,
     );
 
-    final options =
-    (product.options ?? [])
+    final options = (product.options ?? [])
         .map(
           (o) => OptionItem(
         id: o.id ?? '',
         title: o.title ?? '',
         subtitle: o.subtitle,
-        price:
-        (o.price ?? 0).toString(),
-        originalPrice:
-        (o.price ?? 0).toString(),
+        price: (o.price ?? 0).toString(),
+        originalPrice: (o.price ?? 0).toString(),
         isAvailable: false,
+        productVariantOptionsId: int.tryParse(o.id ?? '') ?? 0,
+        productVariantGroupValuesId: 0,
+        productVariantGroupsId: 0,
       ),
     )
         .toList();
 
     return SelectedProductModel(
       masterProductId: id,
-
       productName: product.name,
-
       description: product.description,
-
-      categoryId:
-      product.categoryId ??
-          selectedCategory.value?.id,
-
+      categoryId: product.categoryId ?? selectedCategory.value?.id,
+      categoryName: product.categoryName ?? selectedCategory.value?.title,
+      imageLink: product.photo,
       isVeg: product.veg ?? false,
-
+      hasProductVariants: options.isNotEmpty,
       merchantPrice: merchant,
-
       onlinePrice: online,
-
       discountPrice: 0,
-
       publish: true,
-
       isAvailable: true,
-
       addons: [],
-
       availableDays: [],
-
       availableTimings: {},
-
       options: options,
     );
   }
@@ -703,18 +515,11 @@ class AddFromCatalogController extends GetxController {
   // GENERIC UPDATE
   // ---------------------------------------------------------------------------
 
-  void _update(
-      String id,
-      void Function(SelectedProductModel s) fn,
-      ) {
+  void _update(String id, void Function(SelectedProductModel s) fn) {
     final sel = selectedProducts[id];
-
-    if (sel == null) {
-      return;
-    }
+    if (sel == null) return;
 
     fn(sel);
-
     selectedProducts.refresh();
   }
 
@@ -722,143 +527,55 @@ class AddFromCatalogController extends GetxController {
   // PRICE UPDATES
   // ---------------------------------------------------------------------------
 
-  void updateMerchantPrice(
-      String id,
-      double value,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.merchantPrice = value;
-
-        s.onlinePrice =
-            PricingCalculator.calculateOnlinePrice(
-              merchantPrice: value,
-              hasSubscription:
-              hasSubscription.value,
-              planType: planType.value,
-              applyPercentage:
-              applyPercentage.value,
-              gstAgreed: gstAgreed.value,
-            );
-      },
-    );
+  void updateMerchantPrice(String id, double value) {
+    _update(id, (s) {
+      s.merchantPrice = value;
+      s.onlinePrice = PricingCalculator.calculateOnlinePrice(
+        merchantPrice: value,
+        hasSubscription: hasSubscription.value,
+        planType: planType.value,
+        applyPercentage: applyPercentage.value,
+        gstAgreed: gstAgreed.value,
+      );
+    });
   }
 
-  void updateOnlinePrice(
-      String id,
-      double value,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.onlinePrice = value;
-      },
-    );
+  void updateOnlinePrice(String id, double value) {
+    _update(id, (s) => s.onlinePrice = value);
   }
 
-  void updateDiscountPrice(
-      String id,
-      double value,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.discountPrice = value;
-      },
-    );
+  void updateDiscountPrice(String id, double value) {
+    _update(id, (s) => s.discountPrice = value);
   }
 
-  // ---------------------------------------------------------------------------
-  // PUBLISH / AVAILABILITY
-  // ---------------------------------------------------------------------------
-
-  void setPublish(
-      String id,
-      bool value,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.publish = value;
-      },
-    );
+  void setPublish(String id, bool value) {
+    _update(id, (s) => s.publish = value);
   }
 
-  void setAvailable(
-      String id,
-      bool value,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.isAvailable = value;
-      },
-    );
+  void setAvailable(String id, bool value) {
+    _update(id, (s) => s.isAvailable = value);
   }
 
-  // ---------------------------------------------------------------------------
-  // ADDONS
-  // ---------------------------------------------------------------------------
-
-  void setAddons(
-      String id,
-      List<AddonItem> addons,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.addons = addons;
-      },
-    );
+  void setAddons(String id, List<AddonItem> addons) {
+    _update(id, (s) => s.addons = addons);
   }
 
-  // ---------------------------------------------------------------------------
-  // AVAILABLE DAYS
-  // ---------------------------------------------------------------------------
-
-  void setAvailableDays(
-      String id,
-      List<String> days,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.availableDays = days;
-      },
-    );
+  void setAvailableDays(String id, List<String> days) {
+    _update(id, (s) => s.availableDays = days);
   }
-
-  // ---------------------------------------------------------------------------
-  // AVAILABLE TIMINGS
-  // ---------------------------------------------------------------------------
 
   void setAvailableTimings(
       String id,
       Map<String, List<TimeRangeItem>> timings,
       ) {
-    _update(
-      id,
-          (s) {
-        s.availableTimings = timings;
-      },
-    );
+    _update(id, (s) => s.availableTimings = timings);
   }
 
-  // ---------------------------------------------------------------------------
-  // OPTIONS
-  // ---------------------------------------------------------------------------
-
-  void setOptions(
-      String id,
-      List<OptionItem> options,
-      ) {
-    _update(
-      id,
-          (s) {
-        s.options = options;
-      },
-    );
+  void setOptions(String id, List<OptionItem> options) {
+    _update(id, (s) {
+      s.options = options;
+      s.hasProductVariants = options.isNotEmpty;
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -877,19 +594,14 @@ class AddFromCatalogController extends GetxController {
         return 'Merchant price must be greater than 0.';
       }
 
-      if (product.discountPrice >
-          product.onlinePrice) {
+      if (product.discountPrice > product.onlinePrice) {
         return 'Discount price cannot be greater than online price.';
       }
 
       for (final opt in product.options) {
-        if (!opt.isAvailable) {
-          continue;
-        }
+        if (!opt.isAvailable) continue;
 
-        final price =
-            double.tryParse(opt.price) ?? 0;
-
+        final price = double.tryParse(opt.price) ?? 0;
         if (price <= 0) {
           return 'Option "${opt.title}" must have a price greater than 0.';
         }
@@ -900,247 +612,221 @@ class AddFromCatalogController extends GetxController {
   }
 
   // ---------------------------------------------------------------------------
+  // DAY NAME → DAY OF WEEK ID
+  // ---------------------------------------------------------------------------
+
+  int _dayToId(String day) {
+    const map = {
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6,
+      'sunday': 7,
+    };
+    return map[day.trim().toLowerCase()] ?? 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // BUILD JAVA API REQUEST
+  // ---------------------------------------------------------------------------
+
+  AddProductsFromMasterRequest buildMasterRequest({
+    required int outletId,
+    required int categoryId,
+  }) {
+    final catName = selectedCategory.value?.title ?? '';
+
+    final items = selectedProducts.values.map((sel) {
+      // -------- TIMINGS --------
+      final timings = <ProductTimingRequest>[];
+      sel.availableTimings.forEach((day, slots) {
+        for (final slot in slots) {
+          timings.add(
+            ProductTimingRequest(
+              productAvailableTimingId: slot.productAvailableTimingId,
+              dayOfWeekId: _dayToId(day),
+              startTime: slot.from,
+              endTime: slot.to,
+            ),
+          );
+        }
+      });
+
+      // -------- VARIANT GROUPS --------
+      final variantGroups = <VariantGroupRequest>[];
+      if (sel.options.isNotEmpty) {
+        final groupId = sel.options.first.productVariantGroupsId;
+
+        variantGroups.add(
+          VariantGroupRequest(
+            productVariantGroupsId: groupId,
+            options: sel.options
+                .map(
+                  (opt) => VariantOptionRequest(
+                productVariantOptionsId: opt.productVariantOptionsId,
+                productVariantGroupValuesId:
+                opt.productVariantGroupValuesId,
+                priceType: 'FIXED',
+                variantPrice: double.tryParse(opt.price) ?? 0,
+              ),
+            )
+                .toList(),
+          ),
+        );
+      }
+
+      // ✅ Resolve per-product category with fallbacks
+      final resolvedCategoryId =
+          int.tryParse(sel.categoryId ?? '') ?? categoryId;
+
+      final resolvedCategoryName =
+      (sel.categoryName != null && sel.categoryName!.isNotEmpty)
+          ? sel.categoryName!
+          : catName;
+
+      return AddProductFromMasterItem(
+        masterProductId: int.tryParse(sel.masterProductId) ?? 0,
+        productName: sel.productName ?? '',
+        description: sel.description ?? '',
+        categoryId: resolvedCategoryId,        // ✅
+        categoryName: resolvedCategoryName,    // ✅
+        isVeg: sel.isVeg ?? false,
+        hasProductVariants: variantGroups.isNotEmpty,
+        merchantPrice: sel.merchantPrice,
+        csvTiming: '',
+        csvDayOfWeek: '',
+        timings: timings,
+        variantGroups: variantGroups,
+      );
+    }).toList();
+
+    return AddProductsFromMasterRequest(
+      outletId: outletId,
+      categoryId: categoryId,
+      products: items,
+    );
+  }
+  // ---------------------------------------------------------------------------
   // CONVERT TO INVENTORY PRODUCTS
   // ---------------------------------------------------------------------------
 
-  List<ProductModel> _toInventoryProducts(
-      List<SelectedProductModel> saved,
-      ) {
-    final category =
-        selectedCategory.value;
-
-    final categoryId =
-        category?.id?.toString() ?? '';
+  List<ProductModel> _toInventoryProducts(List<SelectedProductModel> saved) {
+    final category = selectedCategory.value;
+    final categoryId = category?.id?.toString() ?? '';
 
     return saved
         .map(
           (sel) => ProductModel(
         id: sel.masterProductId,
-
         name: sel.productName,
-
         description: sel.description,
-
-        categoryID:
-        sel.categoryId ?? categoryId,
-
-        merchant_price:
-        sel.merchantPrice
-            .toStringAsFixed(0),
-
-        price:
-        sel.merchantPrice
-            .toStringAsFixed(0),
-
+        categoryID: sel.categoryId ?? categoryId,
+        merchant_price: sel.merchantPrice.toStringAsFixed(0),
+        price: sel.merchantPrice.toStringAsFixed(0),
         disPrice: '0',
-
-        veg:
-        sel.isVeg ?? false,
-
-        nonveg:
-        !(sel.isVeg ?? false),
-
-        publish:
-        sel.publish,
-
-        isAvailable:
-        sel.isAvailable,
-
+        veg: sel.isVeg ?? false,
+        nonveg: !(sel.isVeg ?? false),
+        publish: sel.publish,
+        isAvailable: sel.isAvailable,
         quantity: 0,
       ),
     )
         .toList();
   }
 
-  // ---------------------------------------------------------------------------
-  // REFRESH INVENTORY AFTER JAVA API SAVE
-  // ---------------------------------------------------------------------------
-
   Future<void> _refreshInventoryAfterSave(
       List<SelectedProductModel> saved,
       ) async {
-    final outletId =
-    FireStoreUtils.resolveActiveOutletId();
+    final outletId = FireStoreUtils.resolveActiveOutletId();
 
-    FireStoreUtils.invalidateOutletProductCache(
-      outletId,
-    );
-
+    FireStoreUtils.invalidateOutletProductCache(outletId);
     FireStoreUtils.invalidateVendorCategoryCache();
 
     if (!Get.isRegistered<ProductListController>()) {
-      Get.put(
-        ProductListController(),
-        permanent: true,
-      );
+      Get.put(ProductListController(), permanent: true);
     }
 
-    await Get.find<ProductListController>()
-        .refreshAfterCatalogSave(
-      savedProducts:
-      _toInventoryProducts(saved),
-
-      category:
-      selectedCategory.value,
-
-      outletId:
-      outletId,
+    await Get.find<ProductListController>().refreshAfterCatalogSave(
+      savedProducts: _toInventoryProducts(saved),
+      category: selectedCategory.value,
+      outletId: outletId,
     );
   }
 
   // ---------------------------------------------------------------------------
-  // SAVE PRODUCTS
+  // SAVE PRODUCTS (main entry)
   // ---------------------------------------------------------------------------
 
   Future<bool> saveAndCaptureResponse() async {
-    // Validate selected products
+    // 1) Validate
     final err = validateForSave();
-
     if (err != null) {
-      print(
-        "Validation Error: $err",
-      );
-
-      lastStoreResponse =
-          AddProductsFromMasterResponse(
-            savedCount: 0,
-            skippedCount: 0,
-            savedNames: [],
-            skippedNames: [],
-          );
-
+      print("Validation Error: $err");
+      lastStoreResponse = AddProductsFromMasterResponse();
       return false;
     }
 
     isSaving.value = true;
-
     lastStoreResponse = null;
 
     try {
-      // -----------------------------------------------------------------------
-      // Resolve category ID
-      // -----------------------------------------------------------------------
-
-      final categoryId =
-      resolveOutletCategoryIdForSave();
-
+      // 2) Resolve category id
+      final categoryId = resolveOutletCategoryIdForSave();
       if (categoryId <= 0) {
-        print(
-          "ERROR: Invalid categoryId = $categoryId",
-        );
-
-        lastStoreResponse =
-            AddProductsFromMasterResponse(
-              savedCount: 0,
-              skippedCount: 0,
-              savedNames: [],
-              skippedNames: [],
-            );
-
+        print("ERROR: Invalid categoryId = $categoryId");
+        lastStoreResponse = AddProductsFromMasterResponse();
         return false;
       }
 
-      // -----------------------------------------------------------------------
-      // Selected products
-      // -----------------------------------------------------------------------
+      // 3) Resolve outlet id
+      final outletId = FireStoreUtils.resolveActiveOutletId();
+      if (outletId <= 0) {
+        print("ERROR: Invalid outletId = $outletId");
+        lastStoreResponse = AddProductsFromMasterResponse();
+        return false;
+      }
 
-      final selected =
-      selectedProducts.values.toList();
+      final selected = selectedProducts.values.toList();
 
-      print(
-        "====================================",
-      );
+      print("====================================");
+      print("ADD PRODUCTS FROM MASTER");
+      print("Outlet ID: $outletId");
+      print("Category ID: $categoryId");
+      print("Selected Products: ${selected.length}");
+      print("====================================");
 
-      print(
-        "ADD PRODUCTS FROM MASTER",
-      );
-
-      print(
-        "Category ID: $categoryId",
-      );
-
-      print(
-        "Selected Products: ${selected.length}",
-      );
-
-      print(
-        "====================================",
-      );
-
-      // -----------------------------------------------------------------------
-      // CALL NEW JAVA API
-      // -----------------------------------------------------------------------
-
-      final res =
-      await FoodApiService.addProductsToOutletFromMaster(
-        selected,
+      // 4) Build request
+      final request = buildMasterRequest(
+        outletId: outletId,
         categoryId: categoryId,
       );
 
-      // -----------------------------------------------------------------------
-      // Store actual Java response
-      // -----------------------------------------------------------------------
+      // 5) Call Java API
+      final res = await FoodApiService.addProductsToOutletFromMaster(request);
 
       lastStoreResponse = res;
 
-      print(
-        "====================================",
-      );
+      print("====================================");
+      print("JAVA API RESPONSE");
+      print("Saved Count: ${res.savedCount}");
+      print("Skipped Count: ${res.skippedCount}");
+      print("Saved Names: ${res.savedNames}");
+      print("Skipped Names: ${res.skippedNames}");
+      print("====================================");
 
-      print(
-        "JAVA API RESPONSE",
-      );
-
-      print(
-        "Saved Count: ${res.savedCount}",
-      );
-
-      print(
-        "Skipped Count: ${res.skippedCount}",
-      );
-
-      print(
-        "Saved Names: ${res.savedNames}",
-      );
-
-      print(
-        "Skipped Names: ${res.skippedNames}",
-      );
-
-      print(
-        "====================================",
-      );
-
-      // -----------------------------------------------------------------------
-      // If at least one product saved
-      // -----------------------------------------------------------------------
-
+      // 6) Refresh inventory
       if (res.savedCount > 0) {
-        await _refreshInventoryAfterSave(
-          selected,
-        );
+        await _refreshInventoryAfterSave(selected);
       }
-
-      // -----------------------------------------------------------------------
-      // Return true only if at least one product saved
-      // -----------------------------------------------------------------------
 
       return res.savedCount > 0;
     } catch (e, st) {
-      print(
-        "AddFromCatalogController.saveAndCaptureResponse error: $e",
-      );
-
+      print("AddFromCatalogController.saveAndCaptureResponse error: $e");
       print(st);
 
-      lastStoreResponse =
-          AddProductsFromMasterResponse(
-            savedCount: 0,
-            skippedCount: 0,
-            savedNames: [],
-            skippedNames: [],
-          );
-
+      lastStoreResponse = AddProductsFromMasterResponse();
       return false;
     } finally {
       isSaving.value = false;

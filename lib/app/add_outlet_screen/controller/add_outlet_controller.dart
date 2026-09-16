@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../constant/show_toast_dialog.dart';
-import '../models/cuisine_type_model.dart';
-import '../models/outlet_model.dart';
-import '../utils/fire_store_utils.dart';
-import '../utils/preferences.dart';
-import '../models/location_model.dart';
-import '../service/location_api_service.dart';
+import '../../../constant/show_toast_dialog.dart';
+import '../../../models/cuisine_type_model.dart';
+import '../../../models/outlet_model.dart';
+import '../../../utils/fire_store_utils.dart';
+import '../../../utils/preferences.dart';
+import '../../../models/location_model.dart';
+import '../../../service/location_api_service.dart';
 
 class AddOutletController extends GetxController {
   // ============================================================
@@ -739,7 +739,7 @@ class AddOutletController extends GetxController {
         "gstNumber": gstNumberController.text.trim(),
         "isGstApplied": isGstApplied.value,
         "isVegOutlet": isVegOutlet.value,
-        "buildingNumber": buildingController.text.trim(),
+        'buildingNumber': locationDisplayController.text.trim(),
         "road": roadController.text.trim(),
         "landmark": landmarkController.text.trim(),
         "cityId": selectedCity.value?.cityId ?? 0,

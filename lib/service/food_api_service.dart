@@ -17,12 +17,7 @@ import '../utils/preferences.dart';
 class FoodApiService {
   static final _baseUrl = Constant.baseUrl;
 
-  static Map<String, String> _headers({bool formEncoded = false}) {
-    return {
-      'Content-Type': formEncoded ? 'application/x-www-form-urlencoded' : 'application/json',
-      'Accept': 'application/json',
-    };
-  }
+
 
   static String? get _vendorId => Constant.userModel?.vendorID;
 
@@ -66,6 +61,43 @@ class FoodApiService {
   //     return null;
   //   }
   // }
+
+  static Future<AddProductsFromMasterResponse> addProductsToOutletFromMaster(
+      AddProductsFromMasterRequest request,
+      ) async {
+    final url = Uri.parse(
+      '${_baseUrl}fm/products/from-master',
+    );
+
+    print('===== ADD PRODUCTS FROM MASTER =====');
+    print('URL: $url');
+    print('BODY: ${jsonEncode(request.toJson())}');
+
+    final response = await http.post(
+      url,
+      headers: await getHeaders(),
+      body: jsonEncode(request.toJson()),
+    );
+
+    print('STATUS: ${response.statusCode}');
+    print('RESPONSE: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic>) {
+        return AddProductsFromMasterResponse.fromJson(decoded);
+      }
+
+      return AddProductsFromMasterResponse();
+    }
+
+    throw Exception(
+      'Failed to add products from master: '
+          '${response.statusCode} - ${response.body}',
+    );
+  }
+
 
   static Future<MasterProductsResponse?> getMasterProductsByCategoryId(
       String categoryId, {
@@ -276,122 +308,122 @@ class FoodApiService {
   //     );
   //   }
   // }
-  static Future<AddProductsFromMasterResponse> addProductsToOutletFromMaster(
-      List<SelectedProductModel> selected, {
-        required int categoryId,
-      }) async {
-    try {
-      final outletId = Preferences.getInt('outletId');
-
-      final List<AddProductFromMasterItem> productRequests =
-      selected.map((p) {
-        return AddProductFromMasterItem(
-          masterProductId:
-          int.tryParse(p.masterProductId ?? "0") ?? 0,
-
-          productName:
-          p.productName ?? "",
-
-          description:
-          p.description ?? "",
-
-          isVeg:
-          p.isVeg ?? false,
-
-          hasProductVariants:
-          p.hasProductVariants ?? false,
-
-          merchantPrice:
-          (p.merchantPrice ?? 0).toDouble(),
-
-          csvTiming: p.availableDays.map((day) {
-            final slots = p.availableTimings[day] ?? [];
-
-            return slots.map((slot) {
-              return "${slot.from}-${slot.to}";
-            }).join(",");
-          }).join(","),
-
-          csvDayOfWeek: p.availableDays.join(","),
-
-          timings: p.availableDays.expand((day) {
-            final timeSlots = p.availableTimings[day] ?? [];
-
-            return timeSlots.map((slot) {
-              return ProductTimingRequest(
-                productAvailableTimingId:slot.productAvailableTimingId ,
-                dayOfWeekId: _dayNameToId(day),
-                startTime: slot.from,
-                endTime: slot.to,
-              );
-            });
-          }).toList() ,
-
-          variantGroups: [],
-        );
-      }).toList();
-
-      final headers = await getHeaders();
-
-      final requestBody = AddProductsFromMasterRequest(
-        outletId: outletId,
-        categoryId: categoryId,
-        products: productRequests,
-      ).toJson();
-
-      print("========================================");
-      print("ADD PRODUCTS FROM MASTER REQUEST");
-      print("========================================");
-      print(jsonEncode(requestBody));
-
-      final response = await http.post(
-        Uri.parse(
-          '${Constant.baseUrl}fm/products/from-master',
-        ),
-        headers: headers,
-        body: jsonEncode(requestBody),
-      );
-
-      print("========================================");
-      print("ADD PRODUCTS FROM MASTER RESPONSE");
-      print("========================================");
-      print("STATUS CODE = ${response.statusCode}");
-      print("RESPONSE = ${response.body}");
-
-      final bodyStr =
-      response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
-
-      if (bodyStr.isEmpty) {
-        throw Exception('Empty response from server');
-      }
-
-      final Map<String, dynamic> json =
-      jsonDecode(bodyStr) as Map<String, dynamic>;
-
-      final result =
-      AddProductsFromMasterResponse.fromJson(json);
-
-      if (result.savedCount > 0) {
-        FireStoreUtils.invalidateOutletProductCache(outletId);
-        FireStoreUtils.invalidateVendorCategoryCache();
-      }
-
-      return result;
-    } catch (e, st) {
-      print(
-        'FoodApiService.addProductsFromMaster error: $e',
-      );
-
-      print(st);
-
-      return AddProductsFromMasterResponse(
-        savedCount: 0,
-        skippedCount: 0,
-        savedNames: [],
-        skippedNames: [],
-      );
-    }
-  }
+  // static Future<AddProductsFromMasterResponse> addProductsToOutletFromMaster(
+  //     List<SelectedProductModel> selected, {
+  //       required int categoryId,
+  //     }) async {
+  //   try {
+  //     final outletId = Preferences.getInt('outletId');
+  //
+  //     final List<AddProductFromMasterItem> productRequests =
+  //     selected.map((p) {
+  //       return AddProductFromMasterItem(
+  //         masterProductId:
+  //         int.tryParse(p.masterProductId ?? "0") ?? 0,
+  //
+  //         productName:
+  //         p.productName ?? "",
+  //
+  //         description:
+  //         p.description ?? "",
+  //
+  //         isVeg:
+  //         p.isVeg ?? false,
+  //
+  //         hasProductVariants:
+  //         p.hasProductVariants ?? false,
+  //
+  //         merchantPrice:
+  //         (p.merchantPrice ?? 0).toDouble(),
+  //
+  //         csvTiming: p.availableDays.map((day) {
+  //           final slots = p.availableTimings[day] ?? [];
+  //
+  //           return slots.map((slot) {
+  //             return "${slot.from}-${slot.to}";
+  //           }).join(",");
+  //         }).join(","),
+  //
+  //         csvDayOfWeek: p.availableDays.join(","),
+  //
+  //         timings: p.availableDays.expand((day) {
+  //           final timeSlots = p.availableTimings[day] ?? [];
+  //
+  //           return timeSlots.map((slot) {
+  //             return ProductTimingRequest(
+  //               productAvailableTimingId:slot.productAvailableTimingId ,
+  //               dayOfWeekId: _dayNameToId(day),
+  //               startTime: slot.from,
+  //               endTime: slot.to,
+  //             );
+  //           });
+  //         }).toList() ,
+  //
+  //         variantGroups: [],
+  //       );
+  //     }).toList();
+  //
+  //     final headers = await getHeaders();
+  //
+  //     final requestBody = AddProductsFromMasterRequest(
+  //       outletId: outletId,
+  //       categoryId: categoryId,
+  //       products: productRequests,
+  //     ).toJson();
+  //
+  //     print("========================================");
+  //     print("ADD PRODUCTS FROM MASTER REQUEST");
+  //     print("========================================");
+  //     print(jsonEncode(requestBody));
+  //
+  //     final response = await http.post(
+  //       Uri.parse(
+  //         '${Constant.baseUrl}fm/products/from-master',
+  //       ),
+  //       headers: headers,
+  //       body: jsonEncode(requestBody),
+  //     );
+  //
+  //     print("========================================");
+  //     print("ADD PRODUCTS FROM MASTER RESPONSE");
+  //     print("========================================");
+  //     print("STATUS CODE = ${response.statusCode}");
+  //     print("RESPONSE = ${response.body}");
+  //
+  //     final bodyStr =
+  //     response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+  //
+  //     if (bodyStr.isEmpty) {
+  //       throw Exception('Empty response from server');
+  //     }
+  //
+  //     final Map<String, dynamic> json =
+  //     jsonDecode(bodyStr) as Map<String, dynamic>;
+  //
+  //     final result =
+  //     AddProductsFromMasterResponse.fromJson(json);
+  //
+  //     if (result.savedCount > 0) {
+  //       FireStoreUtils.invalidateOutletProductCache(outletId);
+  //       FireStoreUtils.invalidateVendorCategoryCache();
+  //     }
+  //
+  //     return result;
+  //   } catch (e, st) {
+  //     print(
+  //       'FoodApiService.addProductsFromMaster error: $e',
+  //     );
+  //
+  //     print(st);
+  //
+  //     return AddProductsFromMasterResponse(
+  //       savedCount: 0,
+  //       skippedCount: 0,
+  //       savedNames: [],
+  //       skippedNames: [],
+  //     );
+  //   }
+  // }
 
 
 

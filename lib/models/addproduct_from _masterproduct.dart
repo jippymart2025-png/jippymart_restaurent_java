@@ -1,3 +1,6 @@
+/// Request/Response models for POST
+/// /api/foods/add-products-to-outlet-from-master
+
 class AddProductsFromMasterRequest {
   final int outletId;
   final int categoryId;
@@ -22,10 +25,14 @@ class AddProductFromMasterItem {
   final int masterProductId;
   final String productName;
   final String description;
+
+  // ✅ NEW: per-product category fields
+  final int categoryId;
+  final String categoryName;
+
   final bool isVeg;
   final bool hasProductVariants;
   final double merchantPrice;
-  //final String imageLink;
   final String csvTiming;
   final String csvDayOfWeek;
   final List<ProductTimingRequest> timings;
@@ -35,10 +42,11 @@ class AddProductFromMasterItem {
     required this.masterProductId,
     required this.productName,
     required this.description,
+    required this.categoryId,      // ✅
+    required this.categoryName,    // ✅
     required this.isVeg,
     required this.hasProductVariants,
     required this.merchantPrice,
-    //required this.imageLink,
     required this.csvTiming,
     required this.csvDayOfWeek,
     required this.timings,
@@ -50,10 +58,12 @@ class AddProductFromMasterItem {
       "masterProductId": masterProductId,
       "productName": productName,
       "description": description,
+      "categoryId": categoryId,       // ✅
+      "categoryName": categoryName,   // ✅
+      "productType": "p",
       "isVeg": isVeg,
       "hasProductVariants": hasProductVariants,
-      "merchantPrice": merchantPrice,
-      //"imageLink": imageLink,
+      "merchantPrice": _num(merchantPrice),
       "csvTiming": csvTiming,
       "csvDayOfWeek": csvDayOfWeek,
       "timings": timings.map((e) => e.toJson()).toList(),
@@ -120,10 +130,11 @@ class VariantOptionRequest {
       "productVariantOptionsId": productVariantOptionsId,
       "productVariantGroupValuesId": productVariantGroupValuesId,
       "priceType": priceType,
-      "variantPrice": variantPrice,
+      "variantPrice": _num(variantPrice),
     };
   }
 }
+
 class AddProductsFromMasterResponse {
   final int savedCount;
   final int skippedCount;
@@ -137,9 +148,7 @@ class AddProductsFromMasterResponse {
     this.skippedNames = const [],
   });
 
-  factory AddProductsFromMasterResponse.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory AddProductsFromMasterResponse.fromJson(Map<String, dynamic> json) {
     return AddProductsFromMasterResponse(
       savedCount: _parseInt(json['savedCount']),
       skippedCount: _parseInt(json['skippedCount']),
@@ -161,23 +170,24 @@ class AddProductsFromMasterResponse {
     return [];
   }
 
-  /// Useful for your UI where the old code expected `message`.
   String get message {
     if (savedCount > 0 && skippedCount == 0) {
       return 'Saved $savedCount product(s) successfully.';
     }
-
     if (savedCount > 0 && skippedCount > 0) {
       return 'Saved $savedCount product(s), skipped $skippedCount product(s).';
     }
-
     if (savedCount == 0 && skippedCount > 0) {
       return 'All $skippedCount product(s) were skipped.';
     }
-
     return 'No products were saved.';
   }
 
-  /// Keeps compatibility with your existing screen code.
   List<String> get errors => skippedNames;
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+num _num(double v) => v == v.roundToDouble() ? v.toInt() : v;
