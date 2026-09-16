@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'controller/add_outlet_controller.dart';
-import 'widgets/address_info_section.dart';
-import 'widgets/bank_details_section.dart';
-import 'widgets/operating_hours_section.dart';
-import 'widgets/outlet_info_section.dart';
+import '../controller/add_outlet_controller.dart';
+import '../widgets/address_info_section.dart';
+import '../widgets/bank_details_section.dart';
+import '../widgets/operating_hours_section.dart';
+import '../widgets/outlet_info_section.dart';
 
 class AddOutletScreen extends StatelessWidget {
   AddOutletScreen({super.key});
