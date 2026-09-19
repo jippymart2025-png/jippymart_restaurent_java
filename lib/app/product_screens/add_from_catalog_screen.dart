@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jippymart_restaurant/app/product_screens/widgets/AddFromCatalogProductScreen.dart';
 import 'package:jippymart_restaurant/app/product_screens/widgets/ProductCard.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
@@ -91,198 +94,341 @@ class AddFromCatalogScreen extends StatelessWidget {
   }
 }
 void _showCreateCategoryDialog(BuildContext context) {
+  Get.dialog(
+    const _CreateCategoryDialog(),
+  );
+}
+
+class _CreateCategoryDialog extends StatefulWidget {
+  const _CreateCategoryDialog();
+
+  @override
+  State<_CreateCategoryDialog> createState() =>
+      _CreateCategoryDialogState();
+}
+
+class _CreateCategoryDialogState
+    extends State<_CreateCategoryDialog> {
   final TextEditingController categoryController =
   TextEditingController();
-  final TextEditingController imageController =
-  TextEditingController();
 
-  final controller =
-  Get.find<AddFromCatalogController>();
+  final ImagePicker picker = ImagePicker();
 
-  Get.dialog(
-    Dialog(
+  File? selectedImage;
+
+  bool isCreating = false;
+
+  @override
+  void dispose() {
+    categoryController.dispose();
+    super.dispose();
+  }
+
+  Future<void> pickCategoryImage() async {
+    try {
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      debugPrint('Image picker error: $e');
+
+      Get.snackbar(
+        'Error',
+        'Unable to select image',
+      );
+    }
+  }
+
+  Future<void> createCategory() async {
+    final categoryName = categoryController.text.trim();
+
+    final outletId = Preferences.getInt("outletId");
+
+    if (categoryName.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Please enter category name",
+      );
+      return;
+    }
+
+    if (selectedImage == null) {
+      Get.snackbar(
+        "Error",
+        "Please select a category image",
+      );
+      return;
+    }
+
+    setState(() {
+      isCreating = true;
+    });
+
+    try {
+      final success = await FireStoreUtils.createCategory(
+        categoryName: categoryName,
+        categoryType: "ALL",
+        categoryImage: selectedImage!,
+        createdBy: outletId,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        FireStoreUtils.clearVendorCategoriesCache();
+
+        final controller =
+        Get.find<AddFromCatalogController>();
+
+        await controller.loadCategories();
+
+        if (!mounted) return;
+
+        Get.back();
+
+        Get.snackbar(
+          "Success",
+          "Category created successfully",
+        );
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to create category",
+        );
+      }
+    } catch (e) {
+      debugPrint('Create category error: $e');
+
+      if (mounted) {
+        Get.snackbar(
+          "Error",
+          "Something went wrong",
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isCreating = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-
-            Container(
-              height: 65,
-              width: 65,
-              decoration: BoxDecoration(
-                color: ColorConst.orange.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child:  Icon(
-                Icons.category_outlined,
-                color: ColorConst.orange,
-                size: 32,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              "Create Category",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            Text(
-              "Add a new category for your products",
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: categoryController,
-              decoration: InputDecoration(
-                hintText: "e.g. Biryani Specials",
-                prefixIcon:  Icon(
-                  Icons.local_offer_outlined,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ICON
+              Container(
+                height: 65,
+                width: 65,
+                decoration: BoxDecoration(
+                  color: ColorConst.orange.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.category_outlined,
                   color: ColorConst.orange,
+                  size: 32,
                 ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius:
-                  BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+              ),
+
+              const SizedBox(height: 16),
+
+              const Text(
+                "Create Category",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                  BorderRadius.circular(12),
-                  borderSide:  BorderSide(
+              ),
+
+              const SizedBox(height: 6),
+
+              Text(
+                "Add a new category for your products",
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 13,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // CATEGORY NAME
+              TextField(
+                controller: categoryController,
+                decoration: InputDecoration(
+                  hintText: "e.g. Biryani Specials",
+                  prefixIcon: Icon(
+                    Icons.local_offer_outlined,
                     color: ColorConst.orange,
-                    width: 2,
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? AppThemeData.grey800
+                      : Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: ColorConst.orange,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
-            ),
-            TextField(
-              controller: imageController,
-              decoration: InputDecoration(
-                hintText: "Category Image URL",
-                prefixIcon: Icon(
-                  Icons.image_outlined,
-                  color: ColorConst.orange,
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+
+              const SizedBox(height: 16),
+
+              // CATEGORY IMAGE
+              InkWell(
+                onTap: isCreating
+                    ? null
+                    : pickCategoryImage,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppThemeData.grey800
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                    ),
+                  ),
+                  child: selectedImage == null
+                      ? Column(
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 40,
+                        color: ColorConst.orange,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Select Category Image",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Tap to choose an image",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  )
+                      : ClipRRect(
+                    borderRadius:
+                    BorderRadius.circular(12),
+                    child: Image.file(
+                      selectedImage!,
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
 
-            Row(
-              children: [
+              const SizedBox(height: 24),
 
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Get.back();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      minimumSize:
-                      const Size.fromHeight(48),
-                      shape:
-                      RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(12),
+              Row(
+                children: [
+                  // CANCEL
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: isCreating
+                          ? null
+                          : () => Get.back(),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize:
+                        const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      "Cancel",
+                      child: const Text("Cancel"),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
 
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final categoryName = categoryController.text.trim();
-
-                      final categoryImageUrl = imageController.text.trim();
-                     final Outletid= Preferences.getInt("outletId");
-
-                      if (categoryName.isEmpty) {
-                        Get.snackbar(
-                          "Error",
-                          "Please enter category name",
-                        );
-                        return;
-                      }
-
-                      final success = await FireStoreUtils.createCategory(
-                        categoryName: categoryName,
-                        categoryType: "ALL",
-                        categoryImageUrl: categoryImageUrl,
-                        createdBy:Outletid // Replace with the logged-in user's ID if available
-                      );
-
-                      if (success) {
-
-                        FireStoreUtils
-                            .clearVendorCategoriesCache();
-
-                        await controller
-                            .loadCategories();
-
-                        Get.back();
-
-                        Get.snackbar(
-                          "Success",
-                          "Category created successfully",
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                      ColorConst.orange,
-                      minimumSize:
-                      const Size.fromHeight(48),
-                      shape:
-                      RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(12),
+                  // CREATE
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed:
+                      isCreating ? null : createCategory,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                        ColorConst.orange,
+                        minimumSize:
+                        const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      "Create",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight:
-                        FontWeight.w600,
+                      child: isCreating
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child:
+                        CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : const Text(
+                        "Create",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
-
 /// Step 1 – pick a category on a clean, simple screen.
 class _CategorySelectionStep extends StatelessWidget {
   const _CategorySelectionStep();
@@ -856,7 +1002,7 @@ class _BottomBar extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         child: SafeArea(
           child: Row(
             children: [

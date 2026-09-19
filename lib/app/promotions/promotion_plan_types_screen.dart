@@ -146,22 +146,22 @@ class PromotionPlanTypesScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          // The ID badge is always pale orange matching the screenshot
-                          color: const Color(0xFFFFF0E6),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'ID: ${type.promotionPlanTypesId}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: AppThemeData.bold,
-                            color: primaryOrange, // Always orange text
-                          ),
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      //   decoration: BoxDecoration(
+                      //     // The ID badge is always pale orange matching the screenshot
+                      //     color: const Color(0xFFFFF0E6),
+                      //     borderRadius: BorderRadius.circular(6),
+                      //   ),
+                      //   child: Text(
+                      //     'ID: ${type.promotionPlanTypesId}',
+                      //     style: const TextStyle(
+                      //       fontSize: 11,
+                      //       fontFamily: AppThemeData.bold,
+                      //       color: primaryOrange, // Always orange text
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

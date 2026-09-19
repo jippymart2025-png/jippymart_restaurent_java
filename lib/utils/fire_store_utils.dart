@@ -100,6 +100,7 @@ class FireStoreUtils {
   // Outlet inventory cache: keyed by outletId, TTL 3 minutes
   static final Map<int, _OutletProductsCacheEntry> _outletProductCache = {};
   static String? _lastOutletProductsError;
+
   static String? get lastOutletProductsError => _lastOutletProductsError;
 
   // Resolved outlet id cache: avoids a getMerchantOutlets API call on every
@@ -110,16 +111,19 @@ class FireStoreUtils {
 
   // In-flight guard: if two callers request the same merchant's outlets while
   // a request is already running, they share one network call instead of two.
-  static final Map<int, Future<List<OutletModel>>> _merchantOutletsInFlight = {};
+  static final Map<int, Future<List<OutletModel>>> _merchantOutletsInFlight = {
+  };
 
   // Vendor categories cache: one global list per app session, TTL 3 minutes
   static List<VendorCategoryModel>? _cachedVendorCategories;
   static DateTime? _vendorCategoriesCacheTime;
   static const Duration _vendorCategoriesCacheTTL = Duration(minutes: 3);
+
   static void clearVendorCategoriesCache() {
     _cachedVendorCategories = null;
     _vendorCategoriesCacheTime = null;
   }
+
   static List<VariantGroupModel>? _cachedVariantGroups;
   static DateTime? _variantGroupsCacheTime;
 
@@ -185,10 +189,10 @@ class FireStoreUtils {
   }
 
 
-
   static Future<bool> userExistOrNot(String uid) async {
     bool isExist = false;
-    debugPrint("userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
+    debugPrint(
+        "userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
     await http.get(
         Uri.parse('${Constant.baseUrl}restaurant/exists/$uid')
     ).then((response) {
@@ -209,7 +213,8 @@ class FireStoreUtils {
   }
 
 
-  static Future<UserModel?> getUserProfile(String uuid, {bool forceRefresh = false}) async {
+  static Future<UserModel?> getUserProfile(String uuid,
+      {bool forceRefresh = false}) async {
     try {
       // Performance Optimization: Check cache first (transparent to caller)
       if (!forceRefresh &&
@@ -218,7 +223,8 @@ class FireStoreUtils {
           _userProfileCacheTime != null) {
         final cacheAge = DateTime.now().difference(_userProfileCacheTime!);
         if (cacheAge < _userProfileCacheTTL) {
-          log("getUserProfile: Returning cached data (age: ${cacheAge.inSeconds}s)");
+          log("getUserProfile: Returning cached data (age: ${cacheAge
+              .inSeconds}s)");
           Constant.userModel = _cachedUserProfile;
           return _cachedUserProfile;
         }
@@ -236,10 +242,11 @@ class FireStoreUtils {
         final responseData = json.decode(response.body);
         log(" getUserProfileresponse body ${response.body}");
         if (responseData['success'] ?? true) {
-          final userData = responseData['data'] ?? responseData; // Adjust based on your API structure
+          final userData = responseData['data'] ??
+              responseData; // Adjust based on your API structure
           final userModel = UserModel.fromJson(userData);
           Constant.userModel = userModel;
-          debugPrint(" getUserProfile  ${  Constant.userModel?.toJson()} ");
+          debugPrint(" getUserProfile  ${ Constant.userModel?.toJson()} ");
 
           // Performance Optimization: Cache the result
           _cachedUserProfile = userModel;
@@ -252,7 +259,8 @@ class FireStoreUtils {
           return null;
         }
       } else {
-        log("Failed to get user profile: ${response.statusCode} - ${response.body}");
+        log("Failed to get user profile: ${response.statusCode} - ${response
+            .body}");
         return null;
       }
     } catch (error) {
@@ -263,14 +271,17 @@ class FireStoreUtils {
 
   static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     try {
-      if (merchantId.trim().isEmpty) {
+      if (merchantId
+          .trim()
+          .isEmpty) {
         debugPrint("Merchant ID is empty");
         return null;
       }
 
       final headers = await getHeaders();
       final url =
-          '${Constant.baseUrl}fm/merchants/getMerchantProfile?merchantId=$merchantId';
+          '${Constant
+          .baseUrl}fm/merchants/getMerchantProfile?merchantId=$merchantId';
 
       final response = await http.get(
         Uri.parse(url),
@@ -286,7 +297,7 @@ class FireStoreUtils {
         debugPrint("Merchant Profile JSON = $jsonData");
 
         final profileData = jsonData is Map<String, dynamic> &&
-                jsonData['data'] is Map
+            jsonData['data'] is Map
             ? Map<String, dynamic>.from(jsonData['data'] as Map)
             : Map<String, dynamic>.from(jsonData as Map);
 
@@ -306,7 +317,8 @@ class FireStoreUtils {
   }
 
 
-  static Future<bool> updateMerchantProfile(String merchantId, MerchantModel merchant) async {
+  static Future<bool> updateMerchantProfile(String merchantId,
+      MerchantModel merchant) async {
     try {
       final headers = await getHeaders();
       final parsedMerchantId = int.tryParse(merchantId);
@@ -329,8 +341,8 @@ class FireStoreUtils {
         'bankName': merchant.bankName,
         'accountHolderName': merchant.accountHolderName,
         'userType': 'MERCHANT',
-        'aadharNumber' : merchant.addharNumber,
-        'panNumber' : merchant.panNumber,
+        'aadharNumber': merchant.addharNumber,
+        'panNumber': merchant.panNumber,
       };
 
       debugPrint("===== UPDATE MERCHANT REQUEST =====");
@@ -346,7 +358,8 @@ class FireStoreUtils {
         log("updateMerchantProfile success: ${response.body}");
         return true;
       } else {
-        log("updateMerchantProfile failed: ${response.statusCode} - ${response.body}");
+        log("updateMerchantProfile failed: ${response.statusCode} - ${response
+            .body}");
         return false;
       }
     } catch (e) {
@@ -354,17 +367,19 @@ class FireStoreUtils {
       return false;
     }
   }
+
   //(end)
 //  THIS IS JAVA API OF CREATE MERCHANT PROFILE   create merchant profile
-  static Future<MerchantModel?> createMerchant(MerchantRequestModel request,) async {
+  static Future<MerchantModel?> createMerchant(
+      MerchantRequestModel request,) async {
     try {
-     // final token = Preferences.getString('authToken');
-     final headers = await getHeaders();
+      // final token = Preferences.getString('authToken');
+      final headers = await getHeaders();
 //{
-     //    'Content-Type': 'application/json',
-     //    'Accept': 'application/json',
-     //    //'Authorization':'Bearer $token'
-     //  } ;
+      //    'Content-Type': 'application/json',
+      //    'Accept': 'application/json',
+      //    //'Authorization':'Bearer $token'
+      //  } ;
       final response = await http.post(
         Uri.parse(
           '${Constant.baseUrl}fm/merchants/createMerchant',
@@ -380,7 +395,6 @@ class FireStoreUtils {
 
       if (response.statusCode == 200 ||
           response.statusCode == 201) {
-
         final jsonResponse =
         jsonDecode(response.body);
 
@@ -395,6 +409,7 @@ class FireStoreUtils {
       return null;
     }
   }
+
   // end
   // THIS IS THE CODE OF JAVA GETTING THE LIST OF OUTLETS BY USING THE MERCHANT ID
   static Future<List<OutletModel>> getMerchantOutlets(int merchantId) async {
@@ -438,27 +453,27 @@ class FireStoreUtils {
         final List<dynamic> data = rawData is List
             ? rawData
             : rawData == null
-                ? <dynamic>[]
-                : <dynamic>[];
+            ? <dynamic>[]
+            : <dynamic>[];
 
         debugPrint("API DATA COUNT = ${data.length}");
 
         final outlets = data
             .map((e) {
-              try {
-                if (e is Map<String, dynamic>) {
-                  return OutletModel.fromJsonSafe(e);
-                }
-                if (e is Map) {
-                  return OutletModel.fromJsonSafe(
-                    Map<String, dynamic>.from(e),
-                  );
-                }
-              } catch (parseError) {
-                debugPrint("Outlet list item parse warning: $parseError");
-              }
-              return null;
-            })
+          try {
+            if (e is Map<String, dynamic>) {
+              return OutletModel.fromJsonSafe(e);
+            }
+            if (e is Map) {
+              return OutletModel.fromJsonSafe(
+                Map<String, dynamic>.from(e),
+              );
+            }
+          } catch (parseError) {
+            debugPrint("Outlet list item parse warning: $parseError");
+          }
+          return null;
+        })
             .whereType<OutletModel>()
             .toList();
 
@@ -520,10 +535,8 @@ class FireStoreUtils {
     }
   }
 
-  static OutletFetchResult _parseOutletFetchResult(
-    String body,
-    int requestedOutletId,
-  ) {
+  static OutletFetchResult _parseOutletFetchResult(String body,
+      int requestedOutletId,) {
     Map<String, dynamic>? decoded;
     try {
       final raw = jsonDecode(body);
@@ -608,7 +621,8 @@ class FireStoreUtils {
     if (merchantId == null || merchantId <= 0) {
       final fallbackMerchantId = OutletModel.extractMerchantIdFromRaw(body);
       if (fallbackMerchantId != null && fallbackMerchantId > 0) {
-        debugPrint("[getOutletById] Using fallback merchantId=$fallbackMerchantId");
+        debugPrint(
+            "[getOutletById] Using fallback merchantId=$fallbackMerchantId");
         return OutletFetchResult.success(
           outlet: OutletModel(
             outletId: resolvedOutletId,
@@ -629,11 +643,11 @@ class FireStoreUtils {
       outlet: outlet.outletId != null
           ? outlet
           : OutletModel(
-              outletId: resolvedOutletId,
-              merchantId: merchantId,
-              outletName: outlet.outletName,
-             // outletCategoryId: outlet.outletCategoryId,
-            ),
+        outletId: resolvedOutletId,
+        merchantId: merchantId,
+        outletName: outlet.outletName,
+        // outletCategoryId: outlet.outletCategoryId,
+      ),
       merchantId: merchantId,
       outletId: resolvedOutletId,
       hadParseWarning: hadParseWarning,
@@ -645,6 +659,7 @@ class FireStoreUtils {
     final result = await fetchOutletById(outletId);
     return result.isSuccess ? result.outlet : null;
   }
+
   //END
   static Future<UserModel?> getUserById(String uuid) async {
     try {
@@ -665,11 +680,13 @@ class FireStoreUtils {
           return UserModel.fromJson(responseData['data']);
         }
         // Option 3: With success flag
-        else if (responseData['success'] == true && responseData['user'] != null) {
+        else
+        if (responseData['success'] == true && responseData['user'] != null) {
           return UserModel.fromJson(responseData['user']);
         }
         // Option 4: With success flag and data field
-        else if (responseData['success'] == true && responseData['data'] != null) {
+        else
+        if (responseData['success'] == true && responseData['data'] != null) {
           return UserModel.fromJson(responseData['data']);
         }
         else {
@@ -680,7 +697,8 @@ class FireStoreUtils {
         log("User not found with UUID: $uuid");
         return null;
       } else {
-        log("Failed to get user by ID. Status: ${response.statusCode}, Body: ${response.body}");
+        log("Failed to get user by ID. Status: ${response
+            .statusCode}, Body: ${response.body}");
         return null;
       }
     } catch (error) {
@@ -707,7 +725,8 @@ class FireStoreUtils {
       );
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return responseData['success'] ?? true; // Adjust based on your API response
+        return responseData['success'] ??
+            true; // Adjust based on your API response
       } else {
         debugPrint('Failed to update wallet: ${response.statusCode}');
         return false;
@@ -718,6 +737,7 @@ class FireStoreUtils {
       return false;
     }
   }
+
   static Future<bool> updateUser(UserModel userModel) async {
     bool isUpdate = false;
     try {
@@ -751,14 +771,18 @@ class FireStoreUtils {
     }
     return isUpdate;
   }
+
   // Rate limiting: Track last request time and minimum delay between requests
   static DateTime? _lastUpdateDriverUserRequest;
-  static const Duration _minDelayBetweenRequests = Duration(milliseconds: 200); // 200ms delay between requests
+  static const Duration _minDelayBetweenRequests = Duration(
+      milliseconds: 200); // 200ms delay between requests
 
-  static Future<bool> updateDriverUser(UserModel userModel, {int maxRetries = 3}) async {
+  static Future<bool> updateDriverUser(UserModel userModel,
+      {int maxRetries = 3}) async {
     // Rate limiting: Ensure minimum delay between requests
     if (_lastUpdateDriverUserRequest != null) {
-      final timeSinceLastRequest = DateTime.now().difference(_lastUpdateDriverUserRequest!);
+      final timeSinceLastRequest = DateTime.now().difference(
+          _lastUpdateDriverUserRequest!);
       if (timeSinceLastRequest < _minDelayBetweenRequests) {
         final delayNeeded = _minDelayBetweenRequests - timeSinceLastRequest;
         await Future.delayed(delayNeeded);
@@ -771,7 +795,8 @@ class FireStoreUtils {
         userModel.id = userModel.firebaseId;
         log("updateDriverUser ${'${Constant.baseUrl}restaurant/updateUser'} ");
         log("updateDriverUser ${userModel.firebaseId} ${userModel.id} ");
-        Map<String, dynamic> userJson = _convertTimestampsToJson(userModel.toJson());
+        Map<String, dynamic> userJson = _convertTimestampsToJson(
+            userModel.toJson());
         log("updateDriverUser ${userJson}");
         _lastUpdateDriverUserRequest = DateTime.now();
         final response = await http.post(
@@ -786,28 +811,35 @@ class FireStoreUtils {
           final responseData = json.decode(response.body);
           // Performance Optimization: Invalidate user profile cache after update
           _invalidateUserProfileCache();
-          return responseData['success'] ?? true; // Adjust based on your API response structure
+          return responseData['success'] ??
+              true; // Adjust based on your API response structure
         } else if (response.statusCode == 429) {
           // Rate limited - retry with exponential backoff
           attempt++;
           if (attempt < maxRetries) {
-            final backoffDelay = Duration(milliseconds: 500 * (1 << (attempt - 1))); // Exponential backoff: 500ms, 1s, 2s
-            log("Rate limited (429). Retrying in ${backoffDelay.inMilliseconds}ms (attempt $attempt/$maxRetries)");
+            final backoffDelay = Duration(milliseconds: 500 *
+                (1 << (attempt - 1))); // Exponential backoff: 500ms, 1s, 2s
+            log("Rate limited (429). Retrying in ${backoffDelay
+                .inMilliseconds}ms (attempt $attempt/$maxRetries)");
             await Future.delayed(backoffDelay);
             continue;
           } else {
-            log("Failed to update user after $maxRetries attempts: ${response.statusCode} - ${response.body}");
+            log("Failed to update user after $maxRetries attempts: ${response
+                .statusCode} - ${response.body}");
             return false;
           }
         } else {
-          log("Failed to update user: ${response.statusCode} - ${response.body}");
+          log("Failed to update user: ${response.statusCode} - ${response
+              .body}");
           return false;
         }
       } catch (error) {
         attempt++;
         if (attempt < maxRetries) {
-          final backoffDelay = Duration(milliseconds: 500 * (1 << (attempt - 1)));
-          log("Error updating user. Retrying in ${backoffDelay.inMilliseconds}ms (attempt $attempt/$maxRetries): $error");
+          final backoffDelay = Duration(
+              milliseconds: 500 * (1 << (attempt - 1)));
+          log("Error updating user. Retrying in ${backoffDelay
+              .inMilliseconds}ms (attempt $attempt/$maxRetries): $error");
           await Future.delayed(backoffDelay);
           continue;
         } else {
@@ -818,6 +850,7 @@ class FireStoreUtils {
     }
     return false;
   }
+
   static Future<bool> withdrawWalletAmount(WithdrawalModel userModel) async {
     try {
       final response = await http.post(
@@ -844,8 +877,8 @@ class FireStoreUtils {
   static Future<List<OnBoardingModel>> getOnBoardingList() async {
     try {
       final response = await http.get(
-        Uri.parse('${Constant.baseUrl}onboarding/restaurantApp'),
-        headers: await getHeaders()
+          Uri.parse('${Constant.baseUrl}onboarding/restaurantApp'),
+          headers: await getHeaders()
       );
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -860,7 +893,8 @@ class FireStoreUtils {
           throw Exception('API returned success: false');
         }
       } else {
-        throw Exception('Failed to load onboarding data: ${response.statusCode}');
+        throw Exception(
+            'Failed to load onboarding data: ${response.statusCode}');
       }
     } catch (error) {
       log(error.toString());
@@ -872,7 +906,8 @@ class FireStoreUtils {
       WalletTransactionModel walletTransactionModel) async {
     try {
       // Convert Timestamps to JSON-serializable format before encoding
-      Map<String, dynamic> transactionJson = _convertTimestampsToJson(walletTransactionModel.toJson());
+      Map<String, dynamic> transactionJson = _convertTimestampsToJson(
+          walletTransactionModel.toJson());
 
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
@@ -1090,7 +1125,9 @@ class FireStoreUtils {
     }
     return isExist;
   }
-  static Future<ReferralModel?> getReferralUserByCode(String referralCode) async {
+
+  static Future<ReferralModel?> getReferralUserByCode(
+      String referralCode) async {
     try {
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/referral/get-by-code'),
@@ -1176,8 +1213,6 @@ class FireStoreUtils {
   static Future<List<ZoneModel>?> getZone() async {
     List<ZoneModel> zoneList = [];
     try {
-
-
       final response = await http.get(
         Uri.parse('${Constant.baseUrl}restaurant/zones'),
         headers: {'Content-Type': 'application/json'},
@@ -1198,7 +1233,7 @@ class FireStoreUtils {
         throw Exception('Failed to load zones: ${response.statusCode}');
       }
     } catch (error) {
-      log(error.toString(),name: " getZone ");
+      log(error.toString(), name: " getZone ");
       return null;
     }
     return zoneList;
@@ -1208,7 +1243,9 @@ class FireStoreUtils {
     List<OrderModel> orderList = [];
     try {
       final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/orders?vendorID=${Constant.userModel!.vendorID}'),
+        Uri.parse(
+            '${Constant.baseUrl}restaurant/orders?vendorID=${Constant.userModel!
+                .vendorID}'),
         headers: {
           'Content-Type': 'application/json',
           // Add any required authentication headers here
@@ -1240,12 +1277,14 @@ class FireStoreUtils {
     }
     return orderList;
   }
+
   static Future<bool> updateOrder(OrderModel orderModel) async {
     bool isUpdate = false;
     try {
       log(" updateOrder ${orderModel.toJson()} ");
       // Convert the entire model to JSON and handle any remaining Timestamps
-      Map<String, dynamic> orderJson = _convertTimestampsToJson(orderModel.toJson());
+      Map<String, dynamic> orderJson = _convertTimestampsToJson(
+          orderModel.toJson());
 
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/orders/${orderModel.id}'),
@@ -1258,7 +1297,8 @@ class FireStoreUtils {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         isUpdate = true;
       } else {
-        debugPrint("Failed to update order: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to update order: ${response.statusCode} - ${response
+            .body}");
         isUpdate = false;
       }
     } catch (error) {
@@ -1273,12 +1313,14 @@ class FireStoreUtils {
     if (value is Timestamp) {
       return value.toDate().toIso8601String();
     } else if (value is Map<String, dynamic>) {
-      return value.map((key, value) => MapEntry(key, _convertTimestampsToJson(value)));
+      return value.map((key, value) =>
+          MapEntry(key, _convertTimestampsToJson(value)));
     } else if (value is List) {
       return value.map((e) => _convertTimestampsToJson(e)).toList();
     }
     return value;
   }
+
   // static Future<bool> updateOrder(OrderModel orderModel) async {
   //   bool isUpdate = false;
   //   // try {
@@ -1306,7 +1348,9 @@ class FireStoreUtils {
   static Future restaurantVendorWalletSet(OrderModel orderModel) async {
     // Performance Optimization: Add null safety checks
     if (orderModel.products == null || orderModel.products!.isEmpty) {
-      log("Warning: Order has no products, skipping wallet transaction. Order ID: ${orderModel.id}");
+      log(
+          "Warning: Order has no products, skipping wallet transaction. Order ID: ${orderModel
+              .id}");
       return;
     }
 
@@ -1316,7 +1360,8 @@ class FireStoreUtils {
     // double adminCommission = 0.0;
 
     for (var element in orderModel.products!) {
-      final discountPrice = double.tryParse(element.discountPrice?.toString() ?? '0') ?? 0.0;
+      final discountPrice = double.tryParse(
+          element.discountPrice?.toString() ?? '0') ?? 0.0;
 
       if (discountPrice <= 0) {
         subTotal = subTotal +
@@ -1340,7 +1385,8 @@ class FireStoreUtils {
     }
 
     if (orderModel.taxSetting != null) {
-      final discount = double.tryParse(orderModel.discount?.toString() ?? '0') ?? 0.0;
+      final discount = double.tryParse(
+          orderModel.discount?.toString() ?? '0') ?? 0.0;
       for (var element in orderModel.taxSetting!) {
         taxAmount = taxAmount +
             Constant.calculateTax(
@@ -1350,11 +1396,14 @@ class FireStoreUtils {
     }
 
     double basePrice = 0;
-    final discount = double.tryParse(orderModel.discount?.toString() ?? '0') ?? 0.0;
+    final discount = double.tryParse(orderModel.discount?.toString() ?? '0') ??
+        0.0;
 
     // var totalamount = (subTotal + taxAmount) - discount - specialDiscount;
-    if (Constant.adminCommission != null && Constant.adminCommission!.isEnabled == true) {
-      final adminCommissionPercent = double.tryParse(orderModel.adminCommission?.toString() ?? '0') ?? 0.0;
+    if (Constant.adminCommission != null &&
+        Constant.adminCommission!.isEnabled == true) {
+      final adminCommissionPercent = double.tryParse(
+          orderModel.adminCommission?.toString() ?? '0') ?? 0.0;
       if (adminCommissionPercent > 0) {
         basePrice =
             (subTotal / (1 + (adminCommissionPercent / 100))) -
@@ -1399,7 +1448,9 @@ class FireStoreUtils {
     // }
 
     if (vendorAuthorId == null || vendorAuthorId.isEmpty) {
-      log("Warning: Cannot determine vendor author ID, skipping wallet transaction. Order ID: ${orderModel.id}");
+      log(
+          "Warning: Cannot determine vendor author ID, skipping wallet transaction. Order ID: ${orderModel
+              .id}");
       // Don't throw error - order update should still succeed
       return;
     }
@@ -1437,10 +1488,12 @@ class FireStoreUtils {
         userId: vendorAuthorId);
   }
 
-  static Future<bool> addWalletTransaction(WalletTransactionModel historyModel) async {
+  static Future<bool> addWalletTransaction(
+      WalletTransactionModel historyModel) async {
     try {
       // Convert Timestamps to JSON-serializable format before encoding
-      Map<String, dynamic> transactionJson = _convertTimestampsToJson(historyModel.toJson());
+      Map<String, dynamic> transactionJson = _convertTimestampsToJson(
+          historyModel.toJson());
 
       final response = await http.post(
         Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
@@ -1453,7 +1506,8 @@ class FireStoreUtils {
         log("Wallet transaction added successfully");
         return true;
       } else {
-        log("Failed to add wallet transaction: ${response.statusCode} - ${response.body}");
+        log("Failed to add wallet transaction: ${response
+            .statusCode} - ${response.body}");
         return false;
       }
     } catch (error) {
@@ -1461,13 +1515,15 @@ class FireStoreUtils {
       return false;
     }
   }
-  static Future<RatingModel?> getOrderReviewsByID(
-      String orderId, String productID) async {
+
+  static Future<RatingModel?> getOrderReviewsByID(String orderId,
+      String productID) async {
     RatingModel? ratingModel;
 
     try {
       final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/reviews/order?orderId=$orderId&productID=$productID'),
+        Uri.parse('${Constant
+            .baseUrl}restaurant/reviews/order?orderId=$orderId&productID=$productID'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -1483,7 +1539,8 @@ class FireStoreUtils {
           ratingModel = null;
         }
       } else {
-        debugPrint("Failed to fetch review: ${response.statusCode} - ${response.body}");
+        debugPrint("Failed to fetch review: ${response.statusCode} - ${response
+            .body}");
         ratingModel = null;
       }
     } catch (error) {
@@ -1493,6 +1550,7 @@ class FireStoreUtils {
 
     return ratingModel;
   }
+
   static Future<List<ProductModel>?> getProduct() async {
     final String? vendorID = Constant.userModel?.vendorID;
     if (vendorID != null) {
@@ -1505,7 +1563,8 @@ class FireStoreUtils {
 
     List<ProductModel> productList = [];
     try {
-      String url = '${Constant.baseUrl}restaurant/products?vendorID=${Constant.userModel!.vendorID}';
+      String url = '${Constant.baseUrl}restaurant/products?vendorID=${Constant
+          .userModel!.vendorID}';
       debugPrint("getProduct $url ");
       final response = await http.get(
         Uri.parse(url),
@@ -1535,13 +1594,16 @@ class FireStoreUtils {
             }
           }
           if (vendorID != null) {
-            _productCache[vendorID] = _ProductCacheEntry(productList, DateTime.now());
+            _productCache[vendorID] =
+                _ProductCacheEntry(productList, DateTime.now());
           }
         } else {
           debugPrint("No products found or API returned error");
         }
       } else {
-        debugPrint("Failed to fetch products: ${response.statusCode} - ${response.body}");
+        debugPrint(
+            "Failed to fetch products: ${response.statusCode} - ${response
+                .body}");
         return null;
       }
     } catch (error) {
@@ -1580,7 +1642,7 @@ class FireStoreUtils {
       final merchantId = int.tryParse(Preferences.getString('merchantId')) ?? 0;
       if (merchantId <= 0) {
         _lastOutletProductsError =
-            'Merchant session not found. Please log in again.';
+        'Merchant session not found. Please log in again.';
         return null;
       }
 
@@ -1616,7 +1678,7 @@ class FireStoreUtils {
               name.toLowerCase() == storedName.toLowerCase()) {
             debugPrint(
               '[resolveOutletIdForMenu] corrected $storedId -> $id '
-              'for outlet "$storedName"',
+                  'for outlet "$storedName"',
             );
             await _syncOutletPreferences(id, outletName: outlet.outletName);
             _cachedResolvedOutletId = id;
@@ -1627,7 +1689,7 @@ class FireStoreUtils {
       }
 
       _lastOutletProductsError =
-          'Selected outlet not found. Go back and select your outlet again.';
+      'Selected outlet not found. Go back and select your outlet again.';
       return null;
     }
 
@@ -1652,13 +1714,14 @@ class FireStoreUtils {
     return result.outletId;
   }
 
-  static Future<void> _syncOutletPreferences(
-    int outletId, {
+  static Future<void> _syncOutletPreferences(int outletId, {
     String? outletName,
   }) async {
     await Preferences.setInt('outletId', outletId);
     await Preferences.setInt('selectedOutletId', outletId);
-    if (outletName != null && outletName.trim().isNotEmpty) {
+    if (outletName != null && outletName
+        .trim()
+        .isNotEmpty) {
       await Preferences.setString('selectedOutletName', outletName.trim());
     }
   }
@@ -1672,10 +1735,10 @@ class FireStoreUtils {
     _lastOutletProductsError = null;
 
     final verifiedOutletId =
-        await resolveOutletIdForMenu(preferredId: outletId);
+    await resolveOutletIdForMenu(preferredId: outletId);
     if (verifiedOutletId == null || verifiedOutletId <= 0) {
       _lastOutletProductsError =
-          'Invalid outlet session. Please go back and select your outlet again.';
+      'Invalid outlet session. Please go back and select your outlet again.';
       return null;
     }
 
@@ -1719,11 +1782,11 @@ class FireStoreUtils {
             _lastOutletProductsError = errBody['message'].toString();
           } else {
             _lastOutletProductsError =
-                'Failed to load outlet menu (HTTP ${response.statusCode})';
+            'Failed to load outlet menu (HTTP ${response.statusCode})';
           }
         } catch (_) {
           _lastOutletProductsError =
-              'Failed to load outlet menu (HTTP ${response.statusCode})';
+          'Failed to load outlet menu (HTTP ${response.statusCode})';
         }
         return null;
       }
@@ -1771,7 +1834,7 @@ class FireStoreUtils {
 
       debugPrint(
         'getOutletProducts loaded ${result.products.length} products, '
-        '${result.categories.length} categories',
+            '${result.categories.length} categories',
       );
 
       return result;
@@ -1882,7 +1945,9 @@ class FireStoreUtils {
   //   }
   // }
 
-  static Future<List<PromotionOutletProductModel>?> getOutletProductsDetailsOnlyForPromotions({required int outletId}) async {
+  static Future<List<
+      PromotionOutletProductModel>?> getOutletProductsDetailsOnlyForPromotions(
+      {required int outletId}) async {
     try {
       final headers = await getHeaders();
       final url = '${Constant.baseUrl}fm/products/outlet/$outletId';
@@ -1892,25 +1957,32 @@ class FireStoreUtils {
         final decoded = json.decode(response.body);
         if (decoded is List) {
           return decoded
-              .map((item) => PromotionOutletProductModel.fromJson(Map<String, dynamic>.from(item)))
+              .map((item) =>
+              PromotionOutletProductModel.fromJson(
+                  Map<String, dynamic>.from(item)))
               .toList();
         }
       }
-      log('getOutletProductsFlat failed: ${response.statusCode} — ${response.body}');
+      log('getOutletProductsFlat failed: ${response.statusCode} — ${response
+          .body}');
       return null;
     } catch (e) {
       log('getOutletProductsFlat error: $e');
       return null;
     }
   }
-  static Future<OutletSingleProductModel?> getOutletSingleProductDetails(int productId) async {
+
+  static Future<OutletSingleProductModel?> getOutletSingleProductDetails(
+      int productId) async {
     try {
       final headers = await getHeaders();
-      final url = '${Constant.baseUrl}fm/products/getCompleteProductDetails/$productId';
+      final url = '${Constant
+          .baseUrl}fm/products/getCompleteProductDetails/$productId';
 
       debugPrint('getOutletSingleProductDetails => $url');
       final response = await http.get(Uri.parse(url), headers: headers);
-      debugPrint('getOutletSingleProductDetails status => ${response.statusCode}');
+      debugPrint(
+          'getOutletSingleProductDetails status => ${response.statusCode}');
       debugPrint('getOutletSingleProductDetails body => ${response.body}');
 
       if (response.statusCode == 200) {
@@ -1925,6 +1997,7 @@ class FireStoreUtils {
       return null;
     }
   }
+
   static Future<bool> updateSingleOutletProductDetails({
     required int productId,
     required OutletSingleProductModel originalProduct,
@@ -1941,7 +2014,8 @@ class FireStoreUtils {
     try {
       final headers = await getHeaders();
       final url =
-          '${Constant.baseUrl}fm/products/updateCategoryAndProductDetails/$productId';
+          '${Constant
+          .baseUrl}fm/products/updateCategoryAndProductDetails/$productId';
 
       final body = json.encode(
         originalProduct.toUpdateJson(
@@ -2020,7 +2094,9 @@ class FireStoreUtils {
   static Future<List<AdvertisementModel>?> getAdvertisement() async {
     try {
       final response = await http.get(
-        Uri.parse('${Constant.baseUrl}advertisements?vendorId=${Constant.userModel!.vendorID}'),
+        Uri.parse(
+            '${Constant.baseUrl}advertisements?vendorId=${Constant.userModel!
+                .vendorID}'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -2032,7 +2108,8 @@ class FireStoreUtils {
           List<AdvertisementModel> advertisementList = [];
 
           for (var element in responseData['data']) {
-            AdvertisementModel advertisementModel = AdvertisementModel.fromJson(element);
+            AdvertisementModel advertisementModel = AdvertisementModel.fromJson(
+                element);
             advertisementList.add(advertisementModel);
           }
           advertisementList.sort((a, b) {
@@ -2075,7 +2152,8 @@ class FireStoreUtils {
           AdvertisementModel.fromJson(responseData['data']);
           advertisementdata = advertisementModel;
         } else {
-          log('API returned success: false for advertisement ID: $advertisementId');
+          log(
+              'API returned success: false for advertisement ID: $advertisementId');
         }
       } else {
         log('HTTP Error: ${response.statusCode} - ${response.body}');
@@ -2086,11 +2164,13 @@ class FireStoreUtils {
 
     return advertisementdata;
   }
+
   /// GET /api/fm/product-variant-groups — cached, same TTL pattern as categories.
   static Future<List<VariantGroupModel>?> getProductVariantGroups() async {
     if (_cachedVariantGroups != null &&
         _variantGroupsCacheTime != null &&
-        DateTime.now().difference(_variantGroupsCacheTime!) < _variantGroupsCacheTTL) {
+        DateTime.now().difference(_variantGroupsCacheTime!) <
+            _variantGroupsCacheTTL) {
       return _cachedVariantGroups!;
     }
 
@@ -2104,7 +2184,8 @@ class FireStoreUtils {
       debugPrint("Response => ${response.body}");
 
       if (response.statusCode != 200) {
-        throw Exception("Failed to load variant groups: ${response.statusCode}");
+        throw Exception(
+            "Failed to load variant groups: ${response.statusCode}");
       }
 
       final List<dynamic> data = jsonDecode(response.body);
@@ -2125,9 +2206,11 @@ class FireStoreUtils {
   /// GET /api/fm/product-variant-groups/{groupId}/values — not cached long-term
   /// since values can be added mid-session; caller (controller) should cache
   /// per groupId for the lifetime of the sheet only.
-  static Future<List<VariantGroupValueModel>?> getVariantGroupValues(int groupId) async {
+  static Future<List<VariantGroupValueModel>?> getVariantGroupValues(
+      int groupId) async {
     try {
-      final url = '${Constant.baseUrl}fm/product-variant-groups/$groupId/values';
+      final url = '${Constant
+          .baseUrl}fm/product-variant-groups/$groupId/values';
       final headers = await getHeaders();
       final response = await http.get(Uri.parse(url), headers: headers);
 
@@ -2141,7 +2224,8 @@ class FireStoreUtils {
 
       final List<dynamic> data = jsonDecode(response.body);
       return data
-          .map((e) => VariantGroupValueModel.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) =>
+          VariantGroupValueModel.fromJson(Map<String, dynamic>.from(e)))
           .where((v) => v.isActive)
           .toList();
     } catch (e) {
@@ -2157,7 +2241,8 @@ class FireStoreUtils {
     required String variantName,
   }) async {
     try {
-      final url = '${Constant.baseUrl}fm/product-variant-groups/$groupId/values';
+      final url = '${Constant
+          .baseUrl}fm/product-variant-groups/$groupId/values';
       final headers = await getHeaders();
       final response = await http.post(
         Uri.parse(url),
@@ -2179,6 +2264,7 @@ class FireStoreUtils {
       return null;
     }
   }
+
   /// GET /api/fm/products/{productId}/variant-options
   /// Loads whatever variants already exist on this outlet product.
   /// The endpoint only returns groupName (a string), never the group's id,
@@ -2197,7 +2283,8 @@ class FireStoreUtils {
       debugPrint('Response => ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to load variant options: ${response.statusCode}');
+        throw Exception(
+            'Failed to load variant options: ${response.statusCode}');
       }
 
       final List<dynamic> data = jsonDecode(response.body);
@@ -2213,7 +2300,8 @@ class FireStoreUtils {
         grouped.putIfAbsent(groupName, () => []).add(
           StagedVariantOption(
             productVariantOptionsId: json['productVariantOptionsId'] ?? 0,
-            productVariantGroupValuesId: json['productVariantGroupValuesId'] ?? 0,
+            productVariantGroupValuesId: json['productVariantGroupValuesId'] ??
+                0,
             variantName: json['variantName'] ?? '',
             priceType: json['priceType'] ?? 'MAIN',
             variantPrice: (json['variantPrice'] as num?)?.toDouble() ?? 0,
@@ -2274,7 +2362,8 @@ class FireStoreUtils {
   }) async {
     try {
       final headers = await getHeaders();
-      final url = '${Constant.baseUrl}fm/products/$productId/variant-options/$optionId';
+      final url = '${Constant
+          .baseUrl}fm/products/$productId/variant-options/$optionId';
       final response = await http.delete(Uri.parse(url), headers: headers);
       debugPrint('deleteProductVariantOption => $url');
       debugPrint('Status Code => ${response.statusCode}');
@@ -2286,7 +2375,8 @@ class FireStoreUtils {
     }
   }
 
-  static Future<CreateMasterProductResponse?> createMasterProduct(CreateMasterProductRequest request,) async {
+  static Future<CreateMasterProductResponse?> createMasterProduct(
+      CreateMasterProductRequest request,) async {
     try {
       final headers = await getHeaders();
       final response = await http.post(
@@ -2309,6 +2399,7 @@ class FireStoreUtils {
       return null;
     }
   }
+
   // static Future<bool> updateProduct(ProductModel productModel) async {
   //   bool isUpdate = false;
   //   try {
@@ -2338,7 +2429,8 @@ class FireStoreUtils {
   // }
 
   /// Updates a master product via the Java API PUT endpoint.
-  static Future<bool> updateMasterProduct(int masterProductId, Map<String, dynamic> payload) async {
+  static Future<bool> updateMasterProduct(int masterProductId,
+      Map<String, dynamic> payload) async {
     try {
       // final token = Preferences.getString('authToken');
       final headers = await getHeaders();
@@ -2351,12 +2443,15 @@ class FireStoreUtils {
 
         body: json.encode(payload),
       );
-      log('updateMasterProduct response: ${response.statusCode} ${response.body}');
+      log('updateMasterProduct response: ${response.statusCode} ${response
+          .body}');
       if (response.statusCode >= 200 && response.statusCode < 300) {
         invalidateProductCache(Constant.userModel?.vendorID);
         return true;
       } else {
-        debugPrint('updateMasterProduct failed: ${response.statusCode} - ${response.body}');
+        debugPrint(
+            'updateMasterProduct failed: ${response.statusCode} - ${response
+                .body}');
         return false;
       }
     } catch (e) {
@@ -2381,7 +2476,9 @@ class FireStoreUtils {
         invalidateVendorCategoryCache();
         isDeleted = true;
       } else {
-        debugPrint("Failed to delete product: ${response.statusCode} - ${response.body}");
+        debugPrint(
+            "Failed to delete product: ${response.statusCode} - ${response
+                .body}");
         isDeleted = false;
       }
     } catch (error) {
@@ -2391,14 +2488,17 @@ class FireStoreUtils {
 
     return isDeleted;
   }
+
   static Future<List<WalletTransactionModel>?> getWalletTransaction() async {
     List<WalletTransactionModel> walletTransactionList = [];
 
     try {
-      final String userId = await FireStoreUtils.getCurrentUid(); // Get current user ID
+      final String userId = await FireStoreUtils
+          .getCurrentUid(); // Get current user ID
 
       final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/wallet/transactions?userId=$userId'),
+        Uri.parse(
+            '${Constant.baseUrl}restaurant/wallet/transactions?userId=$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -2434,11 +2534,12 @@ class FireStoreUtils {
           });
         }
       } else {
-        throw Exception('Failed to load wallet transactions: ${response.statusCode}');
+        throw Exception(
+            'Failed to load wallet transactions: ${response.statusCode}');
       }
     } catch (error) {
       log('getWalletTransaction error: $error');
-        return null;
+      return null;
     }
 
     return walletTransactionList;
@@ -2518,7 +2619,8 @@ class FireStoreUtils {
           return null;
         }
       } else {
-        log("Failed to get wallet transactions: ${response.statusCode} - ${response.body}");
+        log("Failed to get wallet transactions: ${response
+            .statusCode} - ${response.body}");
         return null;
       }
     } catch (error) {
@@ -2526,11 +2628,14 @@ class FireStoreUtils {
       return null;
     }
   }
+
   static Future<List<WithdrawalModel>?> getWithdrawHistory() async {
     List<WithdrawalModel> walletTransactionList = [];
     try {
       final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/wallet/withdraw-history?vendorID=${Constant.userModel!.vendorID.toString()}'),
+        Uri.parse('${Constant
+            .baseUrl}restaurant/wallet/withdraw-history?vendorID=${Constant
+            .userModel!.vendorID.toString()}'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -2540,7 +2645,8 @@ class FireStoreUtils {
         if (responseData['success'] == true) {
           final List<dynamic> data = responseData['data'];
           for (var element in data) {
-            WithdrawalModel walletTransactionModel = WithdrawalModel.fromJson(element);
+            WithdrawalModel walletTransactionModel = WithdrawalModel.fromJson(
+                element);
             walletTransactionList.add(walletTransactionModel);
           }
           walletTransactionList.sort((a, b) {
@@ -2553,7 +2659,8 @@ class FireStoreUtils {
           throw Exception('API returned success: false');
         }
       } else {
-        throw Exception('Failed to load withdrawal history: ${response.statusCode}');
+        throw Exception(
+            'Failed to load withdrawal history: ${response.statusCode}');
       }
     } catch (error) {
       log(error.toString());
@@ -2574,7 +2681,8 @@ class FireStoreUtils {
         if (responseData['success'] == true) {
           final Map<String, dynamic> paymentData = responseData['data'];
           if (paymentData['payFastSettings'] != null) {
-            PayFastModel payFastModel = PayFastModel.fromJson(paymentData['payFastSettings']);
+            PayFastModel payFastModel = PayFastModel.fromJson(
+                paymentData['payFastSettings']);
             await Preferences.setString(
                 Preferences.payFastSettings,
                 jsonEncode(payFastModel.toJson())
@@ -2582,7 +2690,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['MercadoPago'] != null) {
-            MercadoPagoModel mercadoPagoModel = MercadoPagoModel.fromJson(paymentData['MercadoPago']);
+            MercadoPagoModel mercadoPagoModel = MercadoPagoModel.fromJson(
+                paymentData['MercadoPago']);
             await Preferences.setString(
                 Preferences.mercadoPago,
                 jsonEncode(mercadoPagoModel.toJson())
@@ -2590,7 +2699,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['paypalSettings'] != null) {
-            PayPalModel payPalModel = PayPalModel.fromJson(paymentData['paypalSettings']);
+            PayPalModel payPalModel = PayPalModel.fromJson(
+                paymentData['paypalSettings']);
             await Preferences.setString(
                 Preferences.paypalSettings,
                 jsonEncode(payPalModel.toJson())
@@ -2598,7 +2708,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['stripeSettings'] != null) {
-            StripeModel stripeModel = StripeModel.fromJson(paymentData['stripeSettings']);
+            StripeModel stripeModel = StripeModel.fromJson(
+                paymentData['stripeSettings']);
             await Preferences.setString(
                 Preferences.stripeSettings,
                 jsonEncode(stripeModel.toJson())
@@ -2606,7 +2717,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['flutterWave'] != null) {
-            FlutterWaveModel flutterWaveModel = FlutterWaveModel.fromJson(paymentData['flutterWave']);
+            FlutterWaveModel flutterWaveModel = FlutterWaveModel.fromJson(
+                paymentData['flutterWave']);
             await Preferences.setString(
                 Preferences.flutterWave,
                 jsonEncode(flutterWaveModel.toJson())
@@ -2614,7 +2726,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['payStack'] != null) {
-            PayStackModel payStackModel = PayStackModel.fromJson(paymentData['payStack']);
+            PayStackModel payStackModel = PayStackModel.fromJson(
+                paymentData['payStack']);
             await Preferences.setString(
                 Preferences.payStack,
                 jsonEncode(payStackModel.toJson())
@@ -2622,7 +2735,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['PaytmSettings'] != null) {
-            PaytmModel paytmModel = PaytmModel.fromJson(paymentData['PaytmSettings']);
+            PaytmModel paytmModel = PaytmModel.fromJson(
+                paymentData['PaytmSettings']);
             await Preferences.setString(
                 Preferences.paytmSettings,
                 jsonEncode(paytmModel.toJson())
@@ -2630,7 +2744,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['walletSettings'] != null) {
-            WalletSettingModel walletSettingModel = WalletSettingModel.fromJson(paymentData['walletSettings']);
+            WalletSettingModel walletSettingModel = WalletSettingModel.fromJson(
+                paymentData['walletSettings']);
             await Preferences.setString(
                 Preferences.walletSettings,
                 jsonEncode(walletSettingModel.toJson())
@@ -2638,7 +2753,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['razorpaySettings'] != null) {
-            RazorPayModel razorPayModel = RazorPayModel.fromJson(paymentData['razorpaySettings']);
+            RazorPayModel razorPayModel = RazorPayModel.fromJson(
+                paymentData['razorpaySettings']);
             await Preferences.setString(
                 Preferences.razorpaySettings,
                 jsonEncode(razorPayModel.toJson())
@@ -2646,7 +2762,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['CODSettings'] != null) {
-            CodSettingModel codSettingModel = CodSettingModel.fromJson(paymentData['CODSettings']);
+            CodSettingModel codSettingModel = CodSettingModel.fromJson(
+                paymentData['CODSettings']);
             await Preferences.setString(
                 Preferences.codSettings,
                 jsonEncode(codSettingModel.toJson())
@@ -2654,7 +2771,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['midtrans_settings'] != null) {
-            MidTrans midTrans = MidTrans.fromJson(paymentData['midtrans_settings']);
+            MidTrans midTrans = MidTrans.fromJson(
+                paymentData['midtrans_settings']);
             await Preferences.setString(
                 Preferences.midTransSettings,
                 jsonEncode(midTrans.toJson())
@@ -2662,7 +2780,8 @@ class FireStoreUtils {
           }
 
           if (paymentData['orange_money_settings'] != null) {
-            OrangeMoney orangeMoney = OrangeMoney.fromJson(paymentData['orange_money_settings']);
+            OrangeMoney orangeMoney = OrangeMoney.fromJson(
+                paymentData['orange_money_settings']);
             await Preferences.setString(
                 Preferences.orangeMoneySettings,
                 jsonEncode(orangeMoney.toJson())
@@ -2680,14 +2799,17 @@ class FireStoreUtils {
           throw Exception('API returned unsuccessful response');
         }
       } else {
-        throw Exception('Failed to load payment settings: ${response.statusCode}');
+        throw Exception(
+            'Failed to load payment settings: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error fetching payment settings: $e');
       rethrow;
     }
   }
-  static Future<VendorModel?> getVendorById(String vendorId, {bool forceRefresh = false}) async {
+
+  static Future<VendorModel?> getVendorById(String vendorId,
+      {bool forceRefresh = false}) async {
     VendorModel? vendorModel;
     try {
       // Performance Optimization: Check cache first (transparent to caller)
@@ -2697,7 +2819,8 @@ class FireStoreUtils {
           _vendorCacheTime != null) {
         final cacheAge = DateTime.now().difference(_vendorCacheTime!);
         if (cacheAge < _vendorCacheTTL) {
-          log("getVendorById: Returning cached data (age: ${cacheAge.inSeconds}s)");
+          log("getVendorById: Returning cached data (age: ${cacheAge
+              .inSeconds}s)");
           return _cachedVendor;
         }
       }
@@ -2732,7 +2855,6 @@ class FireStoreUtils {
     }
     return vendorModel;
   }
-
 
 
   static Future<List<VendorCategoryModel>?> getAllMasterCategories() async {
@@ -2797,31 +2919,127 @@ class FireStoreUtils {
   static Future<bool> createCategory({
     required String categoryName,
     required String categoryType,
-    required String categoryImageUrl,
+    required File categoryImage,
     required int createdBy,
   }) async {
     try {
-      //final token = Preferences.getString('authToken');
       final headers = await getHeaders();
-      final response = await http.post(
-        Uri.parse(
-          '${Constant.baseUrl}fm/createCategory',
-        ),
-        headers: headers,
-        body: jsonEncode({
-          "categoryName": categoryName,
-          "categoryType": categoryType,
-          "categoryImageUrl": categoryImageUrl,
-          "createdBy": createdBy,
-        }),
+
+      final uri = Uri.parse(
+        '${Constant.baseUrl}fm/createCategory',
       );
 
-      debugPrint(response.body);
+      final request = http.MultipartRequest(
+        'POST',
+        uri,
+      );
 
-      return response.statusCode == 200 ||
-          response.statusCode == 201;
-    } catch (e) {
-      print(e);
+
+
+      headers.forEach((key, value) {
+        // Don't print full JWT in production logs
+        if (key.toLowerCase() == 'authorization') {
+          final auth = value ?? '';
+
+          if (auth.length > 20) {
+            debugPrint(
+                '$key: ${auth.substring(0, 20)}...'
+            );
+          } else {
+            debugPrint('$key: $auth');
+          }
+        } else {
+          debugPrint('$key: $value');
+        }
+      });
+
+
+      request.headers.addAll({
+        'Accept': '*/*',
+        'Authorization': headers['Authorization'] ?? '',
+      });
+      // ============================================================
+      // DEBUG - FORM FIELDS
+      // ============================================================
+
+      request.fields['categoryName'] = categoryName;
+      request.fields['categoryType'] = categoryType;
+      request.fields['createdBy'] = createdBy.toString();
+
+
+      if (await categoryImage.exists()) {
+        final fileSize = await categoryImage.length();
+
+        debugPrint(
+          'Size         : ${(fileSize / 1024).toStringAsFixed(2)} KB',
+        );
+
+        debugPrint(
+          'File name    : ${categoryImage.path.split('/').last}',
+        );
+      }
+
+      // ============================================================
+      // ADD IMAGE
+      // ============================================================
+
+      final multipartFile = await http.MultipartFile.fromPath(
+        'categoryImageUrl',
+        categoryImage.path,
+      );
+
+
+
+      request.files.add(multipartFile);
+
+      // ============================================================
+      // FINAL REQUEST DEBUG
+      // ============================================================
+
+      debugPrint('');
+      debugPrint('REQUEST HEADERS AFTER ADD:');
+
+      request.headers.forEach((key, value) {
+        if (key.toLowerCase() == 'authorization') {
+          if (value.length > 20) {
+            debugPrint(
+              '$key: ${value.substring(0, 20)}...',
+            );
+          } else {
+            debugPrint('$key: $value');
+          }
+        } else {
+          debugPrint('$key: $value');
+        }
+      });
+
+      final streamedResponse = await request.send();
+
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      );
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201) {
+        try {
+          final data = jsonDecode(response.body);
+
+          debugPrint('Category ID    : ${data['categoryId']}');
+          debugPrint('Category Name  : ${data['categoryName']}');
+          debugPrint(
+            'Category Image : ${data['categoryImageUrl']}',
+          );
+        } catch (e) {
+          debugPrint(
+            'Response parsing error: $e',
+          );
+        }
+
+        return true;
+      }
+
+      return false;
+    } catch (e, stackTrace) {
       return false;
     }
   }
@@ -4210,57 +4428,7 @@ class FireStoreUtils {
       return null;
     }
   }
-  static Future<EmailTemplateModel?> getEmailTemplates(String type) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/email-templates/$type'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          if (responseData['data'] != null) {
-            EmailTemplateModel emailTemplateModel = EmailTemplateModel.fromJson(responseData['data']);
-            return emailTemplateModel;
-          } else {
-            return null; // No email template found
-          }
-        } else {
-          throw Exception('API returned success: false');
-        }
-      } else {
-        throw Exception('Failed to load email template: ${response.statusCode}');
-      }
-    } catch (error) {
-      log(error.toString());
-      return null;
-    }
-  }
-  static sendPayoutMail(
-      {required String amount, required String payoutrequestid}) async {
-    EmailTemplateModel? emailTemplateModel =
-        await FireStoreUtils.getEmailTemplates(Constant.payoutRequest);
-    String body = emailTemplateModel!.subject.toString();
-    body = body.replaceAll("{userid}", Constant.userModel!.id.toString());
-    String newString = emailTemplateModel.message.toString();
-    newString =
-        newString.replaceAll("{username}", Constant.userModel!.fullName());
-    newString =
-        newString.replaceAll("{userid}", Constant.userModel!.id.toString());
-    newString =
-        newString.replaceAll("{amount}", Constant.amountShow(amount: amount));
-    newString =
-        newString.replaceAll("{payoutrequestid}", payoutrequestid.toString());
-    newString = newString.replaceAll("{usercontactinfo}",
-        "${Constant.userModel!.email}\n${Constant.userModel!.phoneNumber}");
-    await Constant.sendMail(
-        subject: body,
-        isAdmin: emailTemplateModel.isSendToAdmin,
-        body: newString,
-        recipients: [Constant.userModel!.email]);
-  }
+
   static Future<NotificationModel?> getNotificationContent(String type) async {
     try {
       // Make API call

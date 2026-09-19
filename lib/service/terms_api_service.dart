@@ -5,16 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/utils/common.dart';
 
-/// Fetches the legal documents (privacy policy / terms & conditions) from:
-///
-/// GET /fm/terms-and-conditions/getTermsAndConditionsForAppType
-///   ?appType=merchant & appPolicyType=PRIVACYPOLICY | TERMSANDCONDITIONS
-///
-/// Response shape:
-/// {
-///   "terms_and_conditions_id": 1,
-///   "app_type": "merchant",
-///   "content": "\n{\n  \"termsAndConditions\": \"<p>...</p>\"\n}\n"
 /// }
 ///
 /// The [content] field is itself a JSON string; the HTML lives inside its

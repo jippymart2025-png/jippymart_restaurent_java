@@ -6,7 +6,7 @@ import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 
-import '../service/outlet_otp_service.dart';
+import '../../../service/outlet_otp_service.dart';
 
 class OutletOtpController extends GetxController {
   static const int otpValiditySeconds = 10 * 60; // 10 minutes

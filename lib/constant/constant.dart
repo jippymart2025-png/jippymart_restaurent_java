@@ -32,13 +32,13 @@ import 'package:video_player/video_player.dart';
 
 class Constant {
    // static String baseUrl  = "https://web.jippymart.in/api/";
-   static String baseUrl  = "http://192.168.0.15:8084/api/";
-  // static String baseUrl = "http://187.127.156.147:8084/api/";
+   // static String baseUrl  = "http://192.168.0.16:8084/api/";
+  static String baseUrl = "http://187.127.156.147:8084/api/";
   static String userRoleDriver = 'driver';
   static String userRoleCustomer = 'customer';
   static String userRoleMerchant = 'MERCHANT';
   static UserModel? userModel;
-  static MerchantModel? merchantModel;
+  static MerchantModel? merchantModel; 
   static const globalUrl = "https://jippymart.in/";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";
   static bool isZoneAvailable = false;
@@ -499,70 +499,6 @@ class Constant {
     return (crossings % 2 != 0);
   }
 
-  static MailSettings? mailSettings;
-  static SmtpServer? get smtpServer {
-    final settings = mailSettings;
-    if (settings == null ||
-        settings.host == null ||
-        settings.userName == null ||
-        settings.password == null ||
-        settings.host!.isEmpty ||
-        settings.userName!.isEmpty ||
-        settings.password!.isEmpty) {
-      return null;
-    }
-    return SmtpServer(
-      settings.host.toString(),
-      username: settings.userName.toString(),
-      password: settings.password.toString(),
-      port: 465,
-      ignoreBadCertificate: false,
-      ssl: true,
-      allowInsecure: true,
-    );
-  }
-
-  static sendMail(
-      {String? subject,
-      String? body,
-      bool? isAdmin = false,
-      List<dynamic>? recipients}) async {
-    final settings = mailSettings;
-    final server = smtpServer;
-    if (settings == null || server == null) {
-      print('❌ Mail settings not available, skipping sendMail.');
-      return;
-    }
-
-    final recipientList = <dynamic>[...?recipients];
-    if (recipientList.isEmpty) {
-      print('❌ No recipients provided, skipping sendMail.');
-      return;
-    }
-
-    if (isAdmin == true) {
-      recipientList.add(settings.userName.toString());
-    }
-
-    final message = Message()
-      ..from = Address(
-          settings.userName.toString(), settings.fromName.toString())
-      ..recipients = recipientList
-      ..subject = subject
-      ..text = body
-      ..html = body;
-
-    try {
-      final sendReport = await send(message, server);
-      print('Message sent: $sendReport');
-    } on MailerException catch (e) {
-      print(e);
-      print('Message not sent.');
-      for (var p in e.problems) {
-        print('Problem: ${p.code}: ${p.msg}');
-      }
-    }
-  }
 
   static Color statusText({required String? status}) {
     if (status == orderPlaced) {

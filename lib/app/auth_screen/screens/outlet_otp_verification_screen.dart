@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:jippymart_restaurant/controller/outlet_otp_controller.dart';
+import 'package:jippymart_restaurant/app/auth_screen/controllers/outlet_otp_controller.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/widget/otp_box_input.dart';

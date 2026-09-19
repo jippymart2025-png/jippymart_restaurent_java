@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:jippymart_restaurant/app/profile_screen/widgets/DeleteAccountButton.dart';
+import 'package:jippymart_restaurant/app/profile_screen/widgets/LegalSection.dart';
+import 'package:jippymart_restaurant/app/profile_screen/widgets/LogoutButton.dart';
+import 'package:jippymart_restaurant/app/profile_screen/widgets/ProfileRow.dart';
+import 'package:jippymart_restaurant/app/profile_screen/widgets/SectionTitle.dart';
+import 'package:jippymart_restaurant/app/profile_screen/widgets/VersionFooter.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,23 +16,18 @@ import 'package:jippymart_restaurant/app/edit_profile_screen/screens/edit_profil
 import 'package:jippymart_restaurant/app/promotions/promotion_plan_types_screen.dart';
 import 'package:jippymart_restaurant/app/special_discount_screen/special_discount_screen.dart';
 import 'package:jippymart_restaurant/app/subscriptions/screens/subscription_plans_screen.dart';
-import 'package:jippymart_restaurant/app/terms_and_condition/terms_and_condition_screen.dart';
-import 'package:jippymart_restaurant/app/verification_screen/verification_screen.dart';
 import 'package:jippymart_restaurant/app/withdraw_method_setup_screens/withdraw_method_setup_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
-import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/controller/home_controller.dart';
 import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
 import 'package:jippymart_restaurant/app/profile_screen/controller/profile_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
-import 'package:jippymart_restaurant/themes/custom_dialog_box.dart';
 import 'package:jippymart_restaurant/themes/responsive.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/utils/const/image_const.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
-import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -85,19 +86,21 @@ class ProfileScreen extends StatelessWidget {
                     controller: controller,
                     themeChange: themeChange),
                 const SizedBox(height: 20),
-                _LegalSection(
+                LegalSection(
                     controller: controller,
                     themeChange: themeChange),
                 const SizedBox(height: 10),
-                _LogoutButton(
-                    loginController: loginController,
-                    themeChange: themeChange),
+                LogoutButton(
+                  controller: controller,
+                  loginController: loginController,
+                  themeChange: themeChange,
+                ),
                 const SizedBox(height: 10),
-                _DeleteAccountButton(
+                DeleteAccountButton(
                     controller: controller,
                     themeChange: themeChange),
                 const SizedBox(height: 10),
-                _VersionFooter(themeChange: themeChange),
+                VersionFooter(themeChange: themeChange),
               ],
             ),
           ),
@@ -235,34 +238,12 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Reusable section title
-// ═══════════════════════════════════════════════════════════════════════
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final themeChange = Provider.of<DarkThemeProvider>(context);
-    return Text(
-      title.tr,
-      style: TextStyle(
-        color: themeChange.getThem()
-            ? AppThemeData.grey400
-            : AppThemeData.grey500,
-        fontFamily: AppThemeData.semiBold,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // Reusable section card (list wrapper)
 // ═══════════════════════════════════════════════════════════════════════
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.children});
+class SectionCard extends StatelessWidget {
+  const SectionCard({required this.children});
   final List<Widget> children;
 
   @override
@@ -286,70 +267,12 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Reusable list row
-// ═══════════════════════════════════════════════════════════════════════
-class _ProfileRow extends StatelessWidget {
-  const _ProfileRow({
-    required this.controller,
-    required this.icon,
-    required this.title,
-    this.onTap,
-    this.trailing,
-    this.danger = false,
-  });
-
-  final ProfileController controller;
-  final Widget icon;
-  final String title;
-  final VoidCallback? onTap;
-  final Widget? trailing;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final themeChange = Provider.of<DarkThemeProvider>(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: InkWell(
-        onTap: onTap == null
-            ? null
-            : () async {
-          FocusManager.instance.primaryFocus?.unfocus();
-          onTap!.call();
-        },
-        child: Row(
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                title.tr,
-                style: TextStyle(
-                  fontFamily: AppThemeData.medium,
-                  fontSize: 16,
-                  color: danger
-                      ? AppThemeData.danger300
-                      : themeChange.getThem()
-                      ? AppThemeData.grey100
-                      : AppThemeData.grey800,
-                ),
-              ),
-            ),
-            trailing ?? const Icon(Icons.keyboard_arrow_right),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // Reusable icon container
 // ═══════════════════════════════════════════════════════════════════════
-class _IconBubble extends StatelessWidget {
-  const _IconBubble({
+class IconBubble extends StatelessWidget {
+  const IconBubble({
     required this.asset,
     required this.bgColor,
     this.padding = const EdgeInsets.all(10),
@@ -405,13 +328,13 @@ class _OutletInformationSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Outlet Information'),
+        const SectionTitle('Outlet Information'),
         const SizedBox(height: 10),
-        _SectionCard(
+        SectionCard(
           children: [
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: 'assets/icons/ic_manage_product.svg',
                 bgColor: themeChange.getThem()
                     ? AppThemeData.secondary600
@@ -425,9 +348,9 @@ class _OutletInformationSection extends StatelessWidget {
                 Constant.isDineInEnable ? 2 : 1;
               },
             ),
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: 'assets/icons/ic_wallet.svg',
                 bgColor: themeChange.getThem()
                     ? AppThemeData.secondary600
@@ -464,13 +387,13 @@ class _OffersSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Offers & Discounts'),
+        const SectionTitle('Offers & Discounts'),
         const SizedBox(height: 10),
-        _SectionCard(
+        SectionCard(
           children: [
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: 'assets/icons/ic_gift_box.svg',
                 bgColor: themeChange.getThem()
                     ? AppThemeData.success600
@@ -479,9 +402,9 @@ class _OffersSection extends StatelessWidget {
               title: 'Promotion Plans',
               onTap: () => Get.to(const PromotionPlanTypesScreen()),
             ),
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: 'assets/icons/ic_subscription.svg',
                 bgColor: themeChange.getThem()
                     ? AppThemeData.secondary600
@@ -490,9 +413,9 @@ class _OffersSection extends StatelessWidget {
               title: 'Subscription Plans',
               onTap: () => Get.to(const SubscriptionPlansScreen()),
             ),
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: ImageConst.whatsApp,
                 bgColor: themeChange.getThem()
                     ? AppThemeData.secondary600
@@ -506,9 +429,9 @@ class _OffersSection extends StatelessWidget {
               onTap: _openBoostWhatsApp,
             ),
             if (Constant.specialDiscountOfferEnable != false)
-              _ProfileRow(
+              ProfileRow(
                 controller: controller,
-                icon: _IconBubble(
+                icon: IconBubble(
                   asset: 'assets/icons/ic_coupon.svg',
                   bgColor: themeChange.getThem()
                       ? AppThemeData.success600
@@ -564,14 +487,14 @@ class _PreferencesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Preferences'),
+        const SectionTitle('Preferences'),
         const SizedBox(height: 10),
-        _SectionCard(
+        SectionCard(
           children: [
             Obx(
-                  () => _ProfileRow(
+                  () => ProfileRow(
                 controller: controller,
-                icon: _IconBubble(
+                icon: IconBubble(
                   asset: 'assets/icons/ic_darkmode.svg',
                   bgColor: themeChange.getThem()
                       ? AppThemeData.warning600
@@ -622,13 +545,13 @@ class _SocialSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Social'),
+        const SectionTitle('Social'),
         const SizedBox(height: 10),
-        _SectionCard(
+        SectionCard(
           children: [
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: 'assets/icons/ic_share.svg',
                 bgColor: themeChange.getThem()
                     ? AppThemeData.info600
@@ -645,9 +568,9 @@ class _SocialSection extends StatelessWidget {
                 );
               },
             ),
-            _ProfileRow(
+            ProfileRow(
               controller: controller,
-              icon: _IconBubble(
+              icon: IconBubble(
                 asset: 'assets/icons/ic_rate.svg',
                 bgColor: themeChange.getThem()
                     ? AppThemeData.info600
@@ -687,215 +610,5 @@ class _SocialSection extends StatelessWidget {
     } catch (e) {
       debugPrint('Rate the app fallback error: $e');
     }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Legal section
-// ═══════════════════════════════════════════════════════════════════════
-class _LegalSection extends StatelessWidget {
-  const _LegalSection({
-    required this.controller,
-    required this.themeChange,
-  });
-
-  final ProfileController controller;
-  final DarkThemeProvider themeChange;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = themeChange.getThem()
-        ? AppThemeData.grey800
-        : AppThemeData.grey100;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionTitle('Legal'),
-        const SizedBox(height: 10),
-        _SectionCard(
-          children: [
-            _ProfileRow(
-              controller: controller,
-              icon: _IconBubble(
-                asset: 'assets/icons/ic_documention.svg',
-                bgColor: bg,
-              ),
-              title: 'Document Verifications',
-              onTap: () => Get.to(const VerificationScreen()),
-            ),
-            _ProfileRow(
-              controller: controller,
-              icon: _IconBubble(
-                asset: 'assets/icons/ic_terms_condition.svg',
-                bgColor: bg,
-              ),
-              title: 'Terms and Conditions',
-              onTap: () => Get.to(
-                const TermsAndConditionScreen(type: 'termAndCondition'),
-              ),
-            ),
-            _ProfileRow(
-              controller: controller,
-              icon: _IconBubble(
-                asset: 'assets/icons/ic_privacyPolicy.svg',
-                bgColor: bg,
-              ),
-              title: 'Privacy Policy',
-              onTap: () => Get.to(
-                const TermsAndConditionScreen(type: 'privacy'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Logout
-// ═══════════════════════════════════════════════════════════════════════
-class _LogoutButton extends StatelessWidget {
-  const _LogoutButton({
-    required this.loginController,
-    required this.themeChange,
-  });
-
-  final LoginController loginController;
-  final DarkThemeProvider themeChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: ShapeDecoration(
-        color: themeChange.getThem()
-            ? AppThemeData.grey900
-            : AppThemeData.grey50,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: _ProfileRow(
-        controller: Get.find<ProfileController>(),
-        icon: SvgPicture.asset('assets/icons/ic_logout.svg'),
-        title: 'Log out',
-        danger: true,
-        onTap: () => _confirmLogout(context),
-      ),
-    );
-  }
-
-  void _confirmLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => CustomDialogBox(
-        title: 'Log out'.tr,
-        descriptions:
-        'Are you sure you want to log out? You will need to enter your credentials to log back in.'
-            .tr,
-        positiveString: 'Log out'.tr,
-        negativeString: 'Cancel'.tr,
-        positiveClick: () => loginController.logoutFunction(),
-        negativeClick: () => Get.back(),
-        img: Image.asset(
-          'assets/images/ic_logout.gif',
-          height: 50,
-          width: 50,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Delete account
-// ═══════════════════════════════════════════════════════════════════════
-class _DeleteAccountButton extends StatelessWidget {
-  const _DeleteAccountButton({
-    required this.controller,
-    required this.themeChange,
-  });
-
-  final ProfileController controller;
-  final DarkThemeProvider themeChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: InkWell(
-        onTap: () => _confirmDelete(context),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset('assets/icons/ic_delete.svg'),
-            const SizedBox(width: 10),
-            Text(
-              'Delete Account'.tr,
-              style: const TextStyle(
-                fontFamily: AppThemeData.medium,
-                fontSize: 16,
-                color: AppThemeData.danger300,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => CustomDialogBox(
-        title: 'Delete Account'.tr,
-        descriptions:
-        'Are you sure you want to delete your account? This action is irreversible and will permanently remove all your data.'
-            .tr,
-        positiveString: 'Delete'.tr,
-        negativeString: 'Cancel'.tr,
-        positiveClick: () async {
-          ShowToastDialog.showLoader('Please wait'.tr);
-          await controller.deleteUserFromServer();
-          await FireStoreUtils().deleteUser();
-          ShowToastDialog.closeLoader();
-        },
-        negativeClick: () => Get.back(),
-        img: Image.asset(
-          'assets/icons/delete_dialog.gif',
-          height: 50,
-          width: 50,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Version footer
-// ═══════════════════════════════════════════════════════════════════════
-class _VersionFooter extends StatelessWidget {
-  const _VersionFooter({required this.themeChange});
-  final DarkThemeProvider themeChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Center(
-          child: Text(
-            'V : ${Constant.appVersion}',
-            style: TextStyle(
-              fontFamily: AppThemeData.medium,
-              fontSize: 14,
-              color: themeChange.getThem()
-                  ? AppThemeData.grey50
-                  : AppThemeData.grey900,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-      ],
-    );
   }
 }

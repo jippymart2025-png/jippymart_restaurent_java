@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -274,7 +275,7 @@ class AddFromCatalogController extends GetxController {
   Future<void> createCategory({
     required String categoryName,
     required String categoryType,
-    required String categoryImageUrl,
+    required File categoryImage,
     required int createdBy,
   }) async {
     if (categoryName.trim().isEmpty) return;
@@ -282,13 +283,21 @@ class AddFromCatalogController extends GetxController {
     final success = await FireStoreUtils.createCategory(
       categoryName: categoryName.trim(),
       categoryType: categoryType,
-      categoryImageUrl: categoryImageUrl,
+      categoryImage: categoryImage,
       createdBy: createdBy,
     );
 
     if (success) {
       await loadCategories();
-      Get.snackbar("Success", "Category Created");
+      Get.snackbar(
+        "Success",
+        "Category Created",
+      );
+    } else {
+      Get.snackbar(
+        "Error",
+        "Failed to create category",
+      );
     }
   }
 
@@ -695,6 +704,7 @@ class AddFromCatalogController extends GetxController {
         isVeg: sel.isVeg ?? false,
         hasProductVariants: variantGroups.isNotEmpty,
         merchantPrice: sel.merchantPrice,
+        imageLink: sel.imageLink ?? '',
         csvTiming: '',
         csvDayOfWeek: '',
         timings: timings,

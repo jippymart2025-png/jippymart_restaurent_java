@@ -29,6 +29,7 @@ class AddProductFromMasterItem {
   // ✅ NEW: per-product category fields
   final int categoryId;
   final String categoryName;
+  final String imageLink;
 
   final bool isVeg;
   final bool hasProductVariants;
@@ -45,6 +46,7 @@ class AddProductFromMasterItem {
     required this.categoryId,      // ✅
     required this.categoryName,    // ✅
     required this.isVeg,
+    required this.imageLink,
     required this.hasProductVariants,
     required this.merchantPrice,
     required this.csvTiming,
@@ -66,6 +68,7 @@ class AddProductFromMasterItem {
       "merchantPrice": _num(merchantPrice),
       "csvTiming": csvTiming,
       "csvDayOfWeek": csvDayOfWeek,
+      "imageLink": imageLink,
       "timings": timings.map((e) => e.toJson()).toList(),
       "variantGroups": variantGroups.map((e) => e.toJson()).toList(),
     };
