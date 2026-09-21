@@ -4,11 +4,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
+import 'package:jippymart_restaurant/models/cart_product_model.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
@@ -16,6 +18,7 @@ import 'package:jippymart_restaurant/service/audio_player_service.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
 import '../models/outlet_model.dart';
+import '../utils/common.dart';
 import '../utils/preferences.dart';
 
 class HomeController extends GetxController {
@@ -203,20 +206,21 @@ class HomeController extends GetxController {
   Future<void> getOrder({bool silent = false}) async {
     if (isFetchingOrders.value && silent) return;
 
-    final vendorId = Constant.userModel?.vendorID;
-    if (vendorId == null || vendorId.isEmpty) {
-      debugPrint('⚠️ No vendor ID – skipping order fetch');
+    final outletId = _activeOutletId;
+    if (outletId <= 0) {
+      debugPrint('⚠️ No outlet ID – skipping order fetch');
       return;
     }
 
-    final url = '${Constant.baseUrl}orders/vendor/$vendorId';
+    final url = '${Constant.baseUrl}fm/outlets/orderSummaryForOutlet'
+        '?outletId=$outletId&page=0&size=10';
     if (!silent) debugPrint('🔄 Fetching orders: $url');
 
     isFetchingOrders.value = true;
     try {
+      final headers = await getHeaders();
       final response = await http
-          .get(Uri.parse(url),
-          headers: {'Content-Type': 'application/json'})
+          .get(Uri.parse(url), headers: headers)
           .timeout(const Duration(seconds: 15),
           onTimeout: () =>
           throw TimeoutException('Order fetch timed out'));
@@ -226,26 +230,21 @@ class HomeController extends GetxController {
         return;
       }
 
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['success'] != true) {
-        if (!silent) {
-          debugPrint('⚠️ API error: ${json['message']}');
-        }
-        return;
-      }
-
-      final rawList = json['data'] as List<dynamic>;
+      final decoded = jsonDecode(response.body);
+      final rawList = decoded is List ? decoded : <dynamic>[];
       final parsed = <OrderModel>[];
       var errors = 0;
 
       for (final el in rawList) {
+        if (el is! Map<String, dynamic>) {
+          errors++;
+          continue;
+        }
         try {
-          final order = OrderModel.fromJson(el as Map<String, dynamic>);
-          order.id = el['id'] as String?;
-          parsed.add(order);
+          parsed.add(_outletSummaryToOrderModel(el));
         } catch (e) {
           errors++;
-          if (!silent) debugPrint('❌ Parse error [${el['id']}]: $e');
+          if (!silent) debugPrint('❌ Parse error [${el['orderId']}]: $e');
         }
       }
 
@@ -322,6 +321,97 @@ class HomeController extends GetxController {
       }
     } finally {
       isFetchingOrders.value = false;
+    }
+  }
+
+  /// Maps the FM `orderSummaryForOutlet` payload onto the existing
+  /// [OrderModel] so the order tabs/cards can render it unchanged.
+  OrderModel _outletSummaryToOrderModel(Map<String, dynamic> json) {
+    final products = <CartProductModel>[];
+    final rawProducts = json['merchantOrderProductDtoList'];
+    if (rawProducts is List) {
+      for (final raw in rawProducts) {
+        if (raw is! Map<String, dynamic>) continue;
+        final unitPrice = raw['merchantUnitPrice'];
+        final rawName = raw['productName']?.toString() ?? '';
+        final variantName = _variantOptionName(raw);
+        products.add(CartProductModel(
+          id: raw['productId']?.toString(),
+          name: rawName.isNotEmpty
+              ? rawName
+              : (variantName ?? 'Item #${raw['productId'] ?? ''}'),
+          photo: raw['productPicUrl']?.toString(),
+          quantity: _toInt(raw['quantity']),
+          price: unitPrice?.toString(),
+          merchant_price: unitPrice?.toString(),
+          variantInfo: _variantOptionName(raw) != null
+              ? VariantInfo(
+                  variantId: raw['variantOptionsId']?.toString(),
+                  variantOptions: {'Variant': _variantOptionName(raw)!},
+                )
+              : null,
+        ));
+      }
+    }
+
+    return OrderModel(
+      id: json['orderId']?.toString(),
+      status: _mapOutletOrderStatus(json['orderStatus']?.toString()),
+      merchant_price: _toNum(json['totalPrice']),
+      notes: json['cookingInstructions']?.toString(),
+      createdAt: _parseOutletTimestamp(json['orderCreatedAt']?.toString()),
+      products: products,
+    );
+  }
+
+  String? _variantOptionName(Map<String, dynamic> raw) {
+    final name = raw['variantOptionName']?.toString();
+    return (name == null || name.isEmpty) ? null : name;
+  }
+
+  String? _mapOutletOrderStatus(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'PENDING':
+      case 'NEW':
+        return Constant.orderPlaced;
+      case 'ORDER_ACCEPTED':
+      case 'ACCEPTED':
+        return Constant.orderAccepted;
+      case 'ORDER_COMPLETED':
+      case 'COMPLETED':
+      case 'ORDER_DELIVERED':
+      case 'DELIVERED':
+        return Constant.orderCompleted;
+      case 'ORDER_REJECTED':
+      case 'REJECTED':
+        return Constant.orderRejected;
+      case 'ORDER_CANCELLED':
+      case 'CANCELLED':
+        return Constant.orderCancelled;
+      default:
+        return status;
+    }
+  }
+
+  int _toInt(dynamic value) {
+    if (value == null) return 1;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 1;
+  }
+
+  num _toNum(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value;
+    return num.tryParse(value.toString()) ?? 0;
+  }
+
+  Timestamp? _parseOutletTimestamp(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      return Timestamp.fromDate(DateTime.parse(value));
+    } catch (_) {
+      return null;
     }
   }
 
