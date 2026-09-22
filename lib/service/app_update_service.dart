@@ -521,7 +521,6 @@ class AppUpdateService {
 
   /// Navigate to main app after update dialog is dismissed
   static Future<void> _navigateAfterUpdate() async {
-    String userId = await FireStoreUtils.getCurrentUid();
     print('[UPDATE DEBUG] Navigating to main app after update dialog dismissed');
     
     // Use the same logic as SplashController to determine where to go
@@ -534,37 +533,11 @@ class AppUpdateService {
     } else {
       bool isLogin = await FireStoreUtils.isLogin();
       if (isLogin == true) {
-        await FireStoreUtils.getUserProfile(userId).then((value) async {
-          if (value != null) {
-            if (value.role == "vendor") {
-              if (value.active == true) {
-                Get.offAll(
-                  () => const DashBoardScreen(),
-                  transition: Transition.fadeIn,
-                  duration: const Duration(milliseconds: 1200),
-                );
-              } else {
-                Get.offAll(
-                  () => const LoginScreen(),
-                  transition: Transition.fadeIn,
-                  duration: const Duration(milliseconds: 1200),
-                );
-              }
-            } else {
-              Get.offAll(
-                () => const LoginScreen(),
-                transition: Transition.fadeIn,
-                duration: const Duration(milliseconds: 1200),
-              );
-            }
-          } else {
-            Get.offAll(
-              () => const LoginScreen(),
-              transition: Transition.fadeIn,
-              duration: const Duration(milliseconds: 1200),
-            );
-          }
-        });
+        Get.offAll(
+          () => const DashBoardScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 1200),
+        );
       } else {
         Get.offAll(
           () => const LoginScreen(),

@@ -25,6 +25,7 @@ class _CreatePromotionPlanScreenState extends State<CreatePromotionPlanScreen> {
   final _offerAmountCtrl = TextEditingController();
   final _minOrderCtrl = TextEditingController();
   final _maxSelectionCtrl = TextEditingController(text: '-1');
+  bool _startDateSelected = false;
 
   int? _selectedTypeId;
   String _offerType = 'FLAT';
@@ -137,8 +138,6 @@ class _CreatePromotionPlanScreenState extends State<CreatePromotionPlanScreen> {
   String _formatTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
 
-  /// Replaces raw "product <id>" / "category <id>" mentions in a backend
-  /// message with the actual product/category name, when we have it loaded.
   String _resolveNamesInMessage(String message) {
     String result = message;
 
@@ -433,28 +432,59 @@ class _CreatePromotionPlanScreenState extends State<CreatePromotionPlanScreen> {
                         firstDate: DateTime(2025),
                         lastDate: DateTime(2030),
                       );
-                      if (picked != null) setState(() => _startDate = picked);
+
+                      if (picked != null) {
+                        setState(() {
+                          _startDate = picked;
+                          _startDateSelected = true;
+
+                          // If existing end date is before start date,
+                          // reset it to the new start date.
+                          if (_endDate.isBefore(_startDate)) {
+                            _endDate = _startDate;
+                          }
+                        });
+                      }
                     },
                   ),
                 ),
+
                 const SizedBox(width: 12),
+
                 Expanded(
                   child: _DatePickerTile(
                     label: 'End Date',
                     date: _endDate,
-                    onTap: () async {
+
+                    onTap: _startDateSelected
+                        ? () async {
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: _endDate,
+                        initialDate: _endDate.isBefore(_startDate)
+                            ? _startDate
+                            : _endDate,
                         firstDate: _startDate,
                         lastDate: DateTime(2030),
                       );
-                      if (picked != null) setState(() => _endDate = picked);
+
+                      if (picked != null) {
+                        setState(() {
+                          _endDate = picked;
+                        });
+                      }
+                    }
+                        : () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please select Start Date first'),
+                        ),
+                      );
                     },
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
 
             Row(
@@ -779,7 +809,12 @@ class _CreatePromotionPlanScreenState extends State<CreatePromotionPlanScreen> {
 }
 
 class _DatePickerTile extends StatelessWidget {
-  const _DatePickerTile({required this.label, required this.date, required this.onTap});
+  const _DatePickerTile({
+    required this.label,
+    required this.date,
+    required this.onTap,
+  });
+
   final String label;
   final DateTime date;
   final VoidCallback onTap;
@@ -790,21 +825,37 @@ class _DatePickerTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400),
+          border: Border.all(
+            color: Colors.grey.shade400,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.grey,
+              ),
+            ),
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${date.day}/${date.month}/${date.year}'),
-                const Icon(Icons.calendar_today_outlined, size: 16),
+                Text(
+                  '${date.day}/${date.month}/${date.year}',
+                ),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                ),
               ],
             ),
           ],
@@ -813,7 +864,6 @@ class _DatePickerTile extends StatelessWidget {
     );
   }
 }
-
 class _TimePickerTile extends StatelessWidget {
   const _TimePickerTile({required this.label, required this.time, required this.onTap});
   final String label;

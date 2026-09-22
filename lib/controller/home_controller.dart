@@ -12,6 +12,7 @@ import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/models/cart_product_model.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/service/audio_player_service.dart';
@@ -75,28 +76,24 @@ class HomeController extends GetxController {
   // ── Profile ───────────────────────────────────────────────────────────────
   Future<void> getUserProfile({bool withOrders = true}) async {
     try {
-      final userId = await FireStoreUtils.getCurrentUid();
-      if (userId.isEmpty) {
-        debugPrint('⚠️ getUserProfile: empty user ID');
-        return;
+      final merchantId = Preferences.getString('merchantId').trim();
+
+      MerchantModel? profile = Constant.merchantModel;
+      if (profile == null) {
+        final id = merchantId.isNotEmpty ? merchantId : await FireStoreUtils.getCurrentUid();
+        if (id.isEmpty) {
+          debugPrint('⚠️ getUserProfile: empty merchant ID');
+          return;
+        }
+        profile = await FireStoreUtils.getMerchantProfile(id);
       }
 
-      final value = await FireStoreUtils.getUserProfile(userId);
-      if (value == null) {
+      if (profile == null) {
         debugPrint('⚠️ getUserProfile: profile not found');
         return;
       }
 
-      userModel.value = value;
-      Constant.userModel = value;
-
-      final vendorId = value.vendorID;
-      if (vendorId == null || vendorId.isEmpty) return;
-
-      // Fetch vendor (non-blocking)
-      FireStoreUtils.getVendorById(vendorId).then((vender) {
-        if (vender?.id != null) vendermodel.value = vender!;
-      }).catchError((e) => debugPrint('⚠️ Vendor fetch error: $e'));
+      _applyMerchantToUser(profile);
 
       if (withOrders) {
         await getOrder();
@@ -107,6 +104,20 @@ class HomeController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// Maps the backend merchant profile into the legacy UI-facing [UserModel].
+  void _applyMerchantToUser(MerchantModel profile) {
+    Constant.merchantModel = profile;
+    userModel.value = UserModel(
+      id: profile.merchantId?.toString(),
+      firstName: profile.firstName ?? profile.merchantName,
+      lastName: profile.lastName,
+      email: profile.merchantEmail,
+      phoneNumber: profile.merchantPhone,
+      isDocumentVerify: profile.isApproved,
+    );
+    Constant.userModel = userModel.value;
   }
 
 
@@ -213,7 +224,7 @@ class HomeController extends GetxController {
     }
 
     final url = '${Constant.baseUrl}fm/outlets/orderSummaryForOutlet'
-        '?outletId=$outletId&page=0&size=10';
+        '?outletId=$outletId&page=0&size=20';
     if (!silent) debugPrint('🔄 Fetching orders: $url');
 
     isFetchingOrders.value = true;

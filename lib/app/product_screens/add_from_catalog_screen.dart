@@ -10,20 +10,15 @@ import 'package:jippymart_restaurant/app/product_screens/widgets/ProductCard.dar
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:provider/provider.dart';
-
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/app/product_screens/controllers/add_from_catalog_controller.dart';
-import 'package:jippymart_restaurant/models/master_product_model.dart';
-import 'package:jippymart_restaurant/models/selected_product_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
-import 'package:jippymart_restaurant/utils/network_image_widget.dart';
-import '../../models/variant_group_model.dart';
-import 'add_masterproduct_screen.dart';
+
 
 class AddFromCatalogScreen extends StatelessWidget {
   const AddFromCatalogScreen({super.key});

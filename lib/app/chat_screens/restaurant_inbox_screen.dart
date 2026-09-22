@@ -5,15 +5,12 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:jippymart_restaurant/app/chat_screens/chat_screen.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
-import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
-import 'package:jippymart_restaurant/models/user_model.dart';
-import 'package:jippymart_restaurant/models/vendor_model.dart';
+import 'package:jippymart_restaurant/models/inbox_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/responsive.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/network_image_widget.dart';
-import 'package:jippymart_restaurant/models/inbox_model.dart';
 
 class RestaurantInboxScreen extends StatefulWidget {
   const RestaurantInboxScreen({super.key});
@@ -66,25 +63,19 @@ class _RestaurantInboxScreenState extends State<RestaurantInboxScreen> {
             itemBuilder: (context, index) {
               final inbox = inboxList[index];
               return InkWell(
-                onTap: () async {
-                  ShowToastDialog.showLoader("Please wait");
-                  UserModel? customer =
-                  await FireStoreUtils.getUserById(inbox.customerId ?? "");
-                  UserModel? restaurantUser =
-                  await FireStoreUtils.getUserProfile(inbox.restaurantId!);
-                  VendorModel? vendorModel =
-                  await FireStoreUtils.getVendorById(
-                      restaurantUser!.vendorID.toString());
-                  ShowToastDialog.closeLoader();
+                onTap: () {
+                  final merchant = Constant.merchantModel;
                   Get.to(const ChatScreen(), arguments: {
-                    "customerName": customer?.fullName(),
-                    "restaurantName": vendorModel?.title,
+                    "customerName": inbox.customerName ?? '',
+                    "restaurantName":
+                        inbox.restaurantName ?? merchant?.merchantName ?? '',
                     "orderId": inbox.orderId,
-                    "restaurantId": restaurantUser.id,
-                    "customerId": customer?.id,
+                    "restaurantId":
+                        inbox.restaurantId ?? merchant?.merchantId?.toString() ?? '',
+                    "customerId": inbox.customerId,
                     "customerProfileImage": inbox.customerProfileImage,
-                    "restaurantProfileImage": vendorModel?.photo,
-                    "token": restaurantUser.fcmToken,
+                    "restaurantProfileImage": inbox.restaurantProfileImage,
+                    "token": '',
                     "chatType": inbox.chatType,
                   });
                 },

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
-import 'package:jippymart_restaurant/models/user_model.dart';
+import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
+import 'package:jippymart_restaurant/utils/preferences.dart';
 
 class BankDetailsController extends GetxController {
   RxBool isLoading = true.obs;
@@ -13,8 +15,6 @@ class BankDetailsController extends GetxController {
   Rx<TextEditingController> accountNoController = TextEditingController().obs;
   Rx<TextEditingController> otherInfoController = TextEditingController().obs;
 
-  Rx<UserModel> userModel = UserModel().obs;
-
   @override
   void onInit() {
     // TODO: implement onInit
@@ -24,48 +24,42 @@ class BankDetailsController extends GetxController {
 
   saveBank() async {
     ShowToastDialog.showLoader("Please wait".tr);
-    userModel.value.userBankDetails ??= UserBankDetails();
-    userModel.value.userBankDetails!.accountNumber =
-        accountNoController.value.text;
-    userModel.value.userBankDetails!.bankName = bankNameController.value.text;
-    userModel.value.userBankDetails!.branchName =
-        branchNameController.value.text;
-    userModel.value.userBankDetails!.holderName =
-        holderNameController.value.text;
-    userModel.value.userBankDetails!.otherDetails =
-        otherInfoController.value.text;
-    await FireStoreUtils.updateUser(userModel.value).then(
-      (value) {
-        ShowToastDialog.closeLoader();
-        Get.back();
-        Get.back();
-      },
-    );
-
-
+    final profile = Constant.merchantModel;
+    if (profile == null) {
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast("Profile not found".tr);
+      return;
+    }
+    profile
+      ..accountNumber = accountNoController.value.text
+      ..bankName = bankNameController.value.text
+      ..ifscCode = branchNameController.value.text
+      ..accountHolderName = holderNameController.value.text;
+    final merchantId =
+        profile.merchantId?.toString() ?? Preferences.getString('merchantId');
+    final saved = await FireStoreUtils.updateMerchantProfile(merchantId, profile);
+    ShowToastDialog.closeLoader();
+    ShowToastDialog.showToast(
+        saved ? "Bank details saved".tr : "Failed to save bank details".tr);
+    Get.back();
+    Get.back();
   }
 
   getCurrentUser() async {
-    String userId = await FireStoreUtils.getCurrentUid();
-    await FireStoreUtils.getUserProfile(userId).then(
-      (value) {
-        if (value != null) {
-          userModel.value = value;
-          if (userModel.value.userBankDetails != null) {
-            bankNameController.value.text =
-                userModel.value.userBankDetails!.bankName.toString();
-            branchNameController.value.text =
-                userModel.value.userBankDetails!.branchName.toString();
-            holderNameController.value.text =
-                userModel.value.userBankDetails!.holderName.toString();
-            accountNoController.value.text =
-                userModel.value.userBankDetails!.accountNumber.toString();
-            otherInfoController.value.text =
-                userModel.value.userBankDetails!.otherDetails.toString();
-          }
-        }
-      },
-    );
+    MerchantModel? profile = Constant.merchantModel;
+    if (profile == null) {
+      profile = await FireStoreUtils.getMerchantProfile(
+        Preferences.getString('merchantId'),
+      );
+    }
+    if (profile != null) {
+      Constant.merchantModel = profile;
+      bankNameController.value.text = profile.bankName ?? '';
+      branchNameController.value.text = profile.ifscCode ?? '';
+      holderNameController.value.text = profile.accountHolderName ?? '';
+      accountNoController.value.text = profile.accountNumber ?? '';
+      otherInfoController.value.text = '';
+    }
     isLoading.value = false;
   }
 

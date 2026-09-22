@@ -139,7 +139,7 @@ class _NewOrderActions extends StatelessWidget {
         note: 'Order Refund success',
         transactionUser: 'user',
       );
-      await FireStoreUtils.setWalletTransaction(tx);
+      // await FireStoreUtils.setWalletTransaction(tx);
       await FireStoreUtils.updateUserWallet(
         amount: amount.toString(),
         userId: orderModel.author?.firebaseId ?? '',

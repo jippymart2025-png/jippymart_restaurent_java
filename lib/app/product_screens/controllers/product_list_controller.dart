@@ -8,7 +8,6 @@ import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/inventory_unavailability_flow.dart';
-import '../../../utils/preferences.dart';
 
 class ProductListController extends GetxController {
   // ── Observables ────────────────────────────────────────────────────────────
@@ -162,15 +161,6 @@ class ProductListController extends GetxController {
     isLoading.value = true;
     loadError.value = '';
     try {
-      final resolvedOutletId = outletId ?? FireStoreUtils.resolveActiveOutletId();
-      if (resolvedOutletId <= 0) {
-        final uid = await FireStoreUtils.getCurrentUid();
-        final profile = await FireStoreUtils.getUserProfile(uid);
-        if (profile != null) {
-          Constant.userModel = profile;
-          userModel.value = profile;
-        }
-      }
       await getProduct(forceRefresh: forceRefresh, outletId: outletId);
     } catch (e) {
       loadError.value = 'Failed to load inventory';

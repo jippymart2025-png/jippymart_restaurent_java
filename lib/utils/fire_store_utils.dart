@@ -81,13 +81,6 @@ class _OutletProductsCacheEntry {
 class FireStoreUtils {
   static FirebaseFirestore fireStore = FirebaseFirestore.instance;
 
-  // Performance Optimization: Transparent caching layer
-  // Cache variables for frequently accessed, rarely-changing data
-  static UserModel? _cachedUserProfile;
-  static String? _cachedUserProfileUuid;
-  static DateTime? _userProfileCacheTime;
-  static const Duration _userProfileCacheTTL = Duration(minutes: 5);
-
   static VendorModel? _cachedVendor;
   static String? _cachedVendorId;
   static DateTime? _vendorCacheTime;
@@ -136,13 +129,6 @@ class FireStoreUtils {
   static DateTime? _deliveryChargeCacheTime;
   static const Duration _deliveryChargeCacheTTL = Duration(minutes: 15);
 
-  // Cache invalidation methods (called on updates)
-  static void _invalidateUserProfileCache() {
-    _cachedUserProfile = null;
-    _cachedUserProfileUuid = null;
-    _userProfileCacheTime = null;
-  }
-
   static void _invalidateVendorCache() {
     _cachedVendor = null;
     _cachedVendorId = null;
@@ -189,87 +175,31 @@ class FireStoreUtils {
   }
 
 
-  static Future<bool> userExistOrNot(String uid) async {
-    bool isExist = false;
-    debugPrint(
-        "userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
-    await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/exists/$uid')
-    ).then((response) {
-      debugPrint("userExistOrNot ${response.body} ");
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        isExist = data['exists'] ?? false;
-      } else {
-        isExist = false;
-        log("Failed to check user exist: ${response.statusCode}");
-      }
-    }).catchError((error) {
-      log("Failed to check user exist: $error");
-      isExist = false;
-    });
+  // static Future<bool> userExistOrNot(String uid) async {
+  //   bool isExist = false;
+  //   debugPrint(
+  //       "userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
+  //   await http.get(
+  //       Uri.parse('${Constant.baseUrl}restaurant/exists/$uid')
+  //   ).then((response) {
+  //     debugPrint("userExistOrNot ${response.body} ");
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //       isExist = data['exists'] ?? false;
+  //     } else {
+  //       isExist = false;
+  //       log("Failed to check user exist: ${response.statusCode}");
+  //     }
+  //   }).catchError((error) {
+  //     log("Failed to check user exist: $error");
+  //     isExist = false;
+  //   });
+  //
+  //   return isExist;
+  // }
 
-    return isExist;
-  }
 
-
-  static Future<UserModel?> getUserProfile(String uuid,
-      {bool forceRefresh = false}) async {
-    try {
-      // Performance Optimization: Check cache first (transparent to caller)
-      if (!forceRefresh &&
-          _cachedUserProfile != null &&
-          _cachedUserProfileUuid == uuid &&
-          _userProfileCacheTime != null) {
-        final cacheAge = DateTime.now().difference(_userProfileCacheTime!);
-        if (cacheAge < _userProfileCacheTTL) {
-          log("getUserProfile: Returning cached data (age: ${cacheAge
-              .inSeconds}s)");
-          Constant.userModel = _cachedUserProfile;
-          return _cachedUserProfile;
-        }
-      }
-
-      String url = '${Constant.baseUrl}restaurant/users/$uuid';
-      debugPrint(" getUserProfile $url");
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        log(" getUserProfileresponse body ${response.body}");
-        if (responseData['success'] ?? true) {
-          final userData = responseData['data'] ??
-              responseData; // Adjust based on your API structure
-          final userModel = UserModel.fromJson(userData);
-          Constant.userModel = userModel;
-          debugPrint(" getUserProfile  ${ Constant.userModel?.toJson()} ");
-
-          // Performance Optimization: Cache the result
-          _cachedUserProfile = userModel;
-          _cachedUserProfileUuid = uuid;
-          _userProfileCacheTime = DateTime.now();
-
-          return userModel;
-        } else {
-          log("API returned error: ${responseData['message']}");
-          return null;
-        }
-      } else {
-        log("Failed to get user profile: ${response.statusCode} - ${response
-            .body}");
-        return null;
-      }
-    } catch (error) {
-      log("Error getting user profile: $error");
-      return null;
-    }
-  }
-
-  static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
+static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     try {
       if (merchantId
           .trim()
@@ -660,54 +590,6 @@ class FireStoreUtils {
     return result.isSuccess ? result.outlet : null;
   }
 
-  //END
-  static Future<UserModel?> getUserById(String uuid) async {
-    try {
-      String url = '${Constant.baseUrl}restaurant/users/$uuid';
-      log("getUserById:: $url");
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        if (responseData is Map<String, dynamic>) {
-          return UserModel.fromJson(responseData);
-        }
-        else if (responseData['data'] != null) {
-          return UserModel.fromJson(responseData['data']);
-        }
-        // Option 3: With success flag
-        else
-        if (responseData['success'] == true && responseData['user'] != null) {
-          return UserModel.fromJson(responseData['user']);
-        }
-        // Option 4: With success flag and data field
-        else
-        if (responseData['success'] == true && responseData['data'] != null) {
-          return UserModel.fromJson(responseData['data']);
-        }
-        else {
-          log("Unexpected API response structure: $responseData");
-          return null;
-        }
-      } else if (response.statusCode == 404) {
-        log("User not found with UUID: $uuid");
-        return null;
-      } else {
-        log("Failed to get user by ID. Status: ${response
-            .statusCode}, Body: ${response.body}");
-        return null;
-      }
-    } catch (error) {
-      log("Error getting user by ID: $error");
-      return null;
-    }
-  }
-
-
   static Future<bool?> updateUserWallet({
     required String amount,
     required String userId
@@ -754,12 +636,6 @@ class FireStoreUtils {
 
       if (response.statusCode == 200) {
         Constant.userModel = userModel;
-        // Performance Optimization: Invalidate user profile cache after update
-        _invalidateUserProfileCache();
-        // Update cache with new data
-        _cachedUserProfile = userModel;
-        _cachedUserProfileUuid = userModel.id;
-        _userProfileCacheTime = DateTime.now();
         isUpdate = true;
       } else {
         log("Failed to update user: ${response.statusCode} - ${response.body}");
@@ -809,8 +685,6 @@ class FireStoreUtils {
 
         if (response.statusCode == 200) {
           final responseData = json.decode(response.body);
-          // Performance Optimization: Invalidate user profile cache after update
-          _invalidateUserProfileCache();
           return responseData['success'] ??
               true; // Adjust based on your API response structure
         } else if (response.statusCode == 429) {
@@ -874,68 +748,68 @@ class FireStoreUtils {
     }
   }
 
-  static Future<List<OnBoardingModel>> getOnBoardingList() async {
-    try {
-      final response = await http.get(
-          Uri.parse('${Constant.baseUrl}onboarding/restaurantApp'),
-          headers: await getHeaders()
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          List<OnBoardingModel> onBoardingModel = [];
-          for (var element in responseData['data']) {
-            OnBoardingModel documentModel = OnBoardingModel.fromJson(element);
-            onBoardingModel.add(documentModel);
-          }
-          return onBoardingModel;
-        } else {
-          throw Exception('API returned success: false');
-        }
-      } else {
-        throw Exception(
-            'Failed to load onboarding data: ${response.statusCode}');
-      }
-    } catch (error) {
-      log(error.toString());
-      rethrow; // or return an empty list: return [];
-    }
-  }
+  // static Future<List<OnBoardingModel>> getOnBoardingList() async {
+  //   try {
+  //     final response = await http.get(
+  //         Uri.parse('${Constant.baseUrl}onboarding/restaurantApp'),
+  //         headers: await getHeaders()
+  //     );
+  //     if (response.statusCode == 200) {
+  //       final Map<String, dynamic> responseData = json.decode(response.body);
+  //       if (responseData['success'] == true) {
+  //         List<OnBoardingModel> onBoardingModel = [];
+  //         for (var element in responseData['data']) {
+  //           OnBoardingModel documentModel = OnBoardingModel.fromJson(element);
+  //           onBoardingModel.add(documentModel);
+  //         }
+  //         return onBoardingModel;
+  //       } else {
+  //         throw Exception('API returned success: false');
+  //       }
+  //     } else {
+  //       throw Exception(
+  //           'Failed to load onboarding data: ${response.statusCode}');
+  //     }
+  //   } catch (error) {
+  //     log(error.toString());
+  //     rethrow; // or return an empty list: return [];
+  //   }
+  // }
 
-  static Future<bool?> setWalletTransaction(
-      WalletTransactionModel walletTransactionModel) async {
-    try {
-      // Convert Timestamps to JSON-serializable format before encoding
-      Map<String, dynamic> transactionJson = _convertTimestampsToJson(
-          walletTransactionModel.toJson());
-
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(transactionJson),
-      );
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final bool success = responseData['success'] ?? false;
-        final String message = responseData['message'] ?? '';
-        if (success) {
-          log("Wallet transaction saved successfully: $message");
-          return true;
-        } else {
-          log("Failed to save wallet transaction: $message");
-          return false;
-        }
-      } else {
-        log("HTTP Error: ${response.statusCode} - ${response.body}");
-        return false;
-      }
-    } catch (error) {
-      log("Error adding wallet transaction: $error");
-      return false;
-    }
-  }
+  // static Future<bool?> setWalletTransaction(
+  //     WalletTransactionModel walletTransactionModel) async {
+  //   try {
+  //     // Convert Timestamps to JSON-serializable format before encoding
+  //     Map<String, dynamic> transactionJson = _convertTimestampsToJson(
+  //         walletTransactionModel.toJson());
+  //
+  //     final response = await http.post(
+  //       Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: jsonEncode(transactionJson),
+  //     );
+  //     if (response.statusCode == 200) {
+  //       final responseData = jsonDecode(response.body);
+  //       final bool success = responseData['success'] ?? false;
+  //       final String message = responseData['message'] ?? '';
+  //       if (success) {
+  //         log("Wallet transaction saved successfully: $message");
+  //         return true;
+  //       } else {
+  //         log("Failed to save wallet transaction: $message");
+  //         return false;
+  //       }
+  //     } else {
+  //       log("HTTP Error: ${response.statusCode} - ${response.body}");
+  //       return false;
+  //     }
+  //   } catch (error) {
+  //     log("Error adding wallet transaction: $error");
+  //     return false;
+  //   }
+  // }
 
   // static Future<void> getSettings({bool forceRefresh = false}) async {
   //   try {
@@ -2893,7 +2767,7 @@ class FireStoreUtils {
       }
 
       final List<dynamic> data =
-          jsonResponse["data"] ?? [];
+          jsonResponse["data"]["categories"] ?? [];
 
       final List<VendorCategoryModel> categories =
       data.map((item) {

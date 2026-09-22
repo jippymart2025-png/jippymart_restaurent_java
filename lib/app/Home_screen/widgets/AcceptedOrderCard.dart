@@ -95,23 +95,6 @@ class _AcceptedOrderActions extends StatelessWidget {
 
     orderModel.status = Constant.orderCancelled;
 
-    if (orderModel.driverID != null) {
-      final driver =
-      await FireStoreUtils.getUserById(orderModel.driverID ?? '');
-      if (driver != null) {
-        // driver.orderRequestData?.remove(orderModel.id);
-        // driver.inProgressOrderID?.remove(orderModel.id);
-        await FireStoreUtils.updateDriverUser(driver);
-        if (driver.fcmToken?.isNotEmpty == true) {
-          SendNotification.sendFcmMessage(
-            Constant.driverCancelled,
-            driver.fcmToken!,
-            {'title': 'Cancelled Order'},
-          );
-        }
-      }
-    }
-
     await FireStoreUtils.updateOrder(orderModel);
 
     if (orderModel.author?.fcmToken?.isNotEmpty == true) {
@@ -130,18 +113,18 @@ class _AcceptedOrderActions extends StatelessWidget {
           (double.tryParse(orderModel.deliveryCharge.toString()) ?? 0) +
           (double.tryParse(orderModel.tipAmount.toString()) ?? 0);
 
-      await FireStoreUtils.setWalletTransaction(WalletTransactionModel(
-        amount: refund,
-        id: const Uuid().v4(),
-        orderId: orderModel.id,
-        userId: orderModel.author!.id,
-        date: Timestamp.now(),
-        isTopup: true,
-        paymentMethod: 'Wallet',
-        paymentStatus: 'success',
-        note: 'Order Refund success',
-        transactionUser: 'user',
-      ));
+      // await FireStoreUtils.setWalletTransaction(WalletTransactionModel(
+      //   amount: refund,
+      //   id: const Uuid().v4(),
+      //   orderId: orderModel.id,
+      //   userId: orderModel.author!.id,
+      //   date: Timestamp.now(),
+      //   isTopup: true,
+      //   paymentMethod: 'Wallet',
+      //   paymentStatus: 'success',
+      //   note: 'Order Refund success',
+      //   transactionUser: 'user',
+      // ));
       await FireStoreUtils.updateUserWallet(
         amount: refund.toString(),
         userId: orderModel.author?.id ?? '',
@@ -163,32 +146,32 @@ class _AcceptedOrderActions extends StatelessWidget {
       vendorAmount = totals.subTotal - disc - totals.specialDiscount;
     }
 
-    await Future.wait([
-      FireStoreUtils.setWalletTransaction(WalletTransactionModel(
-        amount: totals.taxAmount,
-        id: const Uuid().v4(),
-        orderId: orderModel.id,
-        userId: userId,
-        date: Timestamp.now(),
-        isTopup: false,
-        paymentMethod: 'tax',
-        paymentStatus: 'success',
-        note: 'Tax Amount Refund',
-        transactionUser: 'vendor',
-      )),
-      FireStoreUtils.setWalletTransaction(WalletTransactionModel(
-        amount: vendorAmount,
-        id: const Uuid().v4(),
-        orderId: orderModel.id,
-        userId: userId,
-        date: Timestamp.now(),
-        isTopup: false,
-        paymentMethod: 'Wallet',
-        paymentStatus: 'success',
-        note: 'Order Amount Refund',
-        transactionUser: 'vendor',
-      )),
-    ]);
+    // await Future.wait([
+    //   FireStoreUtils.setWalletTransaction(WalletTransactionModel(
+    //     amount: totals.taxAmount,
+    //     id: const Uuid().v4(),
+    //     orderId: orderModel.id,
+    //     userId: userId,
+    //     date: Timestamp.now(),
+    //     isTopup: false,
+    //     paymentMethod: 'tax',
+    //     paymentStatus: 'success',
+    //     note: 'Tax Amount Refund',
+    //     transactionUser: 'vendor',
+    //   )),
+    //   FireStoreUtils.setWalletTransaction(WalletTransactionModel(
+    //     amount: vendorAmount,
+    //     id: const Uuid().v4(),
+    //     orderId: orderModel.id,
+    //     userId: userId,
+    //     date: Timestamp.now(),
+    //     isTopup: false,
+    //     paymentMethod: 'Wallet',
+    //     paymentStatus: 'success',
+    //     note: 'Order Amount Refund',
+    //     transactionUser: 'vendor',
+    //   )),
+    // ]);
 
     await FireStoreUtils.updateUserWallet(
       amount: (-(vendorAmount + totals.taxAmount)).toString(),
