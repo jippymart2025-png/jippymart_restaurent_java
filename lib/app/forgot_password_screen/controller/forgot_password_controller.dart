@@ -7,11 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 
-import '../utils/common.dart';
+import '../../../utils/common.dart';
 
 class ForgotPasswordController extends GetxController {
-  // userType sent to the fm/* endpoints for merchant + outlet logins.
-  //tatic const String userType = "MERCHANT";
+  /// userType sent to the fm/* endpoints. Can be 'MERCHANT' or 'OUTLET'.
+  RxString selectedUserType = Constant.userRoleMerchant.obs;
 
   Rx<TextEditingController> emailEditingController =
       TextEditingController().obs;
@@ -75,7 +75,7 @@ class ForgotPasswordController extends GetxController {
         headers: headers,
         body: jsonEncode({
           "email": email,
-          "userType": Constant.userRoleMerchant,
+          "userType": selectedUserType.value,
         }),
       );
       ShowToastDialog.closeLoader();
@@ -148,7 +148,7 @@ class ForgotPasswordController extends GetxController {
         headers: headers,
         body: jsonEncode({
           "email": email,
-          "userType": Constant.userRoleMerchant,
+          "userType": selectedUserType.value,
           "otp": otp,
         }),
       );
@@ -200,7 +200,7 @@ class ForgotPasswordController extends GetxController {
         headers: headers,
         body: jsonEncode({
           "email": email,
-          "userType": Constant.userRoleMerchant,
+          "userType": selectedUserType.value,
           "newPassword": newPassword,
         }),
       );
