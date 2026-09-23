@@ -126,7 +126,7 @@ class ProductModel {
       }
     }
 
-    id = json['id'];
+    id = json['productId'];
     quantity = json['quantity'];
     grams = json['grams'];
     reviewsCount = json['reviewsCount'] ?? 0.0;
@@ -137,8 +137,13 @@ class ProductModel {
     // FIX: Handle photos as array or JSON string (e.g. "[\"url1\", \"url2\"]")
     photos = _extractArrayFromFirestore(json['photos']) ?? [];
 
-    photo = json['photo'];
-
+    photo = (
+        json['imageLink'] ??
+            json['image_link'] ??
+            json['photo'] ??
+            json['image'] ??
+            ''
+    ).toString().trim();
     // Fix: Convert price to string
     price = _convertToString(json['price']);
 
@@ -387,7 +392,7 @@ class ProductModel {
     data['disPrice'] = disPrice;
     data['photos'] = photos;
     data['nonveg'] = nonveg;
-    data['photo'] = photo;
+    data['imageLink'] = photo;
     data['price'] = price;
     data['merchant_price'] = merchant_price;
     data['categoryID'] = categoryID;
@@ -429,7 +434,7 @@ class ProductModel {
     data['disPrice'] = disPrice;
     data['photos'] = photos;
     data['nonveg'] = nonveg;
-    data['photo'] = photo;
+    data['imageLink'] = photo;
     data['price'] = price;
     data['merchant_price'] = merchant_price;
     data['categoryID'] = categoryID;

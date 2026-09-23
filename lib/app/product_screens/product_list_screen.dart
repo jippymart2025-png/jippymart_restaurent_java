@@ -722,42 +722,76 @@ class _ProductImage extends StatelessWidget {
 
   bool get _hasImage {
     final url = imageUrl?.trim() ?? '';
-    return url.isNotEmpty && url != 'null';
+
+    return url.isNotEmpty &&
+        url != 'null' &&
+        (url.startsWith('http://') || url.startsWith('https://'));
   }
 
   @override
   Widget build(BuildContext context) {
+    final url = imageUrl?.trim() ?? '';
+
+    debugPrint('[PRODUCT_IMAGE] URL: $url');
+    debugPrint('[PRODUCT_IMAGE] Has image: $_hasImage');
+
     return ClipRRect(
-      borderRadius: const BorderRadius.all(Radius.circular(16)),
+      borderRadius: const BorderRadius.all(
+        Radius.circular(16),
+      ),
       child: SizedBox(
         height: height,
         width: width,
         child: _hasImage
-            ? Stack(
-          fit: StackFit.expand,
-          children: [
-            NetworkImageWidget(
-              imageUrl: imageUrl!,
-              fit: BoxFit.cover,
-              height: height,
-              width: width,
-            ),
-            // Gradient overlay (same as original)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: const Alignment(0, -1),
-                  end: const Alignment(0, 1),
-                  colors: [
-                    Colors.black.withOpacity(0),
-                    const Color(0xFF111827),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ? Image.network(
+          url,
+          height: height,
+          width: width,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint(
+              '[PRODUCT_IMAGE] ❌ Image failed: $error',
+            );
+
+            return _Placeholder(
+              isDark: isDark,
+            );
+          },
+          loadingBuilder: (
+              context,
+              child,
+              loadingProgress,
+              ) {
+            if (loadingProgress == null) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  child,
+
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: const Alignment(0, -1),
+                        end: const Alignment(0, 1),
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFF111827),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
         )
-            : _Placeholder(isDark: isDark),
+            : _Placeholder(
+          isDark: isDark,
+        ),
       ),
     );
   }

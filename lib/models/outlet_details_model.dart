@@ -190,6 +190,7 @@ class OutletProductModel {
   final int? productId;
   final String? productName;
   final String? description;
+  final String? imageLink;
   final num? merchantPrice;
   final bool? isVeg;
   final bool? hasProductVariants;
@@ -202,6 +203,7 @@ class OutletProductModel {
     this.productId,
     this.productName,
     this.description,
+    this.imageLink,
     this.merchantPrice,
     this.isVeg,
     this.hasProductVariants,
@@ -215,6 +217,7 @@ class OutletProductModel {
     int? productId,
     String? productName,
     String? description,
+    String? imageLink,
     num? merchantPrice,
     bool? isVeg,
     bool? hasProductVariants,
@@ -227,6 +230,7 @@ class OutletProductModel {
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       description: description ?? this.description,
+      imageLink: imageLink ?? this.imageLink,
       merchantPrice: merchantPrice ?? this.merchantPrice,
       isVeg: isVeg ?? this.isVeg,
       hasProductVariants: hasProductVariants ?? this.hasProductVariants,
@@ -242,6 +246,7 @@ class OutletProductModel {
       if (productId != null) 'productId': productId,
       if (productName != null) 'productName': productName,
       if (description != null) 'description': description,
+      if (imageLink != null) 'imageLink': imageLink,
       if (merchantPrice != null) 'merchantPrice': merchantPrice,
       if (isVeg != null) 'isVeg': isVeg,
       if (hasProductVariants != null) 'hasProductVariants': hasProductVariants,
@@ -285,6 +290,7 @@ class OutletProductModel {
       productId: _parseInt(json['productId']),
       productName: json['productName']?.toString(),
       description: json['description']?.toString(),
+      imageLink: json['imageLink']?.toString(),
       merchantPrice: _parseNum(json['merchantPrice']),
       isVeg: _parseBool(json['isVeg']),
       hasProductVariants: _parseBool(json['hasProductVariants']),
@@ -320,6 +326,7 @@ class OutletProductModel {
       id: productId?.toString(),
       name: productName,
       description: description,
+      photo: imageLink,
       categoryID: categoryId,
       merchant_price: merchant.toString(),
       price: online.toString(),
