@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/app/product_screens/variant_builder_sheet_screen.dart';
+import 'package:jippymart_restaurant/app/product_screens/timings_builder_sheet_screen.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import '../../controller/dash_board_controller.dart';
 import '../../models/outlet_product_model.dart';
 import '../../models/promotion_models.dart';
+import '../../utils/const/color_const.dart';
 
 class EditProductScreen extends StatefulWidget {
   final int productId;
@@ -36,6 +38,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   OutletSingleProductModel? _originalProduct;
   List<ProductVariantGroupModel>? _variantGroupsOverride;
+  List<ProductTimingModel>? _timingsOverride;
   List<PromotionOutletProductModel> _outletProductsFlat = [];
   List<_CategoryOption> _availableCategories = [];
   static final Map<int, List<_CategoryOption>> _categoryCache = {};
@@ -217,6 +220,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       imageLink: _imageLinkCtrl.text.trim(),
       outletId: null,
       variantGroupsOverride: _variantGroupsOverride,
+      timingsOverride: _timingsOverride,
     );
 
     setState(() => _isLoading = false);
@@ -243,6 +247,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        foregroundColor: ColorConst.white,
         title: const Text('Edit Product'),
         backgroundColor: Colors.deepPurple,
       ),
@@ -369,6 +374,38 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   });
                 }
               },            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.schedule_rounded),
+              label: const Text('Manage Timings'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () async {
+                if (_originalProduct == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Product information is not available yet.'),
+                    ),
+                  );
+                  return;
+                }
+
+                final timings = await Navigator.of(context).push<List<ProductTimingModel>>(
+                  MaterialPageRoute(
+                    builder: (_) => TimingsBuilderSheetScreen(
+                      initialTimings: _timingsOverride ?? _originalProduct!.timings,
+                    ),
+                  ),
+                );
+
+                if (timings != null) {
+                  setState(() {
+                    _timingsOverride = timings;
+                  });
+                }
+              },
+            ),
             const SizedBox(height: 30),
             ElevatedButton(
               style: ElevatedButton.styleFrom(

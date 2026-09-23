@@ -1884,6 +1884,7 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     required String imageLink,
     int? outletId,
     List<ProductVariantGroupModel>? variantGroupsOverride,
+    List<ProductTimingModel>? timingsOverride,
   }) async {
     try {
       final headers = await getHeaders();
@@ -1901,6 +1902,7 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
           merchantPrice: merchantPrice,
           imageLink: imageLink,
           variantGroupsOverride: variantGroupsOverride,
+          timingsOverride: timingsOverride,
         ),
       );
 

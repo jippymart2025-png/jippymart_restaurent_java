@@ -3,26 +3,16 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductModel {
-  int? fats;
   String? vendorID;
   bool? veg;
   bool? publish;
-  List<dynamic>? addOnsTitle;
-  int? calories;
-  int? proteins;
-  List<dynamic>? addOnsPrice;
   num? reviewsSum;
-  bool? takeawayOption;
   String? name;
-  Map<String, dynamic>? reviewAttributes;
-  Map<String, dynamic>? productSpecification;
   ItemAttribute? itemAttribute;
   String? id;
   int? quantity;
-  int? grams;
   num? reviewsCount;
   String? disPrice;
-  List<dynamic>? photos;
   bool? nonveg;
   String? photo;
   String? price;
@@ -37,26 +27,16 @@ class ProductModel {
   List<dynamic>? availableTimings;
 
   ProductModel({
-    this.fats,
     this.vendorID,
     this.veg,
     this.publish,
-    this.addOnsTitle,
-    this.calories,
-    this.proteins,
-    this.addOnsPrice,
     this.reviewsSum,
-    this.takeawayOption,
     this.name,
-    this.reviewAttributes,
-    this.productSpecification,
     this.itemAttribute,
     this.id,
     this.quantity,
-    this.grams,
     this.reviewsCount,
     this.disPrice,
-    this.photos,
     this.nonveg,
     this.photo,
     this.price,
@@ -69,33 +49,16 @@ class ProductModel {
   });
 
   ProductModel.fromJson(Map<String, dynamic> json) {
-    fats = json['fats'];
     vendorID = json['vendorID'];
 
     // Handle boolean fields that might come as int (0/1), bool, or String from API
     veg = _convertToBool(json['veg']);
     publish = _convertToBool(json['publish']);
     nonveg = _convertToBool(json['nonveg']);
-    takeawayOption = _convertToBool(json['takeawayOption'] ?? json['takeaway_option']);
     isAvailable = _convertToBool(json['isAvailable'] ?? json['is_available']);
-
-    // FIX: Handle Firestore arrayValue format for addOnsTitle (accept API keys: addOnsTitle, add_ons_title)
-    addOnsTitle = _extractArrayFromFirestore(json['addOnsTitle'] ?? json['add_ons_title']) ?? [];
-
-    calories = json['calories'];
-    proteins = json['proteins'];
-
-    // FIX: Handle Firestore arrayValue format for addOnsPrice (accept API keys: addOnsPrice, add_ons_price)
-    addOnsPrice = _extractArrayFromFirestore(json['addOnsPrice'] ?? json['add_ons_price']) ?? [];
 
     reviewsSum = json['reviewsSum'] ?? 0.0;
     name = json['name'];
-
-    // FIX: Handle reviewAttributes that might be a String (JSON) instead of Map
-    reviewAttributes = _parseJsonField(json['reviewAttributes']);
-
-    // FIX: Handle product_specification that can be either List or Map or String
-    productSpecification = _parseJsonField(json['product_specification']) ?? {};
 
     // FIX: Handle item_attribute / itemAttribute (object). Top-level "options" array is handled below.
     itemAttribute = _parseItemAttribute(json['item_attribute'] ?? json['itemAttribute']);
@@ -128,14 +91,10 @@ class ProductModel {
 
     id = json['productId'];
     quantity = json['quantity'];
-    grams = json['grams'];
     reviewsCount = json['reviewsCount'] ?? 0.0;
 
     // Fix: Convert disPrice to string
     disPrice = _convertToString(json['disPrice']) ?? "0";
-
-    // FIX: Handle photos as array or JSON string (e.g. "[\"url1\", \"url2\"]")
-    photos = _extractArrayFromFirestore(json['photos']) ?? [];
 
     photo = (
         json['imageLink'] ??
@@ -369,28 +328,18 @@ class ProductModel {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['fats'] = fats;
     data['vendorID'] = vendorID;
     data['veg'] = veg;
     data['publish'] = publish;
-    data['addOnsTitle'] = addOnsTitle;
-    data['addOnsPrice'] = addOnsPrice;
-    data['calories'] = calories;
-    data['proteins'] = proteins;
     data['reviewsSum'] = reviewsSum;
-    data['takeawayOption'] = takeawayOption;
     data['name'] = name;
-    data['reviewAttributes'] = reviewAttributes;
-    data['product_specification'] = productSpecification;
     if (itemAttribute != null) {
       data['item_attribute'] = itemAttribute!.toJson();
     }
     data['id'] = id;
     data['quantity'] = quantity;
-    data['grams'] = grams;
     data['reviewsCount'] = reviewsCount;
     data['disPrice'] = disPrice;
-    data['photos'] = photos;
     data['nonveg'] = nonveg;
     data['imageLink'] = photo;
     data['price'] = price;
@@ -411,28 +360,18 @@ class ProductModel {
   // Helper method to convert to Firestore-friendly map (if needed for Firestore operations)
   Map<String, dynamic> toFirestore() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['fats'] = fats;
     data['vendorID'] = vendorID;
     data['veg'] = veg;
     data['publish'] = publish;
-    data['addOnsTitle'] = addOnsTitle;
-    data['addOnsPrice'] = addOnsPrice;
-    data['calories'] = calories;
-    data['proteins'] = proteins;
     data['reviewsSum'] = reviewsSum;
-    data['takeawayOption'] = takeawayOption;
     data['name'] = name;
-    data['reviewAttributes'] = reviewAttributes;
-    data['product_specification'] = productSpecification;
     if (itemAttribute != null) {
       data['item_attribute'] = itemAttribute!.toJson();
     }
     data['id'] = id;
     data['quantity'] = quantity;
-    data['grams'] = grams;
     data['reviewsCount'] = reviewsCount;
     data['disPrice'] = disPrice;
-    data['photos'] = photos;
     data['nonveg'] = nonveg;
     data['imageLink'] = photo;
     data['price'] = price;
@@ -656,25 +595,6 @@ class Variants {
     data['variant_price'] = variantPrice;
     data['variant_quantity'] = variantQuantity;
     data['variant_sku'] = variantSku;
-    return data;
-  }
-}
-
-class ProductSpecificationModel {
-  String? lable;
-  String? value;
-
-  ProductSpecificationModel({this.lable, this.value});
-
-  ProductSpecificationModel.fromJson(Map<String, dynamic> json) {
-    lable = json['lable'];
-    value = json['value'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['lable'] = lable;
-    data['value'] = value;
     return data;
   }
 }
