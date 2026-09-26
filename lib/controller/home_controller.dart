@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:jippymart_restaurant/constant/constant.dart';
+import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/controller/dash_board_controller.dart';
 import 'package:jippymart_restaurant/models/cart_product_model.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
@@ -16,6 +17,7 @@ import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/service/audio_player_service.dart';
+import 'package:jippymart_restaurant/service/order_api_service.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
 import '../models/outlet_model.dart';
@@ -212,6 +214,75 @@ class HomeController extends GetxController {
     final outletId = Preferences.getInt('outletId');
     if (outletId > 0) return outletId;
     return Preferences.getInt('selectedOutletId');
+  }
+
+  /// Outlet the order list currently belongs to. Needed by APIs that take the
+  /// outlet id in the request body (e.g. accept/reject order).
+  int get activeOutletId =>
+      selectedOutletId.value > 0 ? selectedOutletId.value : _activeOutletId;
+
+  /// Accepts or rejects an order through
+  /// `POST /api/co/acceptOrRejectOrderByOutlet`. The backend owns the rejection
+  /// record, the refund and the driver dispatch, so nothing else is triggered
+  /// here. Returns `true` when the status was updated.
+  Future<bool> updateOrderStatus({
+    required OrderModel order,
+    required OutletOrderAction action,
+    int? preparationTimeInMins,
+    String? rejectionReason,
+  }) async {
+    final orderId = order.id;
+    if (orderId == null || orderId.isEmpty) {
+      ShowToastDialog.showToast('Order id is missing'.tr);
+      return false;
+    }
+
+    final outletId = activeOutletId;
+    if (outletId <= 0) {
+      ShowToastDialog.showToast('Please select an outlet'.tr);
+      return false;
+    }
+
+    ShowToastDialog.showLoader('Please wait...'.tr);
+    try {
+      final result = await OrderApiService.acceptOrRejectOrderByOutlet(
+        orderId: orderId,
+        outletId: outletId,
+        action: action,
+        preparationTimeInMins: preparationTimeInMins,
+        rejectionReason: rejectionReason,
+      );
+
+      if (!result.success) {
+        ShowToastDialog.showToast(result.message);
+        return false;
+      }
+
+      if (action == OutletOrderAction.accept) {
+        order
+          ..status = Constant.orderAccepted
+          ..estimatedTimeToPrepare = estimatedTimeController.value.text;
+      } else {
+        order.status = Constant.orderRejected;
+      }
+
+      await AudioPlayerService.playSound(false);
+      await getOrder(silent: false);
+
+      ShowToastDialog.showToast(
+        action == OutletOrderAction.accept
+            ? 'Order accepted successfully'.tr
+            : 'Order rejected successfully'.tr,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Error updating order status: $e');
+      ShowToastDialog.showToast(
+          'Error processing order. Please try again.'.tr);
+      return false;
+    } finally {
+      ShowToastDialog.closeLoader();
+    }
   }
   // ── Orders ────────────────────────────────────────────────────────────────
   Future<void> getOrder({bool silent = false}) async {

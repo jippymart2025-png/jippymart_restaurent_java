@@ -436,6 +436,7 @@ class SignupScreen extends StatelessWidget {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp('[0-9]')),
                 ],
+                maxLength: 10,
                 prefix: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,

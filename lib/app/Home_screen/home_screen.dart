@@ -12,6 +12,7 @@ import 'package:jippymart_restaurant/app/verification_screen/verification_screen
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/home_controller.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
+import 'package:jippymart_restaurant/service/order_api_service.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/themes/round_button_fill.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
@@ -215,46 +216,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
     }
 
-    // No restaurant linked
-    // if (ctrl.userModel.value.vendorID == null ||
-    //     ctrl.userModel.value.vendorID!.isEmpty) {
-    //   return _EmptyStateView(
-    //     icon: 'assets/icons/ic_building_two.svg',
-    //     title: 'Add Your First Outlet'.tr,
-    //     subtitle:
-    //     'Get started by adding your outlet details to manage your menu, orders, and reservations.'
-    //         .tr,
-    //     buttonLabel: 'Add Outlet'.tr,
-    //     onTap: () async {
-    //       final result = await Get.to(const AddRestaurantScreen());
-    //       if (result == true) ctrl.getUserProfile();
-    //     },
-    //     themeChange: themeChange,
-    //   );
-    // }
-    // final outletId = Preferences.getInt('outletId');
-    // if (ctrl.outletList.isEmpty && outletId <= 0) {
-    //   return _EmptyStateView(
-    //     icon: 'assets/icons/ic_building_two.svg',
-    //     title: 'Add Your First Outlet'.tr,
-    //     subtitle:
-    //     'Get started by adding your outlet details to manage your menu, orders, and reservations.'
-    //         .tr,
-    //     buttonLabel: 'Add Outlet'.tr,
-    //     onTap: () async {
-    //       // final result = await Get.to(
-    //         // const AddRestaurantScreen(),
-    //       // );
-    //
-    //       if (result == true) {
-    //         if (Get.isRegistered<MerchantOutletController>()) {
-    //           await Get.find<MerchantOutletController>().refreshOutletsOnly();
-    //         }
-    //       }
-    //     },
-    //     themeChange: themeChange,
-    //   );
-    // }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -327,22 +288,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     Duration initial = const Duration(minutes: 10);
     final text = ctrl.estimatedTimeController.value.text.trim();
     if (text.isNotEmpty) {
-      final minuteMatch =
-      RegExp(r'(\d+)\s*(?:minutes?|min)', caseSensitive: false)
-          .firstMatch(text);
-      if (minuteMatch != null) {
+      final minutes = OrderApiService.parsePreparationTimeInMins(text);
+      if (minutes != null) {
         initial = Duration(
             minutes:
-            (int.tryParse(minuteMatch.group(1) ?? '') ?? 10).clamp(1, 2400));
-      } else {
-        final parts = text.split(':');
-        if (parts.length == 2) {
-          final h = int.tryParse(parts[0]) ?? 0;
-          final m = int.tryParse(parts[1]) ?? 0;
-          initial = Duration(minutes: (h * 60 + m).clamp(1, 2400));
-        } else {
-          initial = Duration(minutes: (int.tryParse(text) ?? 10).clamp(1, 2400));
-        }
+                minutes.clamp(kMinPreparationTimeInMins, kMaxPreparationTimeInMins));
       }
     }
 
@@ -350,7 +300,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DurationPickerBottomSheet(initialDuration: initial),
+      builder: (_) => DurationPickerBottomSheet(
+        initialDuration: initial,
+        minMinutes: kMinPreparationTimeInMins,
+        maxMinutes: kMaxPreparationTimeInMins,
+      ),
     );
     if (picked != null) _applyDuration(picked, ctrl);
   }
@@ -547,8 +501,15 @@ class _ClosedOrderCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class DurationPickerBottomSheet extends StatefulWidget {
   final Duration initialDuration;
+  final int minMinutes;
+  final int maxMinutes;
 
-  const DurationPickerBottomSheet({super.key, required this.initialDuration});
+  const DurationPickerBottomSheet({
+    super.key,
+    required this.initialDuration,
+    this.minMinutes = 1,
+    this.maxMinutes = 15,
+  });
 
   @override
   State<DurationPickerBottomSheet> createState() =>
@@ -557,12 +518,16 @@ class DurationPickerBottomSheet extends StatefulWidget {
 
 class _DurationPickerBottomSheetState
     extends State<DurationPickerBottomSheet> {
+  static const List<int> _chipOptions = [1, 2, 5, 8, 10, 12, 15];
+
   late Duration _selected;
 
   @override
   void initState() {
     super.initState();
-    _selected = widget.initialDuration;
+    _selected = Duration(
+        minutes: widget.initialDuration.inMinutes
+            .clamp(widget.minMinutes, widget.maxMinutes));
   }
 
   @override
@@ -637,8 +602,9 @@ class _DurationPickerBottomSheetState
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [5, 10, 15, 20, 25, 30, 35, 40]
-                    .map((m) => FilterChip(
+                children: _chipOptions
+                        .where((m) => m >= widget.minMinutes && m <= widget.maxMinutes)
+                        .map((m) => FilterChip(
                   label: Text('$m min'),
                   selected: _selected.inMinutes == m,
                   onSelected: (_) =>

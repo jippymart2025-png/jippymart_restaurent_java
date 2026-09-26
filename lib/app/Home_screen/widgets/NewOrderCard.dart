@@ -1,32 +1,24 @@
-import 'dart:convert';
-
 import 'package:bottom_picker/resources/extensions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
-import 'package:uuid/uuid.dart';
 
 import '../../../constant/constant.dart';
-import '../../../constant/send_notification.dart';
 import '../../../constant/show_toast_dialog.dart';
 import '../../../controller/home_controller.dart';
 import '../../../models/order_model.dart';
 import '../../../models/user_model.dart';
-import '../../../models/wallet_transaction_model.dart';
-import '../../../service/audio_player_service.dart';
+import '../../../service/order_api_service.dart';
 import '../../../themes/app_them_data.dart';
 import '../../../themes/round_button_fill.dart';
 import '../../../utils/dark_theme_provider.dart';
-import '../../../utils/fire_store_utils.dart';
 import '../../../widget/my_separator.dart';
 import 'CustomerRow.dart';
 import 'DeliveryManDialog.dart';
 import 'OrderCardShell.dart';
 import 'OrderMetaRows.dart';
 import 'ProductList.dart';
+import 'RejectOrderDialog.dart';
 
 class NewOrderCard extends StatelessWidget {
   final OrderModel orderModel;
@@ -75,7 +67,6 @@ class NewOrderCard extends StatelessWidget {
         const SizedBox(height: 10),
         _NewOrderActions(
           orderModel: orderModel,
-          totals: totals,
           controller: controller,
           themeChange: themeChange,
           context: context,
@@ -89,7 +80,6 @@ class NewOrderCard extends StatelessWidget {
 
 class _NewOrderActions extends StatelessWidget {
   final OrderModel orderModel;
-  final OrderTotals totals;
   final HomeController controller;
   final DarkThemeProvider themeChange;
   final BuildContext context;
@@ -98,7 +88,6 @@ class _NewOrderActions extends StatelessWidget {
 
   const _NewOrderActions({
     required this.orderModel,
-    required this.totals,
     required this.controller,
     required this.themeChange,
     required this.context,
@@ -106,49 +95,18 @@ class _NewOrderActions extends StatelessWidget {
   });
 
   Future<void> _reject() async {
-    ShowToastDialog.showLoader('Please wait...'.tr);
-    await AudioPlayerService.playSound(false);
-    orderModel.status = Constant.orderRejected;
-    await FireStoreUtils.updateOrder(orderModel);
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => RejectOrderDialog(themeChange: themeChange),
+    );
 
-    if (orderModel.author?.fcmToken?.isNotEmpty == true) {
-      SendNotification.sendFcmMessage(
-        Constant.restaurantRejected,
-        orderModel.author!.fcmToken!,
-        {'orderId': orderModel.id ?? '', 'status': Constant.orderRejected},
-      );
-    }
+    if (reason == null || reason.trim().isEmpty) return;
 
-    if (orderModel.paymentMethod?.toLowerCase() != 'cod') {
-      final amount = totals.subTotal +
-          (double.tryParse(orderModel.discount.toString()) ?? 0) +
-          totals.specialDiscount +
-          totals.taxAmount +
-          (double.tryParse(orderModel.deliveryCharge.toString()) ?? 0) +
-          (double.tryParse(orderModel.tipAmount.toString()) ?? 0);
-
-      final tx = WalletTransactionModel(
-        amount: amount,
-        id: const Uuid().v4(),
-        orderId: orderModel.id,
-        userId: orderModel.author!.id,
-        date: Timestamp.now(),
-        isTopup: true,
-        paymentMethod: 'Wallet',
-        paymentStatus: 'success',
-        note: 'Order Refund success',
-        transactionUser: 'user',
-      );
-      // await FireStoreUtils.setWalletTransaction(tx);
-      await FireStoreUtils.updateUserWallet(
-        amount: amount.toString(),
-        userId: orderModel.author?.firebaseId ?? '',
-      );
-    }
-
-    await controller.getOrder(silent: false);
-    ShowToastDialog.closeLoader();
-    Get.back();
+    await controller.updateOrderStatus(
+      order: orderModel,
+      action: OutletOrderAction.reject,
+      rejectionReason: reason,
+    );
   }
 
   void _openEstimatedDialog() {
@@ -492,8 +450,21 @@ class _EstimatedTimeDialog extends StatelessWidget {
   }
 
   Future<void> _onShipPressed(BuildContext ctx) async {
-    if (controller.estimatedTimeController.value.text.isEmpty) {
+    final estimatedText = controller.estimatedTimeController.value.text.trim();
+    if (estimatedText.isEmpty) {
       ShowToastDialog.showToast('Please enter estimated time'.tr);
+      return;
+    }
+
+    final preparationTimeInMins =
+        OrderApiService.parsePreparationTimeInMins(estimatedText);
+    if (preparationTimeInMins == null ||
+        preparationTimeInMins < kMinPreparationTimeInMins ||
+        preparationTimeInMins > kMaxPreparationTimeInMins) {
+      ShowToastDialog.showToast(
+        'Please select a preparation time between $kMinPreparationTimeInMins and $kMaxPreparationTimeInMins minutes'
+            .tr,
+      );
       return;
     }
 
@@ -501,13 +472,21 @@ class _EstimatedTimeDialog extends StatelessWidget {
         controller.vendermodel.value.isSelfDelivery == true &&
         orderModel.takeAway == false;
 
+    final updated = await controller.updateOrderStatus(
+      order: orderModel,
+      action: OutletOrderAction.accept,
+      preparationTimeInMins: preparationTimeInMins,
+    );
+    if (!updated) return;
+
+    Get.back();
+
     if (isSelfDelivery) {
+      if (!context.mounted) return;
       ShowToastDialog.showLoader('Please wait...'.tr);
       await controller.getAllDriverList();
       ShowToastDialog.closeLoader();
-      orderModel.estimatedTimeToPrepare =
-          controller.estimatedTimeController.value.text;
-      Get.back();
+      if (!context.mounted) return;
       showDialog(
         context: context,
         builder: (_) => DeliveryManDialog(
@@ -516,139 +495,6 @@ class _EstimatedTimeDialog extends StatelessWidget {
           orderModel: orderModel,
         ),
       );
-      return;
-    }
-
-    ShowToastDialog.showLoader('Please wait...'.tr);
-    try {
-      orderModel
-        ..estimatedTimeToPrepare =
-            controller.estimatedTimeController.value.text
-        ..status = Constant.orderAccepted;
-
-      await AudioPlayerService.playSound(false);
-
-      // Radius fetch (cached)
-      double radius = Constant.driverSearchRadius ?? 5.0;
-      if (Constant.driverSearchRadius == null) {
-        try {
-          final res = await http.get(
-            Uri.parse('${Constant.baseUrl}restaurant/GetDriverNearBy'),
-            headers: {'Content-Type': 'application/json'},
-          );
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body);
-            if (data['success'] == true) {
-              radius = double.tryParse(
-                  data['data']['driverRadios'].toString()) ??
-                  5.0;
-              Constant.driverSearchRadius = radius;
-            }
-          }
-        } catch (_) {
-          radius = 5.0;
-          Constant.driverSearchRadius = radius;
-        }
-      }
-
-      orderModel.ensureMerchantPriceFromProducts();
-      await Future.wait([
-        FireStoreUtils.updateOrder(orderModel),
-        FireStoreUtils.restaurantVendorWalletSet(orderModel),
-      ]);
-
-      // Notify nearby drivers
-      await _notifyNearbyDrivers(radius);
-
-      // Notify customer
-      if (orderModel.author?.fcmToken?.isNotEmpty == true) {
-        SendNotification.sendFcmMessage(
-          Constant.restaurantAccepted,
-          orderModel.author!.fcmToken!,
-          {'orderId': orderModel.id ?? '', 'status': Constant.orderAccepted},
-        ).catchError((_) {});
-      }
-
-      await controller.getOrder(silent: false);
-    } catch (e) {
-      debugPrint('Error accepting order: $e');
-      ShowToastDialog.showToast(
-          'Error processing order. Please try again.'.tr);
-    } finally {
-      ShowToastDialog.closeLoader();
-      Get.back();
-    }
-  }
-
-  Future<void> _notifyNearbyDrivers(double radius) async {
-    final orderId = orderModel.id;
-    if (orderId == null || orderId.isEmpty) return;
-
-    final restaurantLat =
-        controller.vendermodel.value.latitude ?? 0.0;
-    final restaurantLng =
-        controller.vendermodel.value.longitude ?? 0.0;
-    final zoneId = controller.vendermodel.value.zoneId;
-
-    final allDrivers =
-    await FireStoreUtils.getAvalibleDrivers(zoneId: zoneId);
-
-    final eligible = <UserModel>[];
-    for (final d in allDrivers) {
-      final lat = d.location?.latitude;
-      final lng = d.location?.longitude;
-      if (lat == null || lng == null) continue;
-      try {
-        final dist = Geolocator.distanceBetween(
-            restaurantLat, restaurantLng, lat, lng) /
-            1000;
-        if (dist <= radius) eligible.add(d);
-      } catch (_) {}
-    }
-
-    eligible.sort((a, b) {
-      try {
-        final da = Geolocator.distanceBetween(restaurantLat, restaurantLng,
-            a.location!.latitude!, a.location!.longitude!);
-        final db = Geolocator.distanceBetween(restaurantLat, restaurantLng,
-            b.location!.latitude!, b.location!.longitude!);
-        return da.compareTo(db);
-      } catch (_) {
-        return 0;
-      }
-    });
-
-    const batchSize = 5;
-    for (var i = 0; i < eligible.length; i += batchSize) {
-      final batch = eligible.skip(i).take(batchSize).toList();
-      await Future.wait(batch.map((driver) async {
-        try {
-          driver.role = Constant.userRoleDriver;
-          final existing = <String>[];
-          for (final item in driver.orderRequestData ?? []) {
-            if (item is String) {
-              existing.add(item);
-            } else if (item is Map && item['id'] != null) {
-              existing.add(item['id'].toString());
-            }
-          }
-          if (existing.contains(orderId)) return;
-          // driver.orderRequestData = [...existing, orderId];
-
-          final updated = await FireStoreUtils.updateDriverUser(driver);
-          if (!updated) return;
-
-          if (driver.fcmToken?.isNotEmpty == true) {
-            await SendNotification.sendFcmMessage(
-              Constant.newDeliveryOrder,
-              driver.fcmToken!,
-              {'orderId': orderId},
-            );
-          }
-        } catch (e) {
-          debugPrint('Driver update error [${driver.firebaseId}]: $e');
-        }
-      }));
     }
   }
 }
