@@ -481,20 +481,20 @@ class _EstimatedTimeDialog extends StatelessWidget {
 
     Get.back();
 
-    if (isSelfDelivery) {
-      if (!context.mounted) return;
-      ShowToastDialog.showLoader('Please wait...'.tr);
-      await controller.getAllDriverList();
-      ShowToastDialog.closeLoader();
-      if (!context.mounted) return;
-      showDialog(
-        context: context,
-        builder: (_) => DeliveryManDialog(
-          controller: controller,
-          themeChange: themeChange,
-          orderModel: orderModel,
-        ),
-      );
-    }
+    // if (isSelfDelivery) {
+    //   if (!context.mounted) return;
+    //   ShowToastDialog.showLoader('Please wait...'.tr);
+    //   await controller.getAllDriverList();
+    //   ShowToastDialog.closeLoader();
+    //   if (!context.mounted) return;
+    //   showDialog(
+    //     context: context,
+    //     builder: (_) => DeliveryManDialog(
+    //       controller: controller,
+    //       themeChange: themeChange,
+    //       orderModel: orderModel,
+    //     ),
+    //   );
+    // }
   }
 }

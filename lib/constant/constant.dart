@@ -4,15 +4,12 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/models/admin_commission.dart';
 import 'package:jippymart_restaurant/models/advertisement_model.dart';
 import 'package:jippymart_restaurant/models/coupon_model.dart';
 import 'package:jippymart_restaurant/models/currency_model.dart';
 import 'package:jippymart_restaurant/models/language_model.dart';
-import 'package:jippymart_restaurant/models/mail_setting.dart';
 import 'package:jippymart_restaurant/models/merchant_response_model.dart';
 import 'package:jippymart_restaurant/models/tax_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
@@ -42,7 +39,7 @@ class Constant {
   static const globalUrl = "https://jippymart.in/";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";
   static bool isZoneAvailable = false;
-  static ZoneModel? selectedZone;
+  // static ZoneModel? selectedZone;
   static String mapAPIKey = "";
   static String placeHolderImage = "";
   static String senderId = 'jippymart-27c08'; // <-- Set to your Firebase project ID

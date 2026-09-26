@@ -7,9 +7,6 @@ import 'package:jippymart_restaurant/models/admin_commission.dart';
 class VendorModel {
   /// Preference key used to persist this vendor's zone id.
   static const String zoneIdPrefKey = 'zone_id';
-  // String? author;
-  // bool? dineInActive;
-  // String? openDineTime;
   List<dynamic>? categoryID;
   String? id;
   String? categoryPhoto;
@@ -56,9 +53,6 @@ class VendorModel {
 
   VendorModel(
       {
-        // this.author,
-        // this.dineInActive,
-        // this.openDineTime,
         this.categoryID,
         this.id,
         this.categoryPhoto,
@@ -103,9 +97,7 @@ class VendorModel {
         this.isOpen});
 
   VendorModel.fromJson(Map<String, dynamic> json) {
-    // author = json['author'];
-    // dineInActive = _parseToBool(json['dine_in_active']);
-    // openDineTime = json['openDineTime'];
+
 
     // Handle categoryID - it might be a string or array
     categoryID = _parseJsonFieldToList(json['categoryID']) ?? [];

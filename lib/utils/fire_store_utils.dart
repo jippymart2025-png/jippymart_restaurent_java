@@ -16,11 +16,9 @@ import 'package:jippymart_restaurant/models/advertisement_model.dart';
 import 'package:jippymart_restaurant/models/conversation_model.dart';
 import 'package:jippymart_restaurant/models/document_model.dart';
 import 'package:jippymart_restaurant/models/driver_document_model.dart';
-import 'package:jippymart_restaurant/models/email_template_model.dart';
 import 'package:jippymart_restaurant/models/coupon_model.dart';
 import 'package:jippymart_restaurant/models/inbox_model.dart';
 import 'package:jippymart_restaurant/models/notification_model.dart';
-import 'package:jippymart_restaurant/models/on_boarding_model.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
 import 'package:jippymart_restaurant/models/payment_model/cod_setting_model.dart';
 import 'package:jippymart_restaurant/models/payment_model/flutter_wave_model.dart';
@@ -39,8 +37,6 @@ import 'package:jippymart_restaurant/models/product_model.dart';
 import 'package:jippymart_restaurant/models/rating_model.dart';
 import 'package:jippymart_restaurant/models/referral_model.dart';
 import 'package:jippymart_restaurant/models/review_attribute_model.dart';
-import 'package:jippymart_restaurant/models/story_model.dart';
-
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
@@ -1084,34 +1080,34 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     }
   }
 
-  static Future<List<ZoneModel>?> getZone() async {
-    List<ZoneModel> zoneList = [];
-    try {
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/zones'),
-        headers: {'Content-Type': 'application/json'},
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        if (responseData['success'] == true && responseData['data'] != null) {
-          List<dynamic> zonesData = responseData['data'];
-          for (var element in zonesData) {
-            // Filter zones where publish == 1 (equivalent to true)
-            if (element['publish'] == 1) {
-              ZoneModel zoneModel = ZoneModel.fromJson(element);
-              zoneList.add(zoneModel);
-            }
-          }
-        }
-      } else {
-        throw Exception('Failed to load zones: ${response.statusCode}');
-      }
-    } catch (error) {
-      log(error.toString(), name: " getZone ");
-      return null;
-    }
-    return zoneList;
-  }
+  // static Future<List<ZoneModel>?> getZone() async {
+  //   List<ZoneModel> zoneList = [];
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse('${Constant.baseUrl}restaurant/zones'),
+  //       headers: {'Content-Type': 'application/json'},
+  //     );
+  //     if (response.statusCode == 200) {
+  //       final Map<String, dynamic> responseData = jsonDecode(response.body);
+  //       if (responseData['success'] == true && responseData['data'] != null) {
+  //         List<dynamic> zonesData = responseData['data'];
+  //         for (var element in zonesData) {
+  //           // Filter zones where publish == 1 (equivalent to true)
+  //           if (element['publish'] == 1) {
+  //             ZoneModel zoneModel = ZoneModel.fromJson(element);
+  //             zoneList.add(zoneModel);
+  //           }
+  //         }
+  //       }
+  //     } else {
+  //       throw Exception('Failed to load zones: ${response.statusCode}');
+  //     }
+  //   } catch (error) {
+  //     log(error.toString(), name: " getZone ");
+  //     return null;
+  //   }
+  //   return zoneList;
+  // }
 
   static Future<List<OrderModel>?> getAllOrder() async {
     List<OrderModel> orderList = [];
@@ -4145,96 +4141,7 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
         await (await uploadTask.whenComplete(() {})).ref.getDownloadURL();
     return downloadUrl.toString();
   }
-  static Future<StoryModel?> getStory(String vendorId) async {
-    try {
-      // Make API call
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/stories/$vendorId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          // If API returns the story data
-          if (responseData['data'] != null) {
-            return StoryModel.fromJson(responseData['data']);
-          } else {
-            return null; // No story found
-          }
-        } else {
-          throw Exception('API returned success: false');
-        }
-      } else if (response.statusCode == 404) {
-        // Story not found
-        return null;
-      } else {
-        throw Exception('Failed to load story: ${response.statusCode}');
-      }
-    } catch (error) {
-      log("Error fetching story: $error");
-      return null;
-    }
-  }
-  static Future<void> addOrUpdateStory(StoryModel storyModel) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/stories'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(storyModel.toJson()),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          // Successfully added/updated
-          return;
-        } else {
-          throw Exception('API returned success: false: ${responseData['message']}');
-        }
-      } else {
-        throw Exception('Failed to add/update story: ${response.statusCode}');
-      }
-    } catch (error) {
-      log("Failed to add/update story: $error");
-      throw error; // Re-throw to maintain similar behavior to Firebase version
-    }
-  }
-  static Future<void> removeStory(String vendorId) async {
-    try {
-      // Make API call
-      final response = await http.delete(
-        Uri.parse('${Constant.baseUrl}restaurant/stories/$vendorId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          return;
-        } else {
-          throw Exception('API returned success: false: ${responseData['message']}');
-        }
-      } else if (response.statusCode == 404) {
-        // Story not found - this might be acceptable depending on requirements
-        log("Story not found for vendor: $vendorId");
-        return;
-      } else {
-        throw Exception('Failed to delete story: ${response.statusCode}');
-      }
-    } catch (error) {
-      log("Failed to delete story: $error");
-      throw error; // Re-throw to maintain similar behavior to Firebase version
-    }
-  }
   static Future<WithdrawMethodModel?> getWithdrawMethod() async {
     try {
       // Make API call
