@@ -268,7 +268,7 @@ class ProductListController extends GetxController {
     if (idx == -1) return;
     productList[idx].publish = !currentPublish;
     productList.refresh();
-    await FireStoreUtils.setProduct(productList[idx]);
+    // await FireStoreUtils.setProduct(productList[idx]);
   }
 
   Future<void> updateAvailableStatus(

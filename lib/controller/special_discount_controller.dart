@@ -60,10 +60,10 @@ class SpecialDiscountController extends GetxController {
     vendorModel.value.specialDiscount = specialDiscount;
     vendorModel.value.specialDiscountEnable = isSpecialSwitched.value;
 
-    await FireStoreUtils.updateVendor(vendorModel.value).then((value) async {
-      ShowToastDialog.showToast("Special discount update successfully".tr);
-      ShowToastDialog.closeLoader();
-    });
+    // await FireStoreUtils.updateVendor(vendorModel.value).then((value) async {
+    //   ShowToastDialog.showToast("Special discount update successfully".tr);
+    //   ShowToastDialog.closeLoader();
+    // });
   }
 
   addValue(int index) {

@@ -88,12 +88,12 @@ class AddEditCouponController extends GetxController {
       couponModel.value.isPublic = isPublic.value;
       couponModel.value.resturantId = Constant.userModel!.vendorID.toString();
       couponModel.value.description = titleController.value.text;
-      await FireStoreUtils.setCoupon(couponModel.value).then(
-        (value) {
-          ShowToastDialog.closeLoader();
-          Get.back(result: true);
-        },
-      );
+      // await FireStoreUtils.setCoupon(couponModel.value).then(
+      //   (value) {
+      //     ShowToastDialog.closeLoader();
+      //     Get.back(result: true);
+      //   },
+      // );
     }
   }
 

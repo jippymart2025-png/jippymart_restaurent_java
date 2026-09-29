@@ -31,27 +31,27 @@ class DetailsUploadController extends GetxController {
     if (argumentData != null) {
       documentModel.value = argumentData['documentModel'];
     }
-    getDocument();
+    // getDocument();
     update();
   }
 
   Rx<Documents> documents = Documents().obs;
 
-  getDocument() async {
-    await FireStoreUtils.getDocumentOfDriver().then((value) {
-      isLoading.value = false;
-      if (value != null) {
-        var contain = value.documents!
-            .where((element) => element.documentId == documentModel.value.id);
-        if (contain.isNotEmpty) {
-          documents.value = value.documents!.firstWhere((itemToCheck) =>
-              itemToCheck.documentId == documentModel.value.id);
-          frontImage.value = documents.value.frontImage!;
-          backImage.value = documents.value.backImage!;
-        }
-      }
-    });
-  }
+  // getDocument() async {
+  //   await FireStoreUtils.getDocumentOfDriver().then((value) {
+  //     isLoading.value = false;
+  //     if (value != null) {
+  //       var contain = value.documents!
+  //           .where((element) => element.documentId == documentModel.value.id);
+  //       if (contain.isNotEmpty) {
+  //         documents.value = value.documents!.firstWhere((itemToCheck) =>
+  //             itemToCheck.documentId == documentModel.value.id);
+  //         frontImage.value = documents.value.frontImage!;
+  //         backImage.value = documents.value.backImage!;
+  //       }
+  //     }
+  //   });
+  // }
 
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -85,16 +85,16 @@ class DetailsUploadController extends GetxController {
 
       ShowToastDialog.showLoader("Please wait...");
 
-      bool result = await FireStoreUtils.uploadDriverDocument(documents.value);
+      // bool result = await FireStoreUtils.uploadDriverDocument(documents.value);
 
       ShowToastDialog.closeLoader();
 
-      if (result) {
-        ShowToastDialog.showToast("Document uploaded successfully");
-        Get.back(result: true);
-      } else {
-        ShowToastDialog.showToast("Upload failed — check server logs");
-      }
+      // if (result) {
+      //   ShowToastDialog.showToast("Document uploaded successfully");
+      //   Get.back(result: true);
+      // } else {
+      //   ShowToastDialog.showToast("Upload failed — check server logs");
+      // }
     } catch (e) {
       ShowToastDialog.closeLoader();
       ShowToastDialog.showToast("Error uploading document: $e");
