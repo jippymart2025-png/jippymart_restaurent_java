@@ -1,16 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
-import 'package:uuid/uuid.dart';
 import '../../../constant/constant.dart';
 import '../../../constant/send_notification.dart';
 import '../../../constant/show_toast_dialog.dart';
 import '../../../controller/home_controller.dart';
 import '../../../models/order_model.dart';
-import '../../../models/wallet_transaction_model.dart';
 import '../../../service/audio_player_service.dart';
+import '../../../service/order_api_service.dart';
 import '../../../themes/app_them_data.dart';
 import '../../../themes/round_button_fill.dart';
 import '../../../utils/dark_theme_provider.dart';
@@ -89,14 +87,37 @@ class _AcceptedOrderActions extends StatelessWidget {
   });
 
   Future<void> _cancelOrder() async {
+    final orderId = orderModel.id ?? '';
+    if (orderId.isEmpty) {
+      ShowToastDialog.showToast('Order id is missing'.tr);
+      return;
+    }
+
+    final outletId = controller.activeOutletId;
+    if (outletId <= 0) {
+      ShowToastDialog.showToast('Please select an outlet'.tr);
+      return;
+    }
+
     final userId = await FireStoreUtils.getCurrentUid();
     ShowToastDialog.showLoader('Please wait...'.tr);
     await AudioPlayerService.playSound(false);
 
+    final previousStatus = orderModel.status;
     orderModel.status = Constant.orderCancelled;
 
-    await FireStoreUtils.updateOrder(orderModel);
-
+    final result = await OrderApiService.acceptOrRejectOrderByOutlet(
+      orderId: orderId,
+      outletId: outletId,
+      action: OutletOrderAction.reject,
+      rejectionReason: 'Order cancelled by outlet',
+    );
+    if (!result.success) {
+      orderModel.status = previousStatus;
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(result.message);
+      return;
+    }
     if (orderModel.author?.fcmToken?.isNotEmpty == true) {
       SendNotification.sendFcmMessage(
         Constant.restaurantCancelled,
@@ -113,22 +134,7 @@ class _AcceptedOrderActions extends StatelessWidget {
           (double.tryParse(orderModel.deliveryCharge.toString()) ?? 0) +
           (double.tryParse(orderModel.tipAmount.toString()) ?? 0);
 
-      // await FireStoreUtils.setWalletTransaction(WalletTransactionModel(
-      //   amount: refund,
-      //   id: const Uuid().v4(),
-      //   orderId: orderModel.id,
-      //   userId: orderModel.author!.id,
-      //   date: Timestamp.now(),
-      //   isTopup: true,
-      //   paymentMethod: 'Wallet',
-      //   paymentStatus: 'success',
-      //   note: 'Order Refund success',
-      //   transactionUser: 'user',
-      // ));
-      await FireStoreUtils.updateUserWallet(
-        amount: refund.toString(),
-        userId: orderModel.author?.id ?? '',
-      );
+
     }
 
     // Vendor wallet debit
@@ -146,37 +152,7 @@ class _AcceptedOrderActions extends StatelessWidget {
       vendorAmount = totals.subTotal - disc - totals.specialDiscount;
     }
 
-    // await Future.wait([
-    //   FireStoreUtils.setWalletTransaction(WalletTransactionModel(
-    //     amount: totals.taxAmount,
-    //     id: const Uuid().v4(),
-    //     orderId: orderModel.id,
-    //     userId: userId,
-    //     date: Timestamp.now(),
-    //     isTopup: false,
-    //     paymentMethod: 'tax',
-    //     paymentStatus: 'success',
-    //     note: 'Tax Amount Refund',
-    //     transactionUser: 'vendor',
-    //   )),
-    //   FireStoreUtils.setWalletTransaction(WalletTransactionModel(
-    //     amount: vendorAmount,
-    //     id: const Uuid().v4(),
-    //     orderId: orderModel.id,
-    //     userId: userId,
-    //     date: Timestamp.now(),
-    //     isTopup: false,
-    //     paymentMethod: 'Wallet',
-    //     paymentStatus: 'success',
-    //     note: 'Order Amount Refund',
-    //     transactionUser: 'vendor',
-    //   )),
-    // ]);
 
-    await FireStoreUtils.updateUserWallet(
-      amount: (-(vendorAmount + totals.taxAmount)).toString(),
-      userId: FireStoreUtils.getCurrentUid().toString(),
-    );
 
     await controller.getOrder(silent: false);
     ShowToastDialog.closeLoader();
@@ -187,10 +163,7 @@ class _AcceptedOrderActions extends StatelessWidget {
     ShowToastDialog.showLoader('Please wait...'.tr);
     await AudioPlayerService.playSound(false);
     orderModel.status = Constant.orderCompleted;
-    await Future.wait([
-      FireStoreUtils.updateOrder(orderModel),
-      FireStoreUtils.restaurantVendorWalletSet(orderModel),
-    ]);
+    // await FireStoreUtils.restaurantVendorWalletSet(orderModel);
     if (orderModel.author?.fcmToken?.isNotEmpty == true) {
       SendNotification.sendFcmMessage(
         Constant.takeawayCompleted,

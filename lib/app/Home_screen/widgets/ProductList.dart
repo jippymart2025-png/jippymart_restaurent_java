@@ -8,7 +8,6 @@ import '../../../models/order_model.dart';
 import '../../../themes/app_them_data.dart';
 import '../../../utils/dark_theme_provider.dart';
 import '../../../widget/my_separator.dart';
-import '../../product_rating_view_screen/product_rating_view_screen.dart';
 
 class ProductList extends StatelessWidget {
   final OrderModel orderModel;
@@ -99,25 +98,25 @@ class _ProductItem extends StatelessWidget {
                     fontFamily: AppThemeData.semiBold,
                   ),
                 ),
-                if (showViewRatings)
-                  GestureDetector(
-                    onTap: () => Get.to(
-                      const ProductRatingViewScreen(),
-                      arguments: {
-                        'orderModel': orderModel,
-                        'productId': product.id,
-                      },
-                    ),
-                    child: Text(
-                      'View Ratings'.tr,
-                      style:  TextStyle(
-                        color: AppThemeData.secondary300,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
-                        fontFamily: AppThemeData.semiBold,
-                      ),
-                    ),
-                  ),
+                // if (showViewRatings)
+                  // GestureDetector(
+                  //   onTap: () => Get.to(
+                  //     const ProductRatingViewScreen(),
+                  //     arguments: {
+                  //       'orderModel': orderModel,
+                  //       'productId': product.id,
+                  //     },
+                  //   ),
+                  //   child: Text(
+                  //     'View Ratings'.tr,
+                  //     style:  TextStyle(
+                  //       color: AppThemeData.secondary300,
+                  //       fontWeight: FontWeight.w500,
+                  //       decoration: TextDecoration.underline,
+                  //       fontFamily: AppThemeData.semiBold,
+                  //     ),
+                  //   ),
+                  // ),
               ],
             ),
           ],

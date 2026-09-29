@@ -220,8 +220,8 @@ class ProductListController extends GetxController {
     _loadedOutletId = 0;
     _pendingCatalogEntries.clear();
 
-    final value = await FireStoreUtils.getProduct();
-    if (value != null) productList.value = value;
+    // final value = await FireStoreUtils.getProduct();
+    // if (value != null) productList.value = value;
     await _syncCategories();
   }
 

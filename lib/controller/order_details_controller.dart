@@ -7,12 +7,15 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
+import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/models/cart_product_model.dart';
 import 'package:jippymart_restaurant/models/order_model.dart';
 import 'package:jippymart_restaurant/models/tax_model.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/constant/send_notification.dart';
-import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
+import 'package:jippymart_restaurant/utils/preferences.dart';
+
+import '../service/order_api_service.dart';
 
 class OrderDetailsController extends GetxController {
   RxBool isLoading = true.obs;
@@ -1031,11 +1034,31 @@ class OrderDetailsController extends GetxController {
     return bytes;
   }
 
+  int get _activeOutletId {
+    final outletId = Preferences.getInt('outletId');
+    return outletId > 0 ? outletId : Preferences.getInt('selectedOutletId');
+  }
+
+  /// Preparation time sent to the backend when accepting from the details
+  /// screen. Falls back to the minimum when the order carries no estimate.
+  int get _preparationTimeInMins =>
+      OrderApiService.parsePreparationTimeInMins(
+          orderModel.value.estimatedTimeToPrepare) ??
+      kMinPreparationTimeInMins;
+
   Future<void> acceptOrder() async {
-    // Update order status in Firestore
     orderModel.value.status = Constant.orderAccepted;
 
-    await FireStoreUtils.updateOrder(orderModel.value);
+    final result = await OrderApiService.acceptOrRejectOrderByOutlet(
+      orderId: orderModel.value.id ?? '',
+      outletId: _activeOutletId,
+      action: OutletOrderAction.accept,
+      preparationTimeInMins: _preparationTimeInMins,
+    );
+    if (!result.success) {
+      ShowToastDialog.showToast(result.message);
+      return;
+    }
     // Send notification to customer
     if (orderModel.value.author?.fcmToken != null && orderModel.value.author!.fcmToken!.isNotEmpty) {
       await SendNotification.sendFcmMessage(
@@ -1055,9 +1078,17 @@ class OrderDetailsController extends GetxController {
   }
 
   Future<void> rejectOrder() async {
-    // Update order status in Firestore
     orderModel.value.status = Constant.orderRejected;
-    await FireStoreUtils.updateOrder(orderModel.value);
+    final result = await OrderApiService.acceptOrRejectOrderByOutlet(
+      orderId: orderModel.value.id ?? '',
+      outletId: _activeOutletId,
+      action: OutletOrderAction.reject,
+      rejectionReason: 'Order rejected by outlet',
+    );
+    if (!result.success) {
+      ShowToastDialog.showToast(result.message);
+      return;
+    }
     // Send notification to customer
     if (orderModel.value.author?.fcmToken != null && orderModel.value.author!.fcmToken!.isNotEmpty) {
       await SendNotification.sendFcmMessage(

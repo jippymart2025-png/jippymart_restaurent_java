@@ -35,7 +35,6 @@ import 'package:jippymart_restaurant/models/payment_model/wallet_setting_model.d
 import 'package:jippymart_restaurant/models/payment_model/xendit.dart';
 import 'package:jippymart_restaurant/models/product_model.dart';
 import 'package:jippymart_restaurant/models/rating_model.dart';
-import 'package:jippymart_restaurant/models/referral_model.dart';
 import 'package:jippymart_restaurant/models/review_attribute_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/models/vendor_category_model.dart';
@@ -43,7 +42,6 @@ import 'package:jippymart_restaurant/models/vendor_model.dart';
 import 'package:jippymart_restaurant/models/wallet_transaction_model.dart';
 import 'package:jippymart_restaurant/models/withdraw_method_model.dart';
 import 'package:jippymart_restaurant/models/withdrawal_model.dart';
-import 'package:jippymart_restaurant/models/zone_model.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
@@ -136,14 +134,6 @@ class FireStoreUtils {
     _invalidateVendorCache();
   }
 
-  // static void _invalidateSettingsCache() {
-  //   _settingsCacheTime = null;
-  // }
-  //
-  // static void _invalidateDeliveryChargeCache() {
-  //   _cachedDeliveryCharge = null;
-  //   _deliveryChargeCacheTime = null;
-  // }
 
   static Future<String> getCurrentUid() async {
     // final firebaseId = await getFirebaseId() ?? '';
@@ -170,29 +160,6 @@ class FireStoreUtils {
     return false;
   }
 
-
-  // static Future<bool> userExistOrNot(String uid) async {
-  //   bool isExist = false;
-  //   debugPrint(
-  //       "userExistOrNot ${'${Constant.baseUrl}restaurant/exists/$uid'} ");
-  //   await http.get(
-  //       Uri.parse('${Constant.baseUrl}restaurant/exists/$uid')
-  //   ).then((response) {
-  //     debugPrint("userExistOrNot ${response.body} ");
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //       isExist = data['exists'] ?? false;
-  //     } else {
-  //       isExist = false;
-  //       log("Failed to check user exist: ${response.statusCode}");
-  //     }
-  //   }).catchError((error) {
-  //     log("Failed to check user exist: $error");
-  //     isExist = false;
-  //   });
-  //
-  //   return isExist;
-  // }
 
 
 static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
@@ -299,13 +266,7 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
   static Future<MerchantModel?> createMerchant(
       MerchantRequestModel request,) async {
     try {
-      // final token = Preferences.getString('authToken');
       final headers = await getHeaders();
-//{
-      //    'Content-Type': 'application/json',
-      //    'Accept': 'application/json',
-      //    //'Authorization':'Bearer $token'
-      //  } ;
       final response = await http.post(
         Uri.parse(
           '${Constant.baseUrl}fm/merchants/createMerchant',
@@ -586,36 +547,6 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     return result.isSuccess ? result.outlet : null;
   }
 
-  static Future<bool?> updateUserWallet({
-    required String amount,
-    required String userId
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/update-user-wallet'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'userId': userId,
-          'amount': amount,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        return responseData['success'] ??
-            true; // Adjust based on your API response
-      } else {
-        debugPrint('Failed to update wallet: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      // Handle network or other errors
-      debugPrint('Error updating wallet: $e');
-      return false;
-    }
-  }
-
   static Future<bool> updateUser(UserModel userModel) async {
     bool isUpdate = false;
     try {
@@ -644,844 +575,103 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     return isUpdate;
   }
 
-  // Rate limiting: Track last request time and minimum delay between requests
-  static DateTime? _lastUpdateDriverUserRequest;
-  static const Duration _minDelayBetweenRequests = Duration(
-      milliseconds: 200); // 200ms delay between requests
 
-  static Future<bool> updateDriverUser(UserModel userModel,
-      {int maxRetries = 3}) async {
-    // Rate limiting: Ensure minimum delay between requests
-    if (_lastUpdateDriverUserRequest != null) {
-      final timeSinceLastRequest = DateTime.now().difference(
-          _lastUpdateDriverUserRequest!);
-      if (timeSinceLastRequest < _minDelayBetweenRequests) {
-        final delayNeeded = _minDelayBetweenRequests - timeSinceLastRequest;
-        await Future.delayed(delayNeeded);
-      }
-    }
-
-    int attempt = 0;
-    while (attempt < maxRetries) {
-      try {
-        userModel.id = userModel.firebaseId;
-        log("updateDriverUser ${'${Constant.baseUrl}restaurant/updateUser'} ");
-        log("updateDriverUser ${userModel.firebaseId} ${userModel.id} ");
-        Map<String, dynamic> userJson = _convertTimestampsToJson(
-            userModel.toJson());
-        log("updateDriverUser ${userJson}");
-        _lastUpdateDriverUserRequest = DateTime.now();
-        final response = await http.post(
-          Uri.parse('${Constant.baseUrl}restaurant/updateUser'),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: json.encode(userJson),
-        );
-
-        if (response.statusCode == 200) {
-          final responseData = json.decode(response.body);
-          return responseData['success'] ??
-              true; // Adjust based on your API response structure
-        } else if (response.statusCode == 429) {
-          // Rate limited - retry with exponential backoff
-          attempt++;
-          if (attempt < maxRetries) {
-            final backoffDelay = Duration(milliseconds: 500 *
-                (1 << (attempt - 1))); // Exponential backoff: 500ms, 1s, 2s
-            log("Rate limited (429). Retrying in ${backoffDelay
-                .inMilliseconds}ms (attempt $attempt/$maxRetries)");
-            await Future.delayed(backoffDelay);
-            continue;
-          } else {
-            log("Failed to update user after $maxRetries attempts: ${response
-                .statusCode} - ${response.body}");
-            return false;
-          }
-        } else {
-          log("Failed to update user: ${response.statusCode} - ${response
-              .body}");
-          return false;
-        }
-      } catch (error) {
-        attempt++;
-        if (attempt < maxRetries) {
-          final backoffDelay = Duration(
-              milliseconds: 500 * (1 << (attempt - 1)));
-          log("Error updating user. Retrying in ${backoffDelay
-              .inMilliseconds}ms (attempt $attempt/$maxRetries): $error");
-          await Future.delayed(backoffDelay);
-          continue;
-        } else {
-          log("Failed to update userds after $maxRetries attempts: $error");
-          return false;
-        }
-      }
-    }
-    return false;
-  }
-
-  static Future<bool> withdrawWalletAmount(WithdrawalModel userModel) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/withdraw'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: userModel.toJson(),
-      );
-      if (response.statusCode == 200) {
-        // Optionally parse the response if needed
-        // final responseData = json.decode(response.body);
-        return true;
-      } else {
-        log("Failed to withdraw: ${response.statusCode} - ${response.body}");
-        return false;
-      }
-    } catch (error) {
-      log("Error during withdrawal: $error");
-      return false;
-    }
-  }
-
-  // static Future<List<OnBoardingModel>> getOnBoardingList() async {
+  // static Future<RatingModel?> getOrderReviewsByID(String orderId,
+  //     String productID) async {
+  //   RatingModel? ratingModel;
+  //
   //   try {
   //     final response = await http.get(
-  //         Uri.parse('${Constant.baseUrl}onboarding/restaurantApp'),
-  //         headers: await getHeaders()
-  //     );
-  //     if (response.statusCode == 200) {
-  //       final Map<String, dynamic> responseData = json.decode(response.body);
-  //       if (responseData['success'] == true) {
-  //         List<OnBoardingModel> onBoardingModel = [];
-  //         for (var element in responseData['data']) {
-  //           OnBoardingModel documentModel = OnBoardingModel.fromJson(element);
-  //           onBoardingModel.add(documentModel);
-  //         }
-  //         return onBoardingModel;
-  //       } else {
-  //         throw Exception('API returned success: false');
-  //       }
-  //     } else {
-  //       throw Exception(
-  //           'Failed to load onboarding data: ${response.statusCode}');
-  //     }
-  //   } catch (error) {
-  //     log(error.toString());
-  //     rethrow; // or return an empty list: return [];
-  //   }
-  // }
-
-  // static Future<bool?> setWalletTransaction(
-  //     WalletTransactionModel walletTransactionModel) async {
-  //   try {
-  //     // Convert Timestamps to JSON-serializable format before encoding
-  //     Map<String, dynamic> transactionJson = _convertTimestampsToJson(
-  //         walletTransactionModel.toJson());
-  //
-  //     final response = await http.post(
-  //       Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
+  //       Uri.parse('${Constant
+  //           .baseUrl}restaurant/reviews/order?orderId=$orderId&productID=$productID'),
   //       headers: {
   //         'Content-Type': 'application/json',
   //       },
-  //       body: jsonEncode(transactionJson),
   //     );
   //     if (response.statusCode == 200) {
-  //       final responseData = jsonDecode(response.body);
-  //       final bool success = responseData['success'] ?? false;
-  //       final String message = responseData['message'] ?? '';
-  //       if (success) {
-  //         log("Wallet transaction saved successfully: $message");
-  //         return true;
+  //       final jsonResponse = json.decode(response.body);
+  //
+  //       if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+  //         ratingModel = RatingModel.fromJson(jsonResponse['data']);
+  //         debugPrint("======> Review found");
   //       } else {
-  //         log("Failed to save wallet transaction: $message");
-  //         return false;
+  //         debugPrint("======> No review found");
+  //         ratingModel = null;
   //       }
   //     } else {
-  //       log("HTTP Error: ${response.statusCode} - ${response.body}");
-  //       return false;
+  //       debugPrint("Failed to fetch review: ${response.statusCode} - ${response
+  //           .body}");
+  //       ratingModel = null;
   //     }
   //   } catch (error) {
-  //     log("Error adding wallet transaction: $error");
-  //     return false;
+  //     debugPrint("Error fetching review: $error");
+  //     ratingModel = null;
   //   }
+  //
+  //   return ratingModel;
   // }
 
-  // static Future<void> getSettings({bool forceRefresh = false}) async {
-  //   try {
-  //     // Performance Optimization: Check cache first (transparent to caller)
-  //     if (!forceRefresh && _settingsCacheTime != null) {
-  //       final cacheAge = DateTime.now().difference(_settingsCacheTime!);
-  //       if (cacheAge < _settingsCacheTTL) {
-  //         log("getSettings: Returning cached data (age: ${cacheAge.inSeconds}s)");
-  //         return; // Use cached settings (Constants already set)
-  //       }
+  // static Future<List<ProductModel>?> getProduct() async {
+  //   final String? vendorID = Constant.userModel?.vendorID;
+  //   if (vendorID != null) {
+  //     final entry = _productCache[vendorID];
+  //     if (entry != null &&
+  //         DateTime.now().difference(entry.cachedAt) < _productCacheTTL) {
+  //       return entry.list;
   //     }
-  //
-  //     final response = await http.get(Uri.parse('${Constant.baseUrl}settings/mobile'));
-  //     if (response.statusCode == 200) {
-  //       final Map<String, dynamic> data = json.decode(response.body)['data'];
-  //       final Map<String, dynamic> documents = data['documents'];
-  //       final Map<String, dynamic> derived = data['derived'];
-  //       // Global Settings
-  //       final globalSettings = documents['globalSettings'] ?? {};
-  //       Constant.orderRingtoneUrl = globalSettings['order_ringtone_url'] ?? '';
-  //       Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
-  //       if (globalSettings['app_restaurant_color'] != null) {
-  //         AppThemeData.secondary300 = Color(int.parse(
-  //             globalSettings['app_restaurant_color'].replaceFirst("#", "0xff")));
-  //       }
-  //       Constant.isEnableAdsFeature = globalSettings['isEnableAdsFeature'] ?? false;
-  //       Constant.isSelfDeliveryFeature = globalSettings['isSelfDelivery'] ?? false;
-  //
-  //       if (Constant.orderRingtoneUrl.isNotEmpty) {
-  //         await AudioPlayerService.initAudio();
-  //       }
-  //
-  //       // Schedule Order Notification
-  //       final scheduleOrder = documents['scheduleOrderNotification'] ?? {};
-  //       if (scheduleOrder.isNotEmpty) {
-  //         Constant.scheduleOrderTime = scheduleOrder["notifyTime"];
-  //         Constant.scheduleOrderTimeType = scheduleOrder["timeUnit"];
-  //       }
-  //
-  //       // Dine-in Settings
-  //       final dineInSettings = documents['DineinForRestaurant'] ?? {};
-  //       if (dineInSettings.isNotEmpty) {
-  //         Constant.isDineInEnable = dineInSettings["isEnabled"];
-  //       }
-  //
-  //       // Restaurant Settings
-  //       final restaurantSettings = documents['restaurant'] ?? {};
-  //       Constant.autoApproveRestaurant = restaurantSettings['auto_approve_restaurant'] ?? false;
-  //       // App Store compliance: Subscription model disabled - app is 100% free
-  //       Constant.isSubscriptionModelApplied = false; // Override server: restaurantSettings['subscription_model'] ?? false;
-  //
-  //       // Admin Commission
-  //       final adminCommission = documents['AdminCommission'] ?? {};
-  //       if (adminCommission.isNotEmpty) {
-  //         Constant.adminCommission = AdminCommission.fromJson(adminCommission);
-  //       }
-  //
-  //       // Google Map Key
-  //       final googleMapSettings = documents['googleMapKey'] ?? {};
-  //       Constant.mapAPIKey = googleMapSettings["key"] ?? '';
-  //       Constant.placeHolderImage = googleMapSettings["placeHolderImage"] ?? '';
-  //
-  //       // Story Settings
-  //       final storySettings = documents['story'] ?? {};
-  //       Constant.storyEnable = storySettings['isEnabled'] ?? false;
-  //
-  //       // Placeholder Image
-  //       final placeholderSettings = documents['placeHolderImage'] ?? {};
-  //       Constant.placeholderImage = placeholderSettings['image'] ?? '';
-  //
-  //       // Version Settings
-  //       final versionSettings = documents['Version'] ?? {};
-  //       Constant.googlePlayLink = versionSettings["googlePlayLink"] ?? '';
-  //       Constant.appStoreLink = versionSettings["appStoreLink"] ?? '';
-  //       Constant.appVersion = versionSettings["app_version"] ?? '';
-  //       Constant.storeUrl = versionSettings["storeUrl"] ?? '';
-  //
-  //       // Restaurant Nearby
-  //       final restaurantNearby = documents['RestaurantNearBy'] ?? {};
-  //       if (restaurantNearby.isNotEmpty) {
-  //         Constant.distanceType = restaurantNearby["distanceType"];
-  //       }
-  //
-  //       // Special Discount Offer
-  //       final specialDiscount = documents['specialDiscountOffer'] ?? {};
-  //       if (specialDiscount.isNotEmpty) {
-  //         Constant.specialDiscountOfferEnable = specialDiscount["isEnable"];
-  //       }
-  //
-  //       // Email Settings
-  //       final emailSettings = documents['emailSetting'] ?? {};
-  //       if (emailSettings.isNotEmpty) {
-  //         Constant.mailSettings = MailSettings.fromJson(emailSettings);
-  //       }
-  //
-  //       // Contact Us
-  //       final contactSettings = documents['ContactUs'] ?? {};
-  //       if (contactSettings.isNotEmpty) {
-  //         Constant.adminEmail = contactSettings["Email"];
-  //       }
-  //
-  //       // Driver Nearby
-  //       final driverNearby = documents['DriverNearBy'] ?? {};
-  //       if (driverNearby.isNotEmpty) {
-  //         Constant.selectedMapType = driverNearby["selectedMapType"];
-  //         Constant.singleOrderReceive = driverNearby['singleOrderReceive'];
-  //       }
-  //
-  //       // Notification Settings
-  //       final notificationSettings = documents['notification_setting'] ?? {};
-  //       Constant.senderId = notificationSettings["projectId"];
-  //       Constant.jsonNotificationFileURL = notificationSettings["serviceJson"];
-  //
-  //       // Document Verification
-  //       final docVerification = documents['document_verification_settings'] ?? {};
-  //       Constant.isRestaurantVerification = docVerification['isRestaurantVerification'] ?? false;
-  //
-  //       // Privacy Policy
-  //       final privacyPolicy = documents['privacyPolicy'] ?? {};
-  //       if (privacyPolicy.isNotEmpty) {
-  //         Constant.privacyPolicy = privacyPolicy["privacy_policy"];
-  //       }
-  //
-  //       // Terms and Conditions
-  //       final termsConditions = documents['termsAndConditions'] ?? {};
-  //       if (termsConditions.isNotEmpty) {
-  //         Constant.termsAndConditions = termsConditions["termsAndConditions"];
-  //       }
-  //
-  //       // Also set derived values for consistency
-  //       // App Store compliance: Subscription model disabled - app is 100% free
-  //       Constant.isSubscriptionModelApplied = false; // Override: derived['isSubscriptionModelApplied'] ?? false;
-  //       Constant.autoApproveRestaurant = derived['autoApproveRestaurant'] ?? false;
-  //       Constant.isEnableAdsFeature = derived['isEnableAdsFeature'] ?? false;
-  //       Constant.isSelfDeliveryFeature = derived['isSelfDeliveryFeature'] ?? false;
-  //       Constant.mapAPIKey = derived['mapAPIKey'] ?? Constant.mapAPIKey;
-  //       Constant.placeHolderImage = derived['placeHolderImage'] ?? Constant.placeHolderImage;
-  //       Constant.senderId = derived['senderId'] ?? Constant.senderId;
-  //       Constant.jsonNotificationFileURL = derived['jsonNotificationFileURL'] ?? Constant.jsonNotificationFileURL;
-  //       Constant.privacyPolicy = derived['privacyPolicy'] ?? Constant.privacyPolicy;
-  //       Constant.termsAndConditions = derived['termsAndConditions'] ?? Constant.termsAndConditions;
-  //       Constant.googlePlayLink = derived['googlePlayLink'] ?? Constant.googlePlayLink;
-  //       Constant.appStoreLink = derived['appStoreLink'] ?? Constant.appStoreLink;
-  //       Constant.appVersion = derived['appVersion'] ?? Constant.appVersion;
-  //       Constant.storyEnable = derived['storyEnable'] ?? Constant.storyEnable;
-  //       Constant.placeholderImage = derived['placeholderImage'] ?? Constant.placeholderImage;
-  //       Constant.specialDiscountOfferEnable = derived['specialDiscountOffer'] ?? Constant.specialDiscountOfferEnable;
-  //
-  //       // Performance Optimization: Cache the settings load time
-  //       _settingsCacheTime = DateTime.now();
-  //
-  //     } else {
-  //       throw Exception('Failed to load settings: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     log(e.toString());
   //   }
-  // }
-  static Future<bool?> checkReferralCodeValidOrNot(String referralCode) async {
-    bool? isExist;
-    try {
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/referral/check-code'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'referralCode': referralCode,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-        if (responseData['success'] == true) {
-          isExist = responseData['data'] ?? false;
-        } else {
-          isExist = false;
-        }
-      } else {
-        // Handle non-200 status codes
-        debugPrint('API Error: ${response.statusCode}');
-        isExist = false;
-      }
-    } catch (e, s) {
-      debugPrint('checkReferralCodeValidOrNot $e $s');
-      return false;
-    }
-    return isExist;
-  }
-
-  static Future<ReferralModel?> getReferralUserByCode(
-      String referralCode) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/referral/get-by-code'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'referralCode': referralCode,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-        if (responseData['success'] == true && responseData['data'] != null) {
-          return ReferralModel.fromJson(responseData['data']);
-        } else {
-          log('API returned unsuccessful response: ${response.body}');
-          return null;
-        }
-      } else {
-        log('HTTP Error: ${response.statusCode} - ${response.body}');
-        return null;
-      }
-    } catch (e, s) {
-      log('getReferralUserByCode error: $e $s');
-      return null;
-    }
-  }
-
-  static Future<OrderModel?> getOrderByOrderId(String orderId) async {
-    OrderModel? orderModel;
-    try {
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/orders/$orderId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
-          orderModel = OrderModel.fromJson(jsonResponse['data']);
-        }
-      } else {
-        log('API Error: ${response.statusCode} - ${response.body}');
-        return null;
-      }
-    } catch (e, s) {
-      log('getOrderByOrderId API call failed: $e $s');
-      return null;
-    }
-    return orderModel;
-  }
-
-  static Future<String?> referralAdd(ReferralModel referralModel) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/referral/add'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(referralModel.toJson()),
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        if (responseData['success'] == true) {
-          log('Referral added successfully: ${responseData['message']}');
-          return null; // Success
-        } else {
-          log('Failed to add referral: ${responseData['message']}');
-          return responseData['message'] ?? 'Failed to add referral';
-        }
-      } else {
-        log('HTTP Error: ${response.statusCode} - ${response.body}');
-        return 'HTTP Error: ${response.statusCode}';
-      }
-    } catch (e, s) {
-      log('referralAdd error: $e $s');
-      return e.toString();
-    }
-  }
-
-  // static Future<List<ZoneModel>?> getZone() async {
-  //   List<ZoneModel> zoneList = [];
+  //
+  //   List<ProductModel> productList = [];
   //   try {
+  //     String url = '${Constant.baseUrl}restaurant/products?vendorID=${Constant
+  //         .userModel!.vendorID}';
+  //     debugPrint("getProduct $url ");
   //     final response = await http.get(
-  //       Uri.parse('${Constant.baseUrl}restaurant/zones'),
-  //       headers: {'Content-Type': 'application/json'},
-  //     );
+  //       Uri.parse(url),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     ).timeout(const Duration(seconds: 30));
   //     if (response.statusCode == 200) {
-  //       final Map<String, dynamic> responseData = jsonDecode(response.body);
-  //       if (responseData['success'] == true && responseData['data'] != null) {
-  //         List<dynamic> zonesData = responseData['data'];
-  //         for (var element in zonesData) {
-  //           // Filter zones where publish == 1 (equivalent to true)
-  //           if (element['publish'] == 1) {
-  //             ZoneModel zoneModel = ZoneModel.fromJson(element);
-  //             zoneList.add(zoneModel);
+  //       final jsonResponse = json.decode(response.body);
+  //       if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+  //         final List<dynamic> productsData = jsonResponse['data'];
+  //         debugPrint("======>");
+  //         print(productsData.length);
+  //
+  //         for (int i = 0; i < productsData.length; i++) {
+  //           try {
+  //             final productData = productsData[i];
+  //             debugPrint("Processing product $i: ${productData['name']}");
+  //             ProductModel productModel = ProductModel.fromJson(productData);
+  //             productList.add(productModel);
+  //           } catch (e, stackTrace) {
+  //             debugPrint("Error processing product $i: $e");
+  //             debugPrint("Stack trace: $stackTrace");
+  //             debugPrint("Problematic product data: ${productsData[i]}");
+  //             // Continue with next product instead of failing completely
+  //             continue;
   //           }
   //         }
+  //         if (vendorID != null) {
+  //           _productCache[vendorID] =
+  //               _ProductCacheEntry(productList, DateTime.now());
+  //         }
+  //       } else {
+  //         debugPrint("No products found or API returned error");
   //       }
   //     } else {
-  //       throw Exception('Failed to load zones: ${response.statusCode}');
+  //       debugPrint(
+  //           "Failed to fetch products: ${response.statusCode} - ${response
+  //               .body}");
+  //       return null;
   //     }
   //   } catch (error) {
-  //     log(error.toString(), name: " getZone ");
+  //     debugPrint("Error fetching products: $error");
   //     return null;
   //   }
-  //   return zoneList;
+  //   return productList;
   // }
-
-  static Future<List<OrderModel>?> getAllOrder() async {
-    List<OrderModel> orderList = [];
-    try {
-      final response = await http.get(
-        Uri.parse(
-            '${Constant.baseUrl}restaurant/orders?vendorID=${Constant.userModel!
-                .vendorID}'),
-        headers: {
-          'Content-Type': 'application/json',
-          // Add any required authentication headers here
-          // 'Authorization': 'Bearer $token',
-        },
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          final List<dynamic> data = responseData['data'];
-          for (var element in data) {
-            OrderModel orderModel = OrderModel.fromJson(element);
-            orderList.add(orderModel);
-          }
-          orderList.sort((a, b) {
-            if (a.createdAt == null && b.createdAt == null) return 0;
-            if (a.createdAt == null) return 1; // Put a after b
-            if (b.createdAt == null) return -1; // Put a before b
-            return b.createdAt!.compareTo(a.createdAt!);
-          });
-        } else {
-          log('API returned success: false');
-        }
-      } else {
-        log('HTTP Error: ${response.statusCode} - ${response.body}');
-      }
-    } catch (e) {
-      log(e.toString());
-    }
-    return orderList;
-  }
-
-  static Future<bool> updateOrder(OrderModel orderModel) async {
-    bool isUpdate = false;
-    try {
-      log(" updateOrder ${orderModel.toJson()} ");
-      // Convert the entire model to JSON and handle any remaining Timestamps
-      Map<String, dynamic> orderJson = _convertTimestampsToJson(
-          orderModel.toJson());
-
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/orders/${orderModel.id}'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(orderJson),
-      );
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        isUpdate = true;
-      } else {
-        debugPrint("Failed to update order: ${response.statusCode} - ${response
-            .body}");
-        isUpdate = false;
-      }
-    } catch (error) {
-      debugPrint("Failed to update order: $error");
-      isUpdate = false;
-    }
-    return isUpdate;
-  }
-
-// Recursive method to convert any Timestamp objects to strings
-  static dynamic _convertTimestampsToJson(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate().toIso8601String();
-    } else if (value is Map<String, dynamic>) {
-      return value.map((key, value) =>
-          MapEntry(key, _convertTimestampsToJson(value)));
-    } else if (value is List) {
-      return value.map((e) => _convertTimestampsToJson(e)).toList();
-    }
-    return value;
-  }
-
-  // static Future<bool> updateOrder(OrderModel orderModel) async {
-  //   bool isUpdate = false;
-  //   // try {
-  //     log(" updateOrder ${orderModel.toJson()} ");
-  //     final response = await http.post(
-  //       Uri.parse('${Constant.baseUrl}restaurant/orders/${orderModel.id}'),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: json.encode(orderModel.toJson()),
-  //     );
-  //     if (response.statusCode >= 200 && response.statusCode < 300) {
-  //       isUpdate = true;
-  //     } else {
-  //       debugPrint("Failed to update order: ${response.statusCode} - ${response.body}");
-  //       isUpdate = false;
-  //     }
-  //   // } catch (error) {
-  //   //   debugPrint("Failed to update order: $error");
-  //     isUpdate = false;
-  //   // }
-  //   return isUpdate;
-  // }
-
-  static Future restaurantVendorWalletSet(OrderModel orderModel) async {
-    // Performance Optimization: Add null safety checks
-    if (orderModel.products == null || orderModel.products!.isEmpty) {
-      log(
-          "Warning: Order has no products, skipping wallet transaction. Order ID: ${orderModel
-              .id}");
-      return;
-    }
-
-    double subTotal = 0.0;
-    double specialDiscount = 0.0;
-    double taxAmount = 0.0;
-    // double adminCommission = 0.0;
-
-    for (var element in orderModel.products!) {
-      final discountPrice = double.tryParse(
-          element.discountPrice?.toString() ?? '0') ?? 0.0;
-
-      if (discountPrice <= 0) {
-        subTotal = subTotal +
-            (double.tryParse(element.price?.toString() ?? '0') ?? 0) *
-                (double.tryParse(element.quantity?.toString() ?? '0') ?? 0) +
-            ((double.tryParse(element.extrasPrice?.toString() ?? '0') ?? 0) *
-                (double.tryParse(element.quantity?.toString() ?? '0') ?? 0));
-      } else {
-        subTotal = subTotal +
-            discountPrice *
-                (double.tryParse(element.quantity?.toString() ?? '0') ?? 0) +
-            ((double.tryParse(element.extrasPrice?.toString() ?? '0') ?? 0) *
-                (double.tryParse(element.quantity?.toString() ?? '0') ?? 0));
-      }
-    }
-
-    if (orderModel.specialDiscount != null &&
-        orderModel.specialDiscount!['special_discount'] != null) {
-      specialDiscount = double.tryParse(
-          orderModel.specialDiscount!['special_discount'].toString()) ?? 0.0;
-    }
-
-    if (orderModel.taxSetting != null) {
-      final discount = double.tryParse(
-          orderModel.discount?.toString() ?? '0') ?? 0.0;
-      for (var element in orderModel.taxSetting!) {
-        taxAmount = taxAmount +
-            Constant.calculateTax(
-                amount: (subTotal - discount - specialDiscount).toString(),
-                taxModel: element);
-      }
-    }
-
-    double basePrice = 0;
-    final discount = double.tryParse(orderModel.discount?.toString() ?? '0') ??
-        0.0;
-
-    // var totalamount = (subTotal + taxAmount) - discount - specialDiscount;
-    if (Constant.adminCommission != null &&
-        Constant.adminCommission!.isEnabled == true) {
-      final adminCommissionPercent = double.tryParse(
-          orderModel.adminCommission?.toString() ?? '0') ?? 0.0;
-      if (adminCommissionPercent > 0) {
-        basePrice =
-            (subTotal / (1 + (adminCommissionPercent / 100))) -
-                discount -
-                specialDiscount;
-      } else {
-        basePrice = subTotal - discount - specialDiscount;
-      }
-    } else {
-      basePrice = subTotal - discount - specialDiscount;
-    }
-    // if (Constant.isAdminCommissionModelApplied == true) {
-    //   if (orderModel.adminCommissionType == 'Percent') {
-    //     adminCommission = (subTotal - double.parse(orderModel.discount.toString()) - specialDiscount) * double.parse(orderModel.adminCommission!) / 100;
-    //   } else {
-    //     adminCommission = double.parse(orderModel.adminCommission!);
-    //   }
-    // }
-    // Performance Optimization: Handle null vendor case (can happen when running in parallel)
-    String? vendorAuthorId;
-
-    // if (orderModel.vendor != null && orderModel.vendor!.author != null) {
-    //   vendorAuthorId = orderModel.vendor!.author.toString();
-    // } else if (orderModel.vendorID != null) {
-    //   // Try to get vendor author from cached vendor data or fetch it
-    //   try {
-    //     // Check if cached vendor matches
-    //     if (_cachedVendor != null && _cachedVendorId == orderModel.vendorID && _cachedVendor!.author != null) {
-    //       vendorAuthorId = _cachedVendor!.author;
-    //       log("Using cached vendor data for wallet transaction. Order ID: ${orderModel.id}");
-    //     } else {
-    //       // Fetch vendor data (using cache if available)
-    //       VendorModel? vendor = await getVendorById(orderModel.vendorID!);
-    //       if (vendor != null && vendor.author != null) {
-    //         vendorAuthorId = vendor.author;
-    //         log("Fetched vendor data for wallet transaction. Order ID: ${orderModel.id}");
-    //       }
-    //     }
-    //   } catch (e) {
-    //     log("Error fetching vendor for wallet transaction: $e");
-    //   }
-    // }
-
-    if (vendorAuthorId == null || vendorAuthorId.isEmpty) {
-      log(
-          "Warning: Cannot determine vendor author ID, skipping wallet transaction. Order ID: ${orderModel
-              .id}");
-      // Don't throw error - order update should still succeed
-      return;
-    }
-
-    WalletTransactionModel historyModel = WalletTransactionModel(
-        amount: basePrice,
-        id: const Uuid().v4(),
-        orderId: orderModel.id,
-        userId: vendorAuthorId,
-        date: Timestamp.now(),
-        isTopup: true,
-        note: "Order Amount credited",
-        paymentMethod: "Wallet",
-        paymentStatus: "success",
-        transactionUser: "vendor");
-    addWalletTransaction(historyModel);
-
-    WalletTransactionModel taxModel = WalletTransactionModel(
-        amount: taxAmount,
-        id: const Uuid().v4(),
-        orderId: orderModel.id,
-        userId: vendorAuthorId,
-        date: Timestamp.now(),
-        isTopup: true,
-        note: "Order Tax credited",
-        paymentMethod: "tax",
-        paymentStatus: "success",
-        transactionUser: "vendor");
-    // addWalletTransaction(historyModel);
-
-    addWalletTransaction(taxModel);
-
-    await updateUserWallet(
-        amount: (basePrice + taxAmount).toString(),
-        userId: vendorAuthorId);
-  }
-
-  static Future<bool> addWalletTransaction(
-      WalletTransactionModel historyModel) async {
-    try {
-      // Convert Timestamps to JSON-serializable format before encoding
-      Map<String, dynamic> transactionJson = _convertTimestampsToJson(
-          historyModel.toJson());
-
-      final response = await http.post(
-        Uri.parse('${Constant.baseUrl}restaurant/wallet/transaction'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(transactionJson),
-      );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        log("Wallet transaction added successfully");
-        return true;
-      } else {
-        log("Failed to add wallet transaction: ${response
-            .statusCode} - ${response.body}");
-        return false;
-      }
-    } catch (error) {
-      log("Error adding wallet transaction: $error");
-      return false;
-    }
-  }
-
-  static Future<RatingModel?> getOrderReviewsByID(String orderId,
-      String productID) async {
-    RatingModel? ratingModel;
-
-    try {
-      final response = await http.get(
-        Uri.parse('${Constant
-            .baseUrl}restaurant/reviews/order?orderId=$orderId&productID=$productID'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-
-        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
-          ratingModel = RatingModel.fromJson(jsonResponse['data']);
-          debugPrint("======> Review found");
-        } else {
-          debugPrint("======> No review found");
-          ratingModel = null;
-        }
-      } else {
-        debugPrint("Failed to fetch review: ${response.statusCode} - ${response
-            .body}");
-        ratingModel = null;
-      }
-    } catch (error) {
-      debugPrint("Error fetching review: $error");
-      ratingModel = null;
-    }
-
-    return ratingModel;
-  }
-
-  static Future<List<ProductModel>?> getProduct() async {
-    final String? vendorID = Constant.userModel?.vendorID;
-    if (vendorID != null) {
-      final entry = _productCache[vendorID];
-      if (entry != null &&
-          DateTime.now().difference(entry.cachedAt) < _productCacheTTL) {
-        return entry.list;
-      }
-    }
-
-    List<ProductModel> productList = [];
-    try {
-      String url = '${Constant.baseUrl}restaurant/products?vendorID=${Constant
-          .userModel!.vendorID}';
-      debugPrint("getProduct $url ");
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
-          final List<dynamic> productsData = jsonResponse['data'];
-          debugPrint("======>");
-          print(productsData.length);
-
-          for (int i = 0; i < productsData.length; i++) {
-            try {
-              final productData = productsData[i];
-              debugPrint("Processing product $i: ${productData['name']}");
-              ProductModel productModel = ProductModel.fromJson(productData);
-              productList.add(productModel);
-            } catch (e, stackTrace) {
-              debugPrint("Error processing product $i: $e");
-              debugPrint("Stack trace: $stackTrace");
-              debugPrint("Problematic product data: ${productsData[i]}");
-              // Continue with next product instead of failing completely
-              continue;
-            }
-          }
-          if (vendorID != null) {
-            _productCache[vendorID] =
-                _ProductCacheEntry(productList, DateTime.now());
-          }
-        } else {
-          debugPrint("No products found or API returned error");
-        }
-      } else {
-        debugPrint(
-            "Failed to fetch products: ${response.statusCode} - ${response
-                .body}");
-        return null;
-      }
-    } catch (error) {
-      debugPrint("Error fetching products: $error");
-      return null;
-    }
-    return productList;
-  }
 
   /// Active outlet for merchant/outlet sessions (outlet login or merchant picked outlet).
   static int resolveActiveOutletId() {
@@ -1728,93 +918,6 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     }
   }
 
-  /// Loads outlet menu as nested API model (used for edit/update outlet products).
-  // static Future<OutletDetailsModel?> fetchOutletDetailsModel({
-  //   int? outletId,
-  // }) async {
-  //   final verifiedOutletId =
-  //       await resolveOutletIdForMenu(preferredId: outletId);
-  //   if (verifiedOutletId == null || verifiedOutletId <= 0) {
-  //     return null;
-  //   }
-  //
-  //   try {
-  //     final loginType = Preferences.getString('loginType').trim().toUpperCase();
-  //     final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
-  //     final token = Preferences.getString('authToken');
-  //     final url =
-  //         'http://187.127.156.147:8084/api/fm/outlets/getOutletDetails'
-  //         '?outletId=$verifiedOutletId&userType=$userType';
-  //
-  //     final response = await http.get(
-  //       Uri.parse(url),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //     );
-  //
-  //     if (response.statusCode != 200) return null;
-  //
-  //     final decoded = json.decode(response.body);
-  //     if (decoded is! Map) return null;
-  //
-  //     final map = Map<String, dynamic>.from(decoded);
-  //     if (map['success'] == false) return null;
-  //
-  //     final dynamic rawData = map['data'] ?? map;
-  //     if (rawData is! Map) return null;
-  //
-  //     return OutletDetailsModel.fromJson(
-  //       Map<String, dynamic>.from(rawData),
-  //     );
-  //   } catch (e, st) {
-  //     debugPrint('fetchOutletDetailsModel error: $e $st');
-  //     return null;
-  //   }
-  // }
-
-  /// PUT /api/fm/outlets/editAndUpdateOutletProducts
-  // static Future<bool> editAndUpdateOutletProducts({
-  //   required OutletDetailsModel outletDetails,
-  // }) async {
-  //   final outletId = outletDetails.outletId ?? resolveActiveOutletId();
-  //   if (outletId <= 0) return false;
-  //
-  //   try {
-  //     final loginType = Preferences.getString('loginType').trim().toUpperCase();
-  //     final userType = loginType == 'OUTLET' ? 'OUTLET' : 'MERCHANT';
-  //     final token = Preferences.getString('authToken');
-  //     final url =
-  //         'http://187.127.156.147:8084/api/fm/outlets/editAndUpdateOutletProducts'
-  //         '?outletId=$outletId&userType=$userType';
-  //
-  //     final response = await http.put(
-  //       Uri.parse(url),
-  //       headers: {
-  //
-  //         'Content-Type': 'application/json',
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //       body: json.encode(outletDetails.toJson()),
-  //     );
-  //
-  //     debugPrint(
-  //       'editAndUpdateOutletProducts status=${response.statusCode} '
-  //       'body=${response.body}',
-  //     );
-  //
-  //     if (response.statusCode >= 200 && response.statusCode < 300) {
-  //       invalidateOutletProductCache(outletId);
-  //       return true;
-  //     }
-  //     return false;
-  //   } catch (e, st) {
-  //     debugPrint('editAndUpdateOutletProducts error: $e $st');
-  //     return false;
-  //   }
-  // }
-
   static Future<List<
       PromotionOutletProductModel>?> getOutletProductsDetailsOnlyForPromotions(
       {required int outletId}) async {
@@ -1930,23 +1033,7 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     }
   }
 
-  /// Updates one outlet product inside the nested outlet menu payload.
-  // static Future<bool> updateOutletProductItem({
-  //   required int productId,
-  //   required OutletProductModel updatedProduct,
-  //   int? outletId,
-  // }) async {
-  //   final details = await fetchOutletDetailsModel(outletId: outletId);
-  //   if (details == null) return false;
-  //   if (details.findProductById(productId) == null) return false;
-  //
-  //   final payload = details.copyWithUpdatedProduct(
-  //     productId: productId,
-  //     updatedProduct: updatedProduct,
-  //   );
-  //
-  //   return editAndUpdateOutletProducts(outletDetails: payload);
-  // }
+
 
   /// Call after any product write (set/update/delete) to force next getProduct() to hit the API.
   static void invalidateProductCache([String? vendorID]) {
@@ -2003,39 +1090,6 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     }
   }
 
-  static Future<AdvertisementModel> getAdvertisementById({
-    required String advertisementId,
-  }) async {
-    AdvertisementModel advertisementdata = AdvertisementModel();
-
-    try {
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}advertisements/$advertisementId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          AdvertisementModel advertisementModel =
-          AdvertisementModel.fromJson(responseData['data']);
-          advertisementdata = advertisementModel;
-        } else {
-          log(
-              'API returned success: false for advertisement ID: $advertisementId');
-        }
-      } else {
-        log('HTTP Error: ${response.statusCode} - ${response.body}');
-      }
-    } catch (error) {
-      log(error.toString());
-    }
-
-    return advertisementdata;
-  }
 
   /// GET /api/fm/product-variant-groups — cached, same TTL pattern as categories.
   static Future<List<VariantGroupModel>?> getProductVariantGroups() async {
