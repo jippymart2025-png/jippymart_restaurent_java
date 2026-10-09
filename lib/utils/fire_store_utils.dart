@@ -76,8 +76,6 @@ class FireStoreUtils {
   static DateTime? _cachedResolvedOutletTime;
   static const Duration _resolvedOutletCacheTTL = Duration(minutes: 5);
 
-  // In-flight guard: if two callers request the same merchant's outlets while
-  // a request is already running, they share one network call instead of two.
   static final Map<int, Future<List<OutletModel>>> _merchantOutletsInFlight = {
   };
 
@@ -112,9 +110,6 @@ class FireStoreUtils {
 
 
   static Future<String> getCurrentUid() async {
-    // final firebaseId = await getFirebaseId() ?? '';
-    // if (firebaseId.isNotEmpty) return firebaseId;
-
     final userId = Preferences.getInt('userId');
     if (userId > 0) return userId.toString();
 

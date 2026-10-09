@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'dart:ui';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-
 // ignore: depend_on_referenced_packages
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';

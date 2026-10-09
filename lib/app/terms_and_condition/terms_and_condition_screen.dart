@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/service/terms_api_service.dart';
@@ -66,41 +64,6 @@ class _TermsAndConditionScreenState extends State<TermsAndConditionScreen> {
           _isLoading = false;
         });
         return;
-      }
-
-      // If not cached, fetch from API
-      final response = await http.get(Uri.parse('${Constant.baseUrl}settings/mobile'));
-      
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        final Map<String, dynamic> data = jsonData['data'] ?? {};
-        final Map<String, dynamic> documents = data['documents'] ?? {};
-        final Map<String, dynamic> derived = data['derived'] ?? {};
-
-        String htmlContent = '';
-
-        if (isPrivacy) {
-          // Try derived first, then documents
-          htmlContent = derived['privacyPolicy'] ?? '';
-          if (htmlContent.isEmpty) {
-            final privacyPolicy = documents['privacyPolicy'] ?? {};
-            htmlContent = privacyPolicy['privacy_policy'] ?? '';
-          }
-        } else {
-          // Try derived first, then documents
-          htmlContent = derived['termsAndConditions'] ?? '';
-          if (htmlContent.isEmpty) {
-            final termsConditions = documents['termsAndConditions'] ?? {};
-            htmlContent = termsConditions['termsAndConditions'] ?? '';
-          }
-        }
-
-        setState(() {
-          _htmlData = htmlContent;
-          _isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load content: ${response.statusCode}');
       }
     } catch (e) {
       setState(() {
