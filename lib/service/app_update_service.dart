@@ -11,7 +11,7 @@ import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 import 'package:jippymart_restaurant/utils/common.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import '../app/landing_screen.dart';
 
 class AppUpdateService {

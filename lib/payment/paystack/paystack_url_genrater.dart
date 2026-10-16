@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:jippymart_restaurant/models/payment_model/pay_fast_model.dart';
 import 'package:jippymart_restaurant/models/user_model.dart';
 import 'package:jippymart_restaurant/payment/paystack/pay_stack_url_model.dart';

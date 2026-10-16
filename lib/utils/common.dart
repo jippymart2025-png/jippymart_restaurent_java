@@ -60,6 +60,43 @@ Future<void> clearAuthToken() async {
   await prefs.remove('api_token');
 }
 
+/// Save refresh token after login
+Future<void> saveRefreshToken(String refreshToken) async {
+  final trimmed = refreshToken.trim();
+  if (trimmed.isEmpty) return;
+
+  await _secureStorage.write(
+    key: 'refresh_token',
+    value: trimmed,
+  );
+  
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('refreshToken', trimmed);
+}
+
+/// Get saved refresh token
+Future<String?> getRefreshToken() async {
+  String? token = await _secureStorage.read(key: 'refresh_token');
+  if (token != null && token.trim().isNotEmpty) {
+    return token;
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+  token = prefs.getString('refreshToken');
+  if (token != null && token.trim().isNotEmpty) {
+    return token;
+  }
+
+  return null;
+}
+
+/// Remove refresh token on logout
+Future<void> clearRefreshToken() async {
+  await _secureStorage.delete(key: 'refresh_token');
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('refreshToken');
+}
+
 /// Common headers for all API calls
 Future<Map<String, String>> getHeaders() async {
   final token = await getAuthToken();

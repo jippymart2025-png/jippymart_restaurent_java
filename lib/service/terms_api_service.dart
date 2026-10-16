@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/utils/common.dart';
 

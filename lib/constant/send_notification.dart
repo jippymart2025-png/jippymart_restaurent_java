@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:googleapis_auth/auth_io.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:jippymart_restaurant/models/notification_model.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 

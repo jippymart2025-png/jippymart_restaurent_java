@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:jippymart_restaurant/app/dash_board_screens/dash_board_screen.dart';
@@ -263,6 +263,7 @@ class LoginController extends GetxController {
       // ----------------------------------------------------------
 
       final token = response['jwt']?.toString().trim();
+      final refreshToken = response['refreshToken']?.toString().trim();
 
       if (token == null || token.isEmpty) {
         ShowToastDialog.showToast(
@@ -341,6 +342,10 @@ class LoginController extends GetxController {
         role: role,
         loginType: loginType,
       );
+      
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await saveRefreshToken(refreshToken);
+      }
 
       debugPrint(
         '[LoginSuccess] Session/token saved successfully',

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:jippymart_restaurant/widget/osm_map/place_model.dart';
 

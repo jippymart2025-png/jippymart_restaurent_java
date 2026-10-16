@@ -1,5 +1,5 @@
 // import 'dart:convert';
-// import 'package:http/http.dart' as http;
+// import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 // import '../models/location_model.dart';
 // import '../utils/preferences.dart';
 //
@@ -146,7 +146,7 @@
 
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import '../constant/constant.dart';
 import '../models/location_model.dart';
 import '../utils/common.dart';

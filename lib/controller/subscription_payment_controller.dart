@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:jippymart_restaurant/constant/constant.dart';

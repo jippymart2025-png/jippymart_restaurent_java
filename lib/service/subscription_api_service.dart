@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/models/subscription_plan_model.dart';
@@ -126,7 +126,7 @@ import 'package:jippymart_restaurant/config/app_config.dart';
 //   });
 // }
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/models/subscription_plan_model.dart';

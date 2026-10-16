@@ -7,7 +7,7 @@ import 'package:jippymart_restaurant/utils/preferences.dart';
 import '../constant/collection_name.dart';
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 
 class ChangeLanguageController extends GetxController {
   Rx<LanguageModel> selectedLanguage = LanguageModel().obs;

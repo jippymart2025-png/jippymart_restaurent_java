@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/widget/app_update_dialog.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 class AppUpdateController extends GetxController {
   static AppUpdateController get to => Get.find();
   

@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:jippymart_restaurant/payment/xenditModel.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 
 class XenditScreen extends StatefulWidget {
   final String initialURl;

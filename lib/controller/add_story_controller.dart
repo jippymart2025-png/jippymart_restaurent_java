@@ -1,5 +1,5 @@
 // import 'dart:convert';
-// import 'package:http/http.dart' as http;
+// import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 // import 'package:get/get.dart';
 // import 'package:image_picker/image_picker.dart';
 // import 'package:jippymart_restaurant/constant/collection_name.dart';

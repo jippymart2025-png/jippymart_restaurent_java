@@ -25,7 +25,7 @@ import 'package:jippymart_restaurant/models/withdraw_method_model.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
-import 'package:http/http.dart' as http;
+import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/create_master_product_model.dart';

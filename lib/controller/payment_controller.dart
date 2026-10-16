@@ -40,7 +40,7 @@
 // import 'package:jippymart_restaurant/utils/preferences.dart';
 // import 'package:flutter_paypal/flutter_paypal.dart';
 // import 'dart:math' as maths;
-// import 'package:http/http.dart' as http;
+// import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 
 // class PaymentController extends GetxController {
 //   RxString selectedPaymentMethod = ''.obs;
