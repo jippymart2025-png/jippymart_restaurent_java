@@ -15,6 +15,8 @@ import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
 
 import '../../../utils/common.dart';
 import '../../../utils/preferences.dart' show Preferences;
+import '../../../utils/fcm_token_service.dart';
+import '../../../utils/notification/notification_service.dart';
 import '../../../controller/dash_board_controller.dart';
 import '../../../controller/merchant_outlet_controller.dart';
 
@@ -44,6 +46,8 @@ class LoginController extends GetxController {
 
   final RxBool passwordVisible = true.obs;
   final RxBool isLoading = false.obs;
+
+  final NotificationService notificationService = NotificationService();
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -350,6 +354,21 @@ class LoginController extends GetxController {
       debugPrint(
         '[LoginSuccess] Session/token saved successfully',
       );
+
+      // ----------------------------------------------------------
+      // STEP 8: Save FCM Token
+      // ----------------------------------------------------------
+      // Retrieve the FCM token from Firebase Messaging
+      String? fcmToken = await _getFCMToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        final loginType = Preferences.getString(_keyLoginType);
+        await FCMTokenService.saveToken(
+          userId: userId,
+          userType: loginType ?? 'MERCHANT',
+          fcmToken: fcmToken,
+          deviceType: 'ANDROID',
+        );
+      }
 
       // ----------------------------------------------------------
       // STEP 8: Initialize Merchant / Outlet
@@ -965,6 +984,16 @@ class LoginController extends GetxController {
     try {
       await AudioPlayerService.playSound(false);
 
+      // Remove FCM token from backend
+      final loginType = Preferences.getString(_keyLoginType);
+      final userId = Preferences.getInt(_keyUserIdInt) ?? 0;
+      if (loginType != null && loginType.isNotEmpty) {
+        await FCMTokenService.removeToken(
+          userId: userId,
+          userType: loginType,
+        );
+      }
+
       if (Constant.userModel != null) {
         try {
           Constant.userModel!.fcmToken = '';
@@ -1035,6 +1064,16 @@ class LoginController extends GetxController {
       _keyIsLoggedIn,
       false,
     );
+  }
+
+  /// Get FCM token from Firebase Messaging
+  Future<String?> _getFCMToken() async {
+    try {
+      return await NotificationService.getToken();
+    } catch (e) {
+      debugPrint('[Login] Error getting FCM token: $e');
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------------------

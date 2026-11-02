@@ -130,8 +130,7 @@ class HomeController extends GetxController {
     _isPollingActive = true;
     _orderPollingTimer =
         Timer.periodic(const Duration(seconds: 10), (_) {
-          if (!_isPollingActive ||
-              Constant.userModel?.vendorID == null) {
+          if (!_isPollingActive || _activeOutletId <= 0) {
             _stopPolling();
             return;
           }
@@ -175,7 +174,7 @@ class HomeController extends GetxController {
   }
 
   void resumeOrderPolling() {
-    if (Constant.userModel?.vendorID != null && !_isPollingActive) {
+    if (_activeOutletId > 0 && !_isPollingActive) {
       _startOrderPolling();
     }
   }
@@ -340,28 +339,47 @@ class HomeController extends GetxController {
 
       final newList = parsed
           .where((o) =>
-      o.status == Constant.orderPlaced ||
-          o.status?.toLowerCase() == 'pending')
+              o.status == Constant.orderPlaced ||
+              o.status?.toLowerCase() == 'pending' ||
+              o.status?.toUpperCase() == 'ORDER_PLACED' ||
+              o.status?.toUpperCase() == 'PLACED' ||
+              o.status?.toUpperCase() == 'NEW')
           .toList();
 
       final acceptedList = parsed
           .where((o) =>
-      o.status == Constant.orderAccepted ||
-          o.status == Constant.driverAccepted ||
-          o.status == Constant.driverPending ||
-          o.status == Constant.driverRejected ||
-          o.status == Constant.orderShipped ||
-          o.status == Constant.orderInTransit)
+              o.status == Constant.orderAccepted ||
+              o.status == Constant.driverAccepted ||
+              o.status == Constant.driverPending ||
+              o.status == Constant.driverRejected ||
+              o.status == Constant.orderShipped ||
+              o.status == Constant.orderInTransit ||
+              o.status?.toUpperCase() == 'ORDER_ACCEPTED' ||
+              o.status?.toUpperCase() == 'ACCEPTED')
           .toList();
 
-      final completedList =
-          parsed.where((o) => o.status == Constant.orderCompleted).toList();
+      final completedList = parsed
+          .where((o) =>
+              o.status == Constant.orderCompleted ||
+              o.status?.toUpperCase() == 'ORDER_COMPLETED' ||
+              o.status?.toUpperCase() == 'COMPLETED' ||
+              o.status?.toUpperCase() == 'DELIVERED' ||
+              o.status?.toUpperCase() == 'ORDER_DELIVERED')
+          .toList();
 
-      final rejectedList =
-          parsed.where((o) => o.status == Constant.orderRejected).toList();
+      final rejectedList = parsed
+          .where((o) =>
+              o.status == Constant.orderRejected ||
+              o.status?.toUpperCase() == 'ORDER_REJECTED' ||
+              o.status?.toUpperCase() == 'REJECTED')
+          .toList();
 
-      final cancelledList =
-          parsed.where((o) => o.status == Constant.orderCancelled).toList();
+      final cancelledList = parsed
+          .where((o) =>
+              o.status == Constant.orderCancelled ||
+              o.status?.toUpperCase() == 'ORDER_CANCELLED' ||
+              o.status?.toUpperCase() == 'CANCELLED')
+          .toList();
 
       allOrderList
         ..clear()
@@ -417,23 +435,40 @@ class HomeController extends GetxController {
         final unitPrice = raw['merchantUnitPrice'];
         final rawName = raw['productName']?.toString() ?? '';
         final variantName = _variantOptionName(raw);
+        final hasRawName = rawName.trim().isNotEmpty;
         products.add(CartProductModel(
           id: raw['productId']?.toString(),
-          name: rawName.isNotEmpty
+          name: hasRawName
               ? rawName
               : (variantName ?? 'Item #${raw['productId'] ?? ''}'),
           photo: raw['productPicUrl']?.toString(),
           quantity: _toInt(raw['quantity']),
           price: unitPrice?.toString(),
           merchant_price: unitPrice?.toString(),
-          variantInfo: _variantOptionName(raw) != null
+          variantInfo: (hasRawName && variantName != null)
               ? VariantInfo(
                   variantId: raw['variantOptionsId']?.toString(),
-                  variantOptions: {'Variant': _variantOptionName(raw)!},
+                  variantOptions: {'Variant': variantName},
                 )
               : null,
         ));
       }
+    }
+
+    final customerName = json['customerName']?.toString() ??
+        json['userName']?.toString() ??
+        json['user']?.toString() ??
+        '';
+    final customerPhone = json['customerPhone']?.toString() ??
+        json['userPhone']?.toString() ??
+        json['phone']?.toString() ??
+        '';
+    UserModel? author;
+    if (customerName.isNotEmpty || customerPhone.isNotEmpty) {
+      author = UserModel(
+        firstName: customerName,
+        phoneNumber: customerPhone,
+      );
     }
 
     return OrderModel(
@@ -443,6 +478,7 @@ class HomeController extends GetxController {
       notes: json['cookingInstructions']?.toString(),
       createdAt: _parseOutletTimestamp(json['orderCreatedAt']?.toString()),
       products: products,
+      author: author,
     );
   }
 
@@ -452,12 +488,18 @@ class HomeController extends GetxController {
   }
 
   String? _mapOutletOrderStatus(String? status) {
-    switch (status?.toUpperCase()) {
+    if (status == null) return null;
+    switch (status.toUpperCase()) {
       case 'PENDING':
       case 'NEW':
+      case 'ORDER_PENDING':
+      case 'ORDER_PLACED':
+      case 'PLACED':
         return Constant.orderPlaced;
       case 'ORDER_ACCEPTED':
       case 'ACCEPTED':
+      case 'PREPARING':
+      case 'ORDER_PREPARING':
         return Constant.orderAccepted;
       case 'ORDER_COMPLETED':
       case 'COMPLETED':
@@ -466,10 +508,24 @@ class HomeController extends GetxController {
         return Constant.orderCompleted;
       case 'ORDER_REJECTED':
       case 'REJECTED':
+      case 'REJECTED_BY_RESTAURANT':
         return Constant.orderRejected;
       case 'ORDER_CANCELLED':
       case 'CANCELLED':
+      case 'CANCELLED_BY_CUSTOMER':
         return Constant.orderCancelled;
+      case 'DRIVER_ACCEPTED':
+        return Constant.driverAccepted;
+      case 'DRIVER_PENDING':
+        return Constant.driverPending;
+      case 'DRIVER_REJECTED':
+        return Constant.driverRejected;
+      case 'ORDER_SHIPPED':
+      case 'SHIPPED':
+        return Constant.orderShipped;
+      case 'IN_TRANSIT':
+      case 'ORDER_IN_TRANSIT':
+        return Constant.orderInTransit;
       default:
         return status;
     }
@@ -528,7 +584,7 @@ class HomeController extends GetxController {
     isLoading.value = true;
     try {
       await Future.wait([
-        if (Constant.userModel?.vendorID != null) getOrder(silent: false),
+        if (_activeOutletId > 0) getOrder(silent: false),
         getUserProfile(withOrders: false),
       ]);
 
