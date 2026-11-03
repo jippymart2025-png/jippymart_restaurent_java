@@ -9,12 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
-import '../../../constant/constant.dart';
+
 import '../../../models/location_model.dart';
- // ADD THIS
-import '../../../widget/locationselection.dart';
 
 
 class SignupScreen extends StatelessWidget {
@@ -626,101 +622,101 @@ class SignupScreen extends StatelessWidget {
         //     ],
         //   ),
         // ),
-        // buildSection(
-        //   title: "Address Information",
-        //   child: Column(
-        //     children: [
-        //       TextFieldWidget(
-        //         title: 'Building Number',
-        //         controller: controller.buildingNumberController.value,
-        //         hintText: '12/345',
-        //       ),
-        //       TextFieldWidget(
-        //         title: 'Road',
-        //         controller: controller.roadController.value,
-        //         hintText: 'Road Name',
-        //       ),
-        //       TextFieldWidget(
-        //         title: 'Landmark',
-        //         controller: controller.landmarkController.value,
-        //         hintText: 'Enter Landmark',
-        //       ),
-        //       const SizedBox(height: 12),
-        //       Obx(() {
-        //         return DropdownButtonFormField<StateModel>(
-        //           value: controller.selectedState.value,
-        //           decoration: const InputDecoration(
-        //             labelText: "State",
-        //             hintText: "Select State",
-        //           ),
-        //           isExpanded: true,
-        //           items: controller.states.map((state) {
-        //             return DropdownMenuItem<StateModel>(
-        //               value: state,
-        //               child: Text(state.stateName),
-        //             );
-        //           }).toList(),
-        //           onChanged: (value) async {
-        //             await controller.onStateSelected(value);
-        //           },
-        //         );
-        //       }),
-        //       const SizedBox(height: 12),
-        //       Obx(() {
-        //         return DropdownButtonFormField<CityModel>(
-        //           value: controller.selectedCity.value,
-        //           decoration: const InputDecoration(
-        //             labelText: "City",
-        //             hintText: "Select City",
-        //           ),
-        //           isExpanded: true,
-        //           items: controller.cities.map((city) {
-        //             return DropdownMenuItem<CityModel>(
-        //               value: city,
-        //               child: Text(city.cityName),
-        //             );
-        //           }).toList(),
-        //           onChanged: (value) async {
-        //             await controller.onCitySelected(value);
-        //           },
-        //         );
-        //       }),
-        //       const SizedBox(height: 12),
-        //       Obx(() {
-        //         return DropdownButtonFormField<AreaModel>(
-        //           value: controller.selectedArea.value,
-        //           decoration: const InputDecoration(
-        //             labelText: "Area",
-        //             hintText: "Select Area",
-        //           ),
-        //           isExpanded: true,
-        //           items: controller.areas.map((area) {
-        //             return DropdownMenuItem<AreaModel>(
-        //               value: area,
-        //               child: Text(area.areaName),
-        //             );
-        //           }).toList(),
-        //           onChanged: controller.onAreaSelected,
-        //         );
-        //       }),
-        //       const SizedBox(height: 12),
-        //       // InkWell(
-        //       //   onTap: () => _openLocationPicker(context, controller),
-        //       //   child: IgnorePointer(
-        //       //     child: TextField(
-        //       //       controller: controller.locationDisplayController,
-        //       //       decoration: const InputDecoration(
-        //       //         labelText: "Outlet Location",
-        //       //         hintText: "Tap to select on map",
-        //       //         suffixIcon: Icon(Icons.location_on),
-        //       //       ),
-        //       //       maxLines: 2,
-        //       //     ),
-        //       //   ),
-        //       // ),
-        //     ],
-        //   ),
-        // ),
+        buildSection(
+          title: "Address Information",
+          child: Column(
+            children: [
+              TextFieldWidget(
+                title: 'Building Number',
+                controller: controller.buildingNumberController.value,
+                hintText: '12/345',
+              ),
+              TextFieldWidget(
+                title: 'Road',
+                controller: controller.roadController.value,
+                hintText: 'Road Name',
+              ),
+              TextFieldWidget(
+                title: 'Landmark',
+                controller: controller.landmarkController.value,
+                hintText: 'Enter Landmark',
+              ),
+              const SizedBox(height: 12),
+              Obx(() {
+                return DropdownButtonFormField<StateModel>(
+                  value: controller.selectedState.value,
+                  decoration: const InputDecoration(
+                    labelText: "State",
+                    hintText: "Select State",
+                  ),
+                  isExpanded: true,
+                  items: controller.states.map((state) {
+                    return DropdownMenuItem<StateModel>(
+                      value: state,
+                      child: Text(state.stateName),
+                    );
+                  }).toList(),
+                  onChanged: (value) async {
+                    await controller.onStateSelected(value);
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+              Obx(() {
+                return DropdownButtonFormField<CityModel>(
+                  value: controller.selectedCity.value,
+                  decoration: const InputDecoration(
+                    labelText: "City",
+                    hintText: "Select City",
+                  ),
+                  isExpanded: true,
+                  items: controller.cities.map((city) {
+                    return DropdownMenuItem<CityModel>(
+                      value: city,
+                      child: Text(city.cityName),
+                    );
+                  }).toList(),
+                  onChanged: (value) async {
+                    await controller.onCitySelected(value);
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+              Obx(() {
+                return DropdownButtonFormField<AreaModel>(
+                  value: controller.selectedArea.value,
+                  decoration: const InputDecoration(
+                    labelText: "Area",
+                    hintText: "Select Area",
+                  ),
+                  isExpanded: true,
+                  items: controller.areas.map((area) {
+                    return DropdownMenuItem<AreaModel>(
+                      value: area,
+                      child: Text(area.areaName),
+                    );
+                  }).toList(),
+                  onChanged: controller.onAreaSelected,
+                );
+              }),
+              const SizedBox(height: 12),
+              InkWell(
+                // onTap: () => _openLocationPicker(context, controller),
+                child: IgnorePointer(
+                  child: TextField(
+                    controller: controller.locationDisplayController,
+                    decoration: const InputDecoration(
+                      labelText: "Outlet Location",
+                      hintText: "Tap to select on map",
+                      suffixIcon: Icon(Icons.location_on),
+                    ),
+                    maxLines: 2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         // buildSection(
         //   title: "Bank Information",
         //   child: Column(

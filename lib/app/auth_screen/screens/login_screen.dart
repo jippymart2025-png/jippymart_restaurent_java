@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/app/auth_screen/screens/phone_number_screen.dart';
+import 'package:jippymart_restaurant/app/auth_screen/screens/signup_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:jippymart_restaurant/app/forgot_password_screen/screens/forgot_password_screen.dart';
 import 'package:jippymart_restaurant/app/auth_screen/controllers/login_controller.dart';
@@ -13,7 +14,6 @@ import 'package:jippymart_restaurant/themes/text_field_widget.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 
 import '../../terms_and_condition/terms_and_condition_screen.dart';
-import 'email_verification_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -319,8 +319,8 @@ class LoginScreen extends StatelessWidget {
                           TapGestureRecognizer()
                             ..onTap = () {
                               Get.to(
-                                //const SignupScreen(),
-                                const EmailVerificationScreen()
+                                const SignupScreen(),
+                                // const EmailVerificationScreen()
                               );
                             },
                           style: TextStyle(

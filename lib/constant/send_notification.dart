@@ -28,6 +28,19 @@ class SendNotification {
         await clientViaServiceAccount(serviceAccountCredentials, _scopes);
     return client.credentials.accessToken.data;
   }
+  /// FCM v1 `data` payloads require string keys and string values.
+  /// Non-string values (numbers, bools, nested maps) make the whole send fail,
+  /// and a null payload is rejected as well - so always send a flat string map.
+  static Map<String, String> _sanitizeDataPayload(Map<String, dynamic>? payload) {
+    final Map<String, String> sanitized = <String, String>{};
+    if (payload != null) {
+      payload.forEach((key, value) {
+        sanitized[key.toString()] = value?.toString() ?? '';
+      });
+    }
+    return sanitized;
+  }
+
   static Future<bool> sendFcmMessage(
       String type, String token, Map<String, dynamic>? payload) async {
     print('[FCM DEBUG] sendFcmMessage: type=$type, token=$token, payload=$payload');
@@ -58,6 +71,10 @@ class SendNotification {
           await FireStoreUtils.getNotificationContent(type);
       print('[FCM DEBUG] NotificationModel: ${notificationModel?.toJson()}');
 
+      final Map<String, String> data = _sanitizeDataPayload(payload);
+      final String title = notificationModel?.subject ?? 'New order';
+      final String body = notificationModel?.message ?? 'You have a new order';
+
       final response = await http.post(
         Uri.parse(
             'https://fcm.googleapis.com/v1/projects/${Constant.senderId}/messages:send'),
@@ -70,16 +87,16 @@ class SendNotification {
             'message': {
               'token': token,
               'notification': {
-                'body': notificationModel?.message ?? '',
-                'title': notificationModel?.subject ?? '',
+                'title': title,
+                'body': body,
               },
               'android': {
                 'notification': {
-                  'sound': 'order_ringtone.mp3',
+                  'sound': 'order_ringtone',
                   'channel_id': 'order_channel',
                 }
               },
-              'data': payload,
+              'data': data,
             }
           },
         ),
@@ -124,11 +141,11 @@ class SendNotification {
               'notification': {'body': body, 'title': title},
               'android': {
                 'notification': {
-                  'sound': 'order_ringtone.mp3',
+                  'sound': 'order_ringtone',
                   'channel_id': 'order_channel',
                 }
               },
-              'data': payload,
+              'data': _sanitizeDataPayload(payload),
             }
           },
         ),
@@ -137,7 +154,11 @@ class SendNotification {
       debugPrint("Notification=======>");
       debugPrint(response.statusCode.toString());
       debugPrint(response.body);
-      return true;
+      final bool success = response.statusCode >= 200 && response.statusCode < 300;
+      if (!success) {
+        print('[FCM DEBUG] Send failed (e.g. UNREGISTERED token): status=${response.statusCode}');
+      }
+      return success;
     } catch (e) {
       print('[FCM DEBUG] Error sending notification: $e');
       debugPrint(e.toString());
@@ -164,11 +185,11 @@ class SendNotification {
               'notification': {'body': message, 'title': title},
               'android': {
                 'notification': {
-                  'sound': 'order_ringtone.mp3',
+                  'sound': 'order_ringtone',
                   'channel_id': 'order_channel',
                 }
               },
-              'data': payload,
+              'data': _sanitizeDataPayload(payload),
             }
           },
         ),
@@ -177,7 +198,11 @@ class SendNotification {
       debugPrint("Notification=======>");
       debugPrint(response.statusCode.toString());
       debugPrint(response.body);
-      return true;
+      final bool success = response.statusCode >= 200 && response.statusCode < 300;
+      if (!success) {
+        print('[FCM DEBUG] Send failed (e.g. UNREGISTERED token): status=${response.statusCode}');
+      }
+      return success;
     } catch (e) {
       print('[FCM DEBUG] Error sending notification: $e');
       debugPrint(e.toString());

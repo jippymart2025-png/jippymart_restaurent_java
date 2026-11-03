@@ -11,9 +11,11 @@ import 'package:jippymart_restaurant/utils/notification/daily_notification_servi
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/home_controller.dart';
+import 'package:jippymart_restaurant/utils/fcm_token_service.dart';
 
 // "Good Morning! Are you opening your restaurant today? ",
 // "శుభోదయం!ఈరోజు మీ రెస్టారెంట్ తెరవాలా?",
+@pragma('vm:entry-point')
 Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
   log("BackGround Message :: ${message.messageId}");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -22,7 +24,7 @@ Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
   final notificationService = NotificationService();
   await notificationService.showBackgroundNotification(message);
 }
-const String _orderChannelId = 'order_channel_v2';
+const String _orderChannelId = 'order_channel';
 
 class NotificationService {
   NotificationHandler notificationHandler = NotificationHandler();
@@ -165,6 +167,29 @@ class NotificationService {
     });
     log("::::::::::::Permission authorized:::::::::::::::::");
     await FirebaseMessaging.instance.subscribeToTopic("restaurant");
+
+    // Keep the backend device-token in sync when Firebase rotates the FCM token,
+    // otherwise backend keeps sending notifications to a stale token.
+    FirebaseMessaging.instance.onTokenRefresh.listen((String? token) async {
+      if (token == null || token.isEmpty) {
+        return;
+      }
+      try {
+        final int userId = Preferences.getInt('userId');
+        final String userType = Preferences.getString('loginType');
+        if (userId <= 0) {
+          return;
+        }
+        await FCMTokenService.saveToken(
+          userId: userId,
+          userType: userType.isEmpty ? 'MERCHANT' : userType,
+          fcmToken: token,
+          deviceType: Platform.isIOS ? 'IOS' : 'ANDROID',
+        );
+      } catch (e) {
+        log('FCM token refresh save error: $e');
+      }
+    });
   }
 
   static Future<String?> getToken() async {
