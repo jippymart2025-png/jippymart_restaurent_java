@@ -33,31 +33,50 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   initInfo() async {
-    await FirebaseMessaging.instance.setAutoInitEnabled(true);
-    await FirebaseMessaging.instance
-        .setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          // Let OS play notification sound from channel.
-          sound: true,
-        );
-    var request = await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      // Allow system sound (configured via notification channels).
-      sound: true,
-    );
+    // Each step is isolated so a single failure (e.g. a permission dialog
+    // denied/activity not ready yet) never skips channel creation, listener
+    // registration or local-notification setup.
+    try {
+      await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    } catch (e) {
+      log('setAutoInitEnabled failed: $e');
+    }
+    try {
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+            alert: true,
+            badge: true,
+            // Let OS play notification sound from channel.
+            sound: true,
+          );
+    } catch (e) {
+      log('setForegroundNotificationPresentationOptions failed: $e');
+    }
+    try {
+      var request = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        // Allow system sound (configured via notification channels).
+        sound: true,
+      );
+      log(
+        'Notification permission: '
+        '${request.authorizationStatus}',
+      );
+    } catch (e) {
+      log('requestPermission failed: $e');
+    }
 
-    if (request.authorizationStatus == AuthorizationStatus.authorized ||
-        request.authorizationStatus == AuthorizationStatus.provisional) {
-      if (Platform.isIOS) {
-        // APNs token is required before FCM token generation on iOS.
-        await _waitForApnsToken();
-      }
+    if (Platform.isIOS) {
+      // APNs token is required before FCM token generation on iOS.
+      await _waitForApnsToken();
+    }
+
+    try {
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings(
             '@mipmap/ic_launcher',
@@ -75,11 +94,17 @@ class NotificationService {
           await AudioPlayerService.playSound(false);
         },
       );
-      // Create order_channel at startup so FCM background/terminated notifications use it
-      await _ensureOrderChannelCreated();
-      // ✅ Initialize and schedule daily 8 AM notification
-      await notificationHandler.initializeNotification();
+    } catch (e) {
+      log('Local notifications init failed: $e');
+    }
+    // Create order_channel at startup so FCM background/terminated notifications use it
+    await _ensureOrderChannelCreated();
+    // ✅ Initialize and schedule daily 8 AM notification
+    await notificationHandler.initializeNotification();
+    try {
       setupInteractedMessage();
+    } catch (e) {
+      log('setupInteractedMessage failed: $e');
     }
   }
 

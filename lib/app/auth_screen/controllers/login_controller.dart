@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -366,7 +367,7 @@ class LoginController extends GetxController {
           userId: userId,
           userType: loginType ?? 'MERCHANT',
           fcmToken: fcmToken,
-          deviceType: 'ANDROID',
+          deviceType: Platform.isIOS ? 'IOS' : 'ANDROID',
         );
       }
 

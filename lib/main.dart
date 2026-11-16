@@ -85,6 +85,17 @@ void main() async {
   // Background handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessageBackgroundHandle);
 
+  // Request notification permissions, create notification channels,
+  // and register the FCM listeners (foreground message display, topic
+  // subscription and backend token-refresh sync). This is the single place
+  // that wires notifications up, so it must run on every app start.
+  try {
+    await NotificationService().initInfo();
+  } catch (e) {
+    // Never block app startup because of notification setup.
+    log('Notification init failed: $e');
+  }
+
   runApp(const MyApp());
 }
 
@@ -170,7 +181,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         );
       }
     });
-    // Notifications are already initialized in main() via notificationService.initInfo()
+    // Notifications are initialized in main() via NotificationService().initInfo()
     // No need to initialize again here to avoid duplicate notifications
     super.initState();
     Get.put(OSMMapController());
