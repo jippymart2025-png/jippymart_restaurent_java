@@ -174,6 +174,7 @@ class EditProfileController extends GetxController {
     if (value == null) return;
 
     merchantModel.value = value;
+    Constant.merchantModel = value;
     emailController.text = value.merchantEmail ?? '';
     phoneNumberController.text = value.merchantPhone ?? '';
     merchantNameController.text = value.merchantName ?? '';
@@ -185,6 +186,15 @@ class EditProfileController extends GetxController {
     accountHolderNameController.text = value.accountHolderName ?? '';
     panController.text = value.panNumber ?? '';
     aadharController.text = value.addharNumber ?? '';
+
+    // Existing address — populated so a merchant/bank/KYC-only update still
+    // sends the complete address back to the API.
+    buildingNumberController.text = value.buildingNumber ?? '';
+    roadController.text = value.road ?? '';
+    landmarkController.text = value.landmark ?? '';
+    selectedStateId.value = value.stateId ?? 0;
+    selectedCityId.value = value.cityId ?? 0;
+    selectedAreaId.value = value.areaId ?? 0;
   }
 
   // ─────────────────────────────────────────────────────────
@@ -416,7 +426,7 @@ class EditProfileController extends GetxController {
       );
     }
 
-    merchantModel.value ??= MerchantModel();
+    merchantModel.value ??= Constant.merchantModel ?? MerchantModel();
     final m = merchantModel.value!;
     m
       ..merchantName = merchantNameController.text
@@ -427,13 +437,22 @@ class EditProfileController extends GetxController {
       ..accountHolderName = accountHolderNameController.text
       ..status = statusController.text
       ..addharNumber = aadharController.text
-      ..panNumber = panController.text;
+      ..panNumber = panController.text
+      ..buildingNumber = buildingNumberController.text.trim()
+      ..road = roadController.text.trim()
+      ..landmark = landmarkController.text.trim()
+      ..stateId =
+          selectedStateId.value > 0 ? selectedStateId.value : m.stateId
+      ..cityId = selectedCityId.value > 0 ? selectedCityId.value : m.cityId
+      ..areaId = selectedAreaId.value > 0 ? selectedAreaId.value : m.areaId;
 
     final merchantId =
         m.merchantId?.toString() ?? Preferences.getString('merchantId');
 
     final success =
     await FireStoreUtils.updateMerchantProfile(merchantId, m);
+
+    if (success) Constant.merchantModel = m;
 
     success
         ? Get.back(result: true)

@@ -198,6 +198,18 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
         //'status': merchant.status,
         'merchantEmail': merchant.merchantEmail,
         'merchantPhone': merchant.merchantPhone,
+        // Existing/updated address — required so the backend does not
+        // overwrite the merchant address with null values.
+        if (merchant.stateId != null) 'stateId': merchant.stateId,
+        if (merchant.cityId != null) 'cityId': merchant.cityId,
+        if (merchant.areaId != null) 'areaId': merchant.areaId,
+        if (merchant.buildingNumber != null)
+          'buildingNumber': merchant.buildingNumber,
+        if (merchant.road != null) 'road': merchant.road,
+        if (merchant.landmark != null) 'landmark': merchant.landmark,
+        if (merchant.stateName != null) 'stateName': merchant.stateName,
+        if (merchant.cityName != null) 'cityName': merchant.cityName,
+        if (merchant.areaName != null) 'areaName': merchant.areaName,
         'bankId': merchant.bankId,
         'recipientId': merchant.recipientId,
         'accountNumber': merchant.accountNumber,

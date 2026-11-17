@@ -59,6 +59,26 @@ class MerchantForm extends StatelessWidget {
             ),
           ],
         ),
+        SectionCard(
+          title: 'Address Information',
+          children: [
+            TextFieldWidget(
+              title: 'Building Number'.tr,
+              controller: controller.buildingNumberController,
+              hintText: 'Building Number'.tr,
+            ),
+            TextFieldWidget(
+              title: 'Road'.tr,
+              controller: controller.roadController,
+              hintText: 'Road'.tr,
+            ),
+            TextFieldWidget(
+              title: 'Landmark'.tr,
+              controller: controller.landmarkController,
+              hintText: 'Landmark'.tr,
+            ),
+          ],
+        ),
         BankInfoSection(controller: controller),
       ],
     );

@@ -277,18 +277,36 @@ class VendorModel {
     // Handle isOpen only - int (1/0), bool, or string; API may use isOpen, is_open, or open
     isOpen = _parseToBool(json['isOpen']) ??
         _parseToBool(json['is_open']) ??
-        _parseToBool(json['open']);
+        _parseToBool(json['isActive']);
   }
 
 // Add this helper method to VendorModel class for boolean parsing
+
   static bool? _parseToBool(dynamic value) {
     if (value == null) return null;
+
     if (value is bool) return value;
+
     if (value is int) return value == 1;
+
+    if (value is num) return value == 1;
+
     if (value is String) {
-      if (value.toLowerCase() == 'true' || value == '1') return true;
-      if (value.toLowerCase() == 'false' || value == '0') return false;
+      switch (value.trim().toUpperCase()) {
+        case 'TRUE':
+        case '1':
+        case 'Y':
+        case 'YES':
+          return true;
+
+        case 'FALSE':
+        case '0':
+        case 'N':
+        case 'NO':
+          return false;
+      }
     }
+
     return null;
   }
 
