@@ -57,34 +57,34 @@ class WithdrawMethodSetupController extends GetxController {
     accountIdRazorPay.value.clear();
     accountIdStripe.value.clear();
 
-    await FireStoreUtils.getWithdrawMethod().then(
-      (value) {
-        if (value != null) {
-          withdrawMethodModel.value = value;
-
-          if (withdrawMethodModel.value.flutterWave != null) {
-            accountNumberFlutterWave.value.text =
-                withdrawMethodModel.value.flutterWave!.accountNumber.toString();
-            bankCodeFlutterWave.value.text =
-                withdrawMethodModel.value.flutterWave!.bankCode.toString();
-          }
-
-          if (withdrawMethodModel.value.paypal != null) {
-            emailPaypal.value.text =
-                withdrawMethodModel.value.paypal!.email.toString();
-          }
-
-          if (withdrawMethodModel.value.razorpay != null) {
-            accountIdRazorPay.value.text =
-                withdrawMethodModel.value.razorpay!.accountId.toString();
-          }
-          if (withdrawMethodModel.value.stripe != null) {
-            accountIdStripe.value.text =
-                withdrawMethodModel.value.stripe!.accountId.toString();
-          }
-        }
-      },
-    );
+    // await FireStoreUtils.getWithdrawMethod().then(
+    //   (value) {
+    //     if (value != null) {
+    //       withdrawMethodModel.value = value;
+    //
+    //       if (withdrawMethodModel.value.flutterWave != null) {
+    //         accountNumberFlutterWave.value.text =
+    //             withdrawMethodModel.value.flutterWave!.accountNumber.toString();
+    //         bankCodeFlutterWave.value.text =
+    //             withdrawMethodModel.value.flutterWave!.bankCode.toString();
+    //       }
+    //
+    //       if (withdrawMethodModel.value.paypal != null) {
+    //         emailPaypal.value.text =
+    //             withdrawMethodModel.value.paypal!.email.toString();
+    //       }
+    //
+    //       if (withdrawMethodModel.value.razorpay != null) {
+    //         accountIdRazorPay.value.text =
+    //             withdrawMethodModel.value.razorpay!.accountId.toString();
+    //       }
+    //       if (withdrawMethodModel.value.stripe != null) {
+    //         accountIdStripe.value.text =
+    //             withdrawMethodModel.value.stripe!.accountId.toString();
+    //       }
+    //     }
+    //   },
+    // );
     isLoading.value = false;
   }
 

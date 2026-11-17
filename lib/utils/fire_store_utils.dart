@@ -234,39 +234,59 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
 
   //(end)
 //  THIS IS JAVA API OF CREATE MERCHANT PROFILE   create merchant profile
-  static Future<MerchantModel?> createMerchant(
-      MerchantRequestModel request,) async {
+
+  static Future<MerchantModel> createMerchant(
+      MerchantRequestModel request,
+      ) async {
     try {
       final headers = await getHeaders();
+
       final response = await http.post(
         Uri.parse(
           '${Constant.baseUrl}fm/merchants/createMerchant',
         ),
         headers: headers,
-        body: jsonEncode(
-          request.toJson(),
-        ),
+        body: jsonEncode(request.toJson()),
       );
 
-      debugPrint("Status Code : ${response.statusCode}");
-      debugPrint("Response : ${response.body}");
+      debugPrint("Status Code: ${response.statusCode}");
+      debugPrint("Response: ${response.body}");
+
+
+      final jsonResponse = jsonDecode(response.body);
 
       if (response.statusCode == 200 ||
           response.statusCode == 201) {
-        final jsonResponse =
-        jsonDecode(response.body);
-
-        return MerchantModel.fromJson(
-          jsonResponse['data'],
-        );
+        return MerchantModel.fromJson(jsonResponse['data']);
       }
 
-      return null;
+// Extract validation errors
+      String errorMessage = "Unable to create merchant. Please try again.";
+
+      if (jsonResponse['errors'] != null &&
+          jsonResponse['errors'] is List &&
+          (jsonResponse['errors'] as List).isNotEmpty) {
+        errorMessage = (jsonResponse['errors'] as List).join('\n');
+      } else if (jsonResponse['message'] != null) {
+        errorMessage = jsonResponse['message'].toString();
+      }
+
+      throw Exception(errorMessage);
+
+
+    } on FormatException {
+      throw Exception("Invalid server response. Please try again.");
     } catch (e) {
-      debugPrint("createMerchant Error : $e");
-      return null;
+      debugPrint("createMerchant Error: $e");
+
+      if (e is Exception) {
+        rethrow;
+      }
+
+      throw Exception("Something went wrong. Please try again.");
     }
   }
+
 
   // end
   // THIS IS THE CODE OF JAVA GETTING THE LIST OF OUTLETS BY USING THE MERCHANT ID
@@ -2071,39 +2091,41 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
     return downloadUrl.toString();
   }
 
-  static Future<WithdrawMethodModel?> getWithdrawMethod() async {
-    try {
-      // Make API call
-      final response = await http.get(
-        Uri.parse('${Constant.baseUrl}restaurant/wallet/withdraw-method?userId=${getCurrentUid()}'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          final List<dynamic> data = responseData['data'];
-
-          if (data.isNotEmpty) {
-            WithdrawMethodModel withdrawMethodModel = WithdrawMethodModel.fromJson(data.first);
-            return withdrawMethodModel;
-          } else {
-            return null; // No withdraw method found
-          }
-        } else {
-          throw Exception('API returned success: false');
-        }
-      } else {
-        throw Exception('Failed to load withdraw method: ${response.statusCode}');
-      }
-    } catch (error) {
-      log(error.toString());
-      return null;
-    }
-  }
+  // static Future<WithdrawMethodModel?> getWithdrawMethod() async {
+  //   try {
+  //
+  //   var  userid = await FireStoreUtils.getCurrentUid();
+  //     // Make API call
+  //     final response = await http.get(
+  //       Uri.parse('${Constant.baseUrl}restaurant/wallet/withdraw-method?userId=$userid'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final Map<String, dynamic> responseData = json.decode(response.body);
+  //
+  //       if (responseData['success'] == true) {
+  //         final List<dynamic> data = responseData['data'];
+  //
+  //         if (data.isNotEmpty) {
+  //           WithdrawMethodModel withdrawMethodModel = WithdrawMethodModel.fromJson(data.first);
+  //           return withdrawMethodModel;
+  //         } else {
+  //           return null; // No withdraw method found
+  //         }
+  //       } else {
+  //         throw Exception('API returned success: false');
+  //       }
+  //     } else {
+  //       throw Exception('Failed to load withdraw method: ${response.statusCode}');
+  //     }
+  //   } catch (error) {
+  //     log(error.toString());
+  //     return null;
+  //   }
+  // }
   static Future<WithdrawMethodModel?> setWithdrawMethod(
       WithdrawMethodModel withdrawMethodModel) async {
     try {

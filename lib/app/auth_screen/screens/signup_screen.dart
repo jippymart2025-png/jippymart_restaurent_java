@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:jippymart_restaurant/constant/show_toast_dialog.dart';
 import 'package:jippymart_restaurant/app/auth_screen/controllers/signup_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
@@ -8,9 +9,13 @@ import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as google_maps;
+import 'package:latlong2/latlong.dart' as latlong;
 import 'package:provider/provider.dart';
 
+import '../../../constant/constant.dart';
 import '../../../models/location_model.dart';
+import '../../../widget/locationselection.dart';
 
 
 class SignupScreen extends StatelessWidget {
@@ -242,37 +247,37 @@ class SignupScreen extends StatelessWidget {
           );
         });
   }
-  // void _openLocationPicker(BuildContext context, SignupController controller) {
-  //   Constant.checkPermission(
-  //     context: context,
-  //     onTap: () async {
-  //       ShowToastDialog.showLoader("Getting location...".tr);
-  //       try {
-  //         await Geolocator.requestPermission();
-  //         final position = await Geolocator.getCurrentPosition();
-  //         ShowToastDialog.closeLoader();
-  //         final initialPos = Constant.selectedMapType == 'osm'
-  //             ? const LatLng(20.5937, 78.9629)
-  //             : LatLng(position.latitude, position.longitude);
-  //         final result = await Get.to(
-  //               () => MapPickerPage(initialPosition: initialPos),
-  //           fullscreenDialog: Constant.selectedMapType != 'osm',
-  //         );
-  //         if (result != null) {
-  //           final data = result as Map<String, dynamic>;
-  //           final LatLng selectedLatLng = data['location'] as LatLng;
-  //           final String selectedAddress = data['address'] as String? ?? '';
-  //           controller.latitudeController.value.text = selectedLatLng.latitude.toString();
-  //           controller.longitudeController.value.text = selectedLatLng.longitude.toString();
-  //           controller.locationDisplayController.text = selectedAddress;
-  //         }
-  //       } catch (e) {
-  //         ShowToastDialog.closeLoader();
-  //         ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
-  //       }
-  //     },
-  //   );
-  // }
+  void _openLocationPicker(BuildContext context, SignupController controller) {
+    Constant.checkPermission(
+      context: context,
+      onTap: () async {
+        ShowToastDialog.showLoader("Getting location...".tr);
+        try {
+          await Geolocator.requestPermission();
+          final position = await Geolocator.getCurrentPosition();
+          ShowToastDialog.closeLoader();
+          final initialPos = Constant.selectedMapType == 'osm'
+              ? const google_maps.LatLng(20.5937, 78.9629)
+              : google_maps.LatLng(position.latitude, position.longitude);
+          final result = await Get.to(
+                () => MapPickerPage(initialPosition: initialPos),
+            fullscreenDialog: Constant.selectedMapType != 'osm',
+          );
+          if (result != null) {
+            final data = result as Map<String, dynamic>;
+            final google_maps.LatLng selectedLatLng = data['location'] as google_maps.LatLng;
+            final String selectedAddress = data['address'] as String? ?? '';
+            controller.latitudeController.value.text = selectedLatLng.latitude.toString();
+            controller.longitudeController.value.text = selectedLatLng.longitude.toString();
+            controller.locationDisplayController.text = selectedAddress;
+          }
+        } catch (e) {
+          ShowToastDialog.closeLoader();
+          ShowToastDialog.showToast("Failed to get location: ${e.toString()}".tr);
+        }
+      },
+    );
+  }
 
   // void _openLocationPicker(BuildContext context, SignupController controller) {
   //   Constant.checkPermission(
@@ -333,7 +338,7 @@ class SignupScreen extends StatelessWidget {
   //     },
   //   );
   // }  // call site, inside build():
-  //merchantForm(controller, themeChange, context),
+  // merchantForm(controller, themeChange, context),
   Widget merchantForm(
       SignupController controller,
       DarkThemeProvider themeChange,
@@ -701,7 +706,7 @@ class SignupScreen extends StatelessWidget {
               }),
               const SizedBox(height: 12),
               InkWell(
-                // onTap: () => _openLocationPicker(context, controller),
+                onTap: () => _openLocationPicker(context, controller),
                 child: IgnorePointer(
                   child: TextField(
                     controller: controller.locationDisplayController,

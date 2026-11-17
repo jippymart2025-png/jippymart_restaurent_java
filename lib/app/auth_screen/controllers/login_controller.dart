@@ -228,19 +228,6 @@ class LoginController extends GetxController {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Reusable Login Success
-  //
-  // Used by:
-  //
-  // 1. Username + Password Login
-  // 2. Merchant Mobile OTP Login
-  //
-  // This automatically handles:
-  //
-  // MERCHANT → Merchant Flow
-  // OUTLET   → Outlet Flow
-  // ---------------------------------------------------------------------------
 
   Future<bool> handleLoginSuccess(
       Map<String, dynamic> response,
