@@ -12,14 +12,12 @@ import 'package:jippymart_restaurant/controller/sales_report_controller.dart';
 import 'package:jippymart_restaurant/themes/app_them_data.dart';
 import 'package:jippymart_restaurant/utils/const/color_const.dart';
 import 'package:jippymart_restaurant/utils/dark_theme_provider.dart';
-import 'package:jippymart_restaurant/service/dashboard_api_service.dart';
 import '../../models/bottom_nav_item.dart';
-import '../../utils/preferences.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DashBoardScreen
 // ─────────────────────────────────────────────────────────────────────────────
-class DashBoardScreen extends StatelessWidget {
+class DashBoardScreen extends StatefulWidget {
   final String outletName;
 
   const DashBoardScreen({
@@ -28,10 +26,25 @@ class DashBoardScreen extends StatelessWidget {
   });
 
   @override
+  State<DashBoardScreen> createState() => _DashBoardScreenState();
+}
+
+class _DashBoardScreenState extends State<DashBoardScreen> {
+  late final DashBoardController controller;
+  late final ProductListController productCtrl;
+  late final List<BottomNavItem> _navItems;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(DashBoardController());
+    productCtrl = Get.put(ProductListController(), permanent: true);
+    _navItems = controller.getNavItems();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
-    final controller = Get.put(DashBoardController());
-    final productCtrl = Get.put(ProductListController(), permanent: true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       debugPrint("Dashboard opened");
@@ -39,7 +52,7 @@ class DashBoardScreen extends StatelessWidget {
     });
 
     return Obx(() {
-      final navItems = controller.getNavItems();
+      final navItems = _navItems;
 
       return PopScope(
         canPop: false,
@@ -288,242 +301,102 @@ class _StatusBanner extends StatelessWidget {
 
   Future<void> _onTap(BuildContext context, bool isOpen) async {
     if (isOpen) {
-      // ================= CLOSE RESTAURANT =================
+      // ================= CLOSE OUTLET =================
 
-      final bool ok =
-          await showDialog<bool>(
+      final bool ok = await showDialog<bool>(
             context: context,
             builder: (_) => const _ConfirmDialog(
               iconData: Icons.storefront_rounded,
               iconColor: _kRed,
               title: 'Close Outlet?',
               message:
-              'Customers will not be able to place new orders while your restaurant is closed.',
+                  'Customers will not be able to place new orders while your restaurant is closed.',
               confirmLabel: 'Close',
               confirmColor: _kRed,
               isDanger: true,
             ),
           ) ??
-              false;
+          false;
 
-      if (!ok) return;
-
-      if (!context.mounted) return;
+      if (!ok || !context.mounted) return;
 
       final RestaurantCloseOption? option =
-      await showDialog<RestaurantCloseOption>(
+          await showDialog<RestaurantCloseOption>(
         context: context,
         builder: (_) => const _CloseOptionsDialog(),
       );
 
-      if (option == null) return;
+      if (option == null || !context.mounted) return;
 
       final DateTime now = DateTime.now();
 
-      DateTime? toDate;
-
-      switch (option) {
-        case RestaurantCloseOption.today:
-          toDate = DateTime(
+      // Keep the same close windows as the dashboard options.
+      final DateTime? closeUntil = switch (option) {
+        RestaurantCloseOption.today => DateTime(
             now.year,
             now.month,
             now.day,
             23,
             59,
             59,
-          );
-          break;
-
-        case RestaurantCloseOption.tomorrow:
-          toDate = DateTime(
+          ),
+        RestaurantCloseOption.tomorrow => DateTime(
             now.year,
             now.month,
             now.day + 1,
             23,
             59,
             59,
-          );
-          break;
+          ),
+        RestaurantCloseOption.threeDays =>
+          now.add(const Duration(days: 3)),
+        RestaurantCloseOption.sevenDays =>
+          now.add(const Duration(days: 7)),
+        RestaurantCloseOption.untilReopened =>
+          DateTime(2099, 12, 31, 23, 59, 59),
+        RestaurantCloseOption.custom => null,
+      };
 
-        case RestaurantCloseOption.threeDays:
-          toDate = now.add(const Duration(days: 3));
-          break;
+      if (closeUntil == null) return;
 
-        case RestaurantCloseOption.sevenDays:
-          toDate = now.add(const Duration(days: 7));
-          break;
-
-        case RestaurantCloseOption.untilReopened:
-          toDate = DateTime(2099, 12, 31, 23, 59, 59);
-          break;
-
-        case RestaurantCloseOption.custom:
-        // Use custom selected date here
-          return;
-      }
-
-      final outletId = DashBoardController.resolveActiveOutletId();
-      debugPrint('========== OPEN OUTLET ==========');
-      debugPrint('outletId = $outletId');
-      debugPrint('loginType = ${Preferences.getString('loginType')}');
-      debugPrint(
-        'Preferences outletId = ${Preferences.getInt('outletId')}',
-      );
-      debugPrint(
-        'Preferences selectedOutletId = ${Preferences.getInt('selectedOutletId')}',
-      );
-      debugPrint('=================================');
-      if (outletId <= 0) {
-        ShowToastDialog.showToast('No outlet selected'.tr);
-        return;
-      }
-
-      final success = await DashBoardController.updateOutletUnavailability(
-        type: "OUTLET",
-        unavailabilityId: outletId,
-        fromDate: now,
-        toDate: toDate,
-        reason: "Outlet temporarily unavailable",
+      final success = await controller.setOutletOpen(
+        open: false,
+        closeUntil: closeUntil,
       );
 
-      if (!success) {
-        ShowToastDialog.showToast(
-          "Failed to close outlet",
-        );
-        return;
-      }
-
-// Update UI
-      controller.vendorModel.update((vendor) {
-        if (vendor != null) {
-          vendor.isOpen = false;
-          vendor.reststatus = false;
-        }
-      });
-
-      await Preferences.setBoolean(
-        Preferences.vendorIsOpenKey,
-        false,
-      );
-
-      controller.vendorModel.refresh();
-
+      if (!context.mounted) return;
       ShowToastDialog.showToast(
-        "Outlet closed successfully",
+        success
+            ? 'Outlet closed successfully'.tr
+            : 'Failed to close outlet'.tr,
       );
-
-
-      // switch (option) {
-      //   case RestaurantCloseOption.today:
-      //     fromDate = now;
-      //     toDate = DateTime(
-      //       now.year,
-      //       now.month,
-      //       now.day,
-      //       23,
-      //       59,
-      //       59,
-      //     );
-      //     reason = "Restaurant closed for today";
-      //     break;
-      //
-      //   case RestaurantCloseOption.tomorrow:
-      //     fromDate = now;
-      //     toDate = now.add(const Duration(days: 1));
-      //     reason = "Restaurant closed until tomorrow";
-      //     break;
-      //
-      //   case RestaurantCloseOption.custom:
-      //     fromDate = now;
-      //     toDate = now.add(const Duration(days: 7));
-      //     reason = "Restaurant temporarily unavailable";
-      //     break;
-      // }
-
-      // final bool success =
-      // await ApiService.updateOutletUnavailability(
-      //   type: "outlet",
-      //   unavailabilityId: 7,
-      //   fromDate: fromDate,
-      //   toDate: toDate,
-      //   reason: reason,
-      // );
-
-      // if (!success) {
-      //   if (context.mounted) {
-      //     ShowToastDialog.showToast(
-      //       'Failed to update status'.tr,
-      //     );
-      //   }
-      //   return;
-      // }
-
-
-
-      if (option != RestaurantCloseOption.today &&
-          context.mounted) {
-        // await _maybeSendEmail(context, option);
-      }
     } else {
-      // ================= OPEN RESTAURANT =================
+      // ================= OPEN OUTLET =================
 
-      // ================= OPEN RESTAURANT =================
-
-      final bool ok =
-          await showDialog<bool>(
+      final bool ok = await showDialog<bool>(
             context: context,
             builder: (_) => const _ConfirmDialog(
               iconData: Icons.storefront_rounded,
               iconColor: _kGreen,
               title: 'Open Outlet?',
               message:
-              'Your restaurant will be visible to customers and start accepting orders.',
+                  'Your restaurant will be visible to customers and start accepting orders.',
               confirmLabel: 'Open Now',
               confirmColor: _kGreen,
             ),
           ) ??
-              false;
+          false;
 
-      if (!ok) return;
+      if (!ok || !context.mounted) return;
 
-      final outletId = DashBoardController.resolveActiveOutletId();
-      if (outletId <= 0) {
-        ShowToastDialog.showToast('No outlet selected'.tr);
-        return;
-      }
+      final success = await controller.setOutletOpen(open: true);
 
-      final bool success =
-      await DashboardApiService.restoreOutletAvailability(
-        type: "OUTLET",
-        unavailabilityId: outletId,
-        reason: "Outlet reopened",
-      );
-      if (!success) {
-        ShowToastDialog.showToast(
-          "Failed to update status",
-        );
-        return;
-      }
-
-// Update UI
-      controller.vendorModel.update((vendor) {
-        if (vendor != null) {
-          vendor.isOpen = true;
-          vendor.reststatus = true;
-        }
-      });
-
-      await Preferences.setBoolean(
-        Preferences.vendorIsOpenKey,
-        true,
-      );
-
-      controller.vendorModel.refresh();
-
+      if (!context.mounted) return;
       ShowToastDialog.showToast(
-        "Outlet opened successfully",
+        success
+            ? 'Outlet opened successfully'.tr
+            : 'Failed to update status'.tr,
       );
-
     }
   }
   //

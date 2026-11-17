@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:jippymart_restaurant/utils/http_client.dart' as http;
 
 import 'package:jippymart_restaurant/constant/constant.dart';
@@ -47,6 +48,8 @@ extension DashboardFilterExt on DashboardFilter {
 /// API: GET {{baseURL}}vendor/dashboard?vendor_id=...&filter=last_week|last_month
 class DashboardApiService {
   //static String get _baseUrl => Constant.baseUrl;
+
+  static bool _hasLoggedOutletStack = false;
 
   static Map<String, String> get _headers => {
         'Content-Type': 'application/json',
@@ -327,6 +330,55 @@ class DashboardApiService {
       filter: filter,
       forceRefresh: forceRefresh,
     );
+  }
+
+  /// GET `fm/outlets/getOutletById/{outletId}` — returns the outlet `data`
+  /// object, including `isActive` and `operatingDays`.
+  static Future<Map<String, dynamic>?> getOutlet(int outletId) async {
+    if (!_hasLoggedOutletStack) {
+      _hasLoggedOutletStack = true;
+      debugPrint(
+        '[getOutletById] called from:\n'
+        '${StackTrace.current.toString().split('\n').take(8).join('\n')}',
+      );
+    }
+
+    if (outletId <= 0) return null;
+
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/outlets/getOutletById/$outletId';
+
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        if (AppConfig.enableDebugLogs) {
+          // ignore: avoid_print
+          print(
+            'DashboardApiService.getOutlet status=${response.statusCode}',
+          );
+        }
+        return null;
+      }
+
+      final bodyStr = response.body.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+      if (bodyStr.isEmpty) return null;
+
+      final decoded = jsonDecode(bodyStr);
+      if (decoded is! Map) return null;
+      if (decoded['success'] == false) return null;
+
+      final data = decoded['data'] ?? decoded;
+      if (data is! Map) return null;
+
+      return Map<String, dynamic>.from(data);
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('DashboardApiService.getOutlet error: $e $st');
+      return null;
+    }
   }
 
   static Future<bool> restoreOutletAvailability({

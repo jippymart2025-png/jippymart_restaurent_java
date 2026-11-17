@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jippymart_restaurant/app/Home_screen/home_screen.dart';
@@ -9,7 +11,9 @@ import 'package:jippymart_restaurant/constant/constant.dart';
 import 'package:jippymart_restaurant/controller/app_update_controller.dart';
 import 'package:jippymart_restaurant/app/product_screens/controllers/product_list_controller.dart';
 import 'package:jippymart_restaurant/models/vendor_model.dart';
+import 'package:jippymart_restaurant/service/dashboard_api_service.dart';
 import 'package:jippymart_restaurant/utils/fire_store_utils.dart';
+import 'package:jippymart_restaurant/utils/outlet_open_state.dart';
 import 'package:jippymart_restaurant/utils/preferences.dart';
 import '../app/merchant_outlet_list_screen.dart';
 import '../app/promotions/promotion_plan_types_screen.dart';
@@ -51,16 +55,49 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
   // ── Private state ──────────────────────────────────────────────────────────
   DateTime? _lastBackPress;
 
+  /// Guards [_buildPageList] from rebuilding for an unchanged session.
+  int? _lastBuiltOutletId;
+  String? _lastBuiltLoginType;
+
+  /// Latest `data` object from the outlet API — source of the live schedule.
+  Map<String, dynamic>? _lastOutletPayload;
+
+  /// Short-lived outlet payload cache + single-flight request guard.
+  Map<String, dynamic>? _cachedOutlet;
+  int? _cachedOutletId;
+  DateTime? _cachedOutletAt;
+  Future<Map<String, dynamic>?>? _inflightOutlet;
+
+  /// Re-evaluates the outlet schedule once a minute while the app is running.
+  Timer? _openStateTicker;
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void onInit() {
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
     activeOutletId.value = Preferences.getInt('outletId');
+
+    // Initialise the merchant controller once, never from _buildPageList.
+    final loginType = Preferences.getString('loginType');
+    if (loginType == 'MERCHANT') {
+      if (!Get.isRegistered<MerchantOutletController>()) {
+        Get.put(MerchantOutletController(), permanent: true);
+      }
+    } else if (Get.isRegistered<MerchantOutletController>()) {
+      Get.delete<MerchantOutletController>(force: true);
+    }
+
+    // Refetch the outlet only when the selected outlet actually changes.
+    ever<int>(activeOutletId, (id) {
+      if (id > 0) unawaited(_loadOutletPayload(id));
+    });
+
     _ensureMerchantSession();
     _buildPageList();
     _restoreOpenState();
     loadVendor();
+    _startOpenStateTicker();
     _checkUpdate();
     _applyInitialTab();
   }
@@ -94,19 +131,33 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
 
   @override
   void onClose() {
+    _openStateTicker?.cancel();
+    _openStateTicker = null;
     WidgetsBinding.instance.removeObserver(this);
     super.onClose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkUpdate();
+    if (state == AppLifecycleState.resumed) {
+      _checkUpdate();
+      // Re-evaluate the outlet schedule as soon as the app is back.
+      loadVendor();
+    }
   }
 
 
   void _buildPageList({int? outletIdOverride}) {
     final loginType = Preferences.getString('loginType');
     final outletId = outletIdOverride ?? activeOutletId.value;
+
+    if (_lastBuiltLoginType == loginType && _lastBuiltOutletId == outletId) {
+      debugPrint(
+        '[buildPageList] skipped loginType=$loginType outletId=$outletId',
+      );
+      return;
+    }
+
     final isOutletSession = loginType == 'OUTLET' || outletId > 0;
 
     print("=================================");
@@ -115,12 +166,11 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     print("isOutletSession = $isOutletSession");
     print("=================================");
 
+    // Mark as built before mutating the RxList so a re-entrant call is a no-op.
+    _lastBuiltLoginType = loginType;
+    _lastBuiltOutletId = outletId;
+
     if (isOutletSession) {
-      // Keep merchant outlet cache when a merchant opens an outlet dashboard.
-      if (loginType != 'MERCHANT' &&
-          Get.isRegistered<MerchantOutletController>()) {
-        Get.delete<MerchantOutletController>(force: true);
-      }
       pageList.value = [
         HomeScreen(),
         const ProductListScreen(),
@@ -135,9 +185,6 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     }
 
     if (loginType == 'MERCHANT') {
-      if (!Get.isRegistered<MerchantOutletController>()) {
-        Get.put(MerchantOutletController(), permanent: true);
-      }
       pageList.value = [
         MerchantOutletListScreen(),
         const MerchantSelectOutletPromptScreen(),
@@ -244,6 +291,9 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     if (Get.isRegistered<ProductListController>()) {
       Get.find<ProductListController>().clearOutletInventoryState();
     }
+    if (!Get.isRegistered<MerchantOutletController>()) {
+      Get.put(MerchantOutletController(), permanent: true);
+    }
     if (Get.isRegistered<MerchantOutletController>()) {
       final outletCtrl = Get.find<MerchantOutletController>();
       await outletCtrl.exitOutletDashboard();
@@ -346,23 +396,36 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  /// Fetches fresh vendor data from Firestore and merges it with local state.
+  /// Fetches fresh vendor data and merges it with the outlet schedule.
   Future<void> loadVendor() async {
-    final vendorId = Constant.userModel?.vendorID;
-    if (vendorId == null || vendorId.isEmpty) return;
+    final outletId = resolveActiveOutletId();
 
-    _log('loadVendor id=$vendorId');
+    // Load the outlet schedule first so it can take priority below.
+    await _loadOutletPayload(outletId);
+
+    final vendorId = Constant.userModel?.vendorID;
+    if (vendorId == null || vendorId.isEmpty) {
+      _applyResolvedOpenState();
+      return;
+    }
+
+    _log('loadVendor id=$vendorId outletId=$outletId');
     try {
       final fresh =
           await FireStoreUtils.getVendorById(vendorId, forceRefresh: true);
-      if (fresh == null) return;
+      if (fresh == null) {
+        _applyResolvedOpenState();
+        return;
+      }
 
       Constant.vendorAdminCommission = fresh.adminCommission;
       fresh.id ??= vendorId;
 
-      // Prefer server value; fall back to persisted pref if server omits it.
-      final isOpen =
-          fresh.isOpen ?? Preferences.getBoolean(Preferences.vendorIsOpenKey);
+      // Outlet schedule > Firestore value > persisted preference.
+      final isOpen = _resolveOpenState(
+        fallback:
+            fresh.isOpen ?? Preferences.getBoolean(Preferences.vendorIsOpenKey),
+      );
       fresh
         ..isOpen = isOpen
         ..reststatus = isOpen;
@@ -384,8 +447,147 @@ class DashBoardController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  /// Loads the outlet payload with a 30-second memo and single-flight guard.
+  Future<Map<String, dynamic>?> _loadOutletPayload(int outletId) async {
+    if (outletId <= 0) {
+      _lastOutletPayload = null;
+      return null;
+    }
+
+    final cachedOk = _cachedOutletId == outletId &&
+        _cachedOutletAt != null &&
+        DateTime.now().difference(_cachedOutletAt!) <
+            const Duration(seconds: 30);
+    if (cachedOk) {
+      debugPrint(
+        '[DashBoardController] outlet payload cache hit id=$outletId',
+      );
+      _lastOutletPayload = _cachedOutlet;
+      return _cachedOutlet;
+    }
+
+    if (_inflightOutlet != null) {
+      debugPrint(
+        '[DashBoardController] outlet payload join in-flight id=$outletId',
+      );
+      return _inflightOutlet;
+    }
+
+    debugPrint(
+      '[DashBoardController] outlet payload cache miss id=$outletId — fetching',
+    );
+
+    _inflightOutlet = () async {
+      try {
+        // The service already returns the outlet `data` map.
+        final res = await DashboardApiService.getOutlet(outletId);
+        if (res != null) {
+          _cachedOutlet = Map<String, dynamic>.from(res);
+          _cachedOutletId = outletId;
+          _cachedOutletAt = DateTime.now();
+          _lastOutletPayload = _cachedOutlet;
+          return _cachedOutlet;
+        }
+        return null;
+      } catch (e) {
+        debugPrint('[DashBoardController] getOutletById error: $e');
+        return null;
+      } finally {
+        _inflightOutlet = null;
+      }
+    }();
+
+    return _inflightOutlet;
+  }
+
+  /// Re-evaluates the schedule once a minute and refreshes the banner on change.
+  void _startOpenStateTicker() {
+    _openStateTicker?.cancel();
+    _openStateTicker = Timer.periodic(const Duration(minutes: 1), (_) {
+      final payload = _lastOutletPayload;
+      if (payload == null || isUpdatingStatus.value) return;
+
+      final next = OutletOpenState.isCurrentlyOpen(payload);
+      if ((vendorModel.value.isOpen ?? false) == next) return;
+
+      _setLocalOpenState(next);
+      unawaited(Preferences.setBoolean(Preferences.vendorIsOpenKey, next));
+    });
+  }
+
+  /// Schedule first, then the server value, then the persisted preference.
+  bool _resolveOpenState({required bool fallback}) {
+    final payload = _lastOutletPayload;
+    if (payload != null) {
+      return OutletOpenState.isCurrentlyOpen(payload);
+    }
+    return fallback;
+  }
+
+  /// Applies the resolved state to the existing model when no fresh vendor
+  /// could be loaded.
+  void _applyResolvedOpenState() {
+    final isOpen = _resolveOpenState(
+      fallback: vendorModel.value.isOpen ??
+          Preferences.getBoolean(Preferences.vendorIsOpenKey),
+    );
+    _setLocalOpenState(isOpen);
+    unawaited(Preferences.setBoolean(Preferences.vendorIsOpenKey, isOpen));
+  }
+
+  void _setLocalOpenState(bool isOpen) {
+    vendorModel.value =
+        vendorModel.value.copyWith(isOpen: isOpen, reststatus: isOpen);
+    vendorModel.refresh();
+  }
+
   /// Public alias kept for callers such as [HomeController.refreshApp].
   Future<void> getVendor() => loadVendor();
+
+  /// Closes or reopens the active outlet, then syncs local and persisted state.
+  Future<bool> setOutletOpen({
+    required bool open,
+    DateTime? closeUntil,
+  }) async {
+    if (isUpdatingStatus.value) return false;
+
+    isUpdatingStatus.value = true;
+    try {
+      final outletId = resolveActiveOutletId();
+      if (outletId <= 0) return false;
+
+      final success = open
+          ? await DashboardApiService.restoreOutletAvailability(
+              type: 'OUTLET',
+              unavailabilityId: outletId,
+              reason: 'Outlet reopened',
+            )
+          : await updateOutletUnavailability(
+              type: 'OUTLET',
+              unavailabilityId: outletId,
+              fromDate: DateTime.now(),
+              toDate: closeUntil ?? DateTime(2099, 12, 31, 23, 59, 59),
+              reason: 'Outlet temporarily unavailable',
+            );
+
+      if (!success) return false;
+
+      _setLocalOpenState(open);
+      await Preferences.setBoolean(Preferences.vendorIsOpenKey, open);
+
+      // Re-read after reopening so the real schedule wins on the next tick.
+      if (open) {
+        await _loadOutletPayload(outletId);
+      }
+
+      return true;
+    } catch (e) {
+      _log('setOutletOpen error: $e');
+      return false;
+    } finally {
+      isUpdatingStatus.value = false;
+    }
+  }
 
   /// Pushes an open/closed status change to Firestore.
   /// Returns `true` on success, `false` on any failure.
