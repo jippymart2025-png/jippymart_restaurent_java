@@ -165,21 +165,13 @@ class AddFromCatalogController extends GetxController {
     if (outletId <= 0) return {};
 
     try {
-      final outletResult =
-      await FireStoreUtils.getOutletDetailsWithProducts(outletId: outletId);
+      // getOutletDetails does not expose outletCategoryId; update-menu does.
+      final mapping = await FireStoreUtils.getOutletCategoryIdMap(outletId);
+      if (mapping == null) return {};
 
-      if (outletResult == null) return {};
-
-      final map = <String, int>{};
-      for (final cat in outletResult.categories) {
-        final categoryId = cat.id?.toString() ?? '';
-        final outletCatId = cat.outletCategoryId;
-
-        if (categoryId.isNotEmpty && outletCatId != null && outletCatId > 0) {
-          map[categoryId] = outletCatId;
-        }
-      }
-      return map;
+      return {
+        for (final entry in mapping.entries) entry.key.toString(): entry.value,
+      };
     } catch (e) {
       print("_loadOutletCategoryIdMap error: $e");
       return {};

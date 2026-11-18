@@ -52,6 +52,12 @@ class _OutletProductsCacheEntry {
   _OutletProductsCacheEntry(this.result, this.cachedAt);
 }
 
+class _OutletCategoryIdCacheEntry {
+  final Map<int, int> mapping;
+  final DateTime cachedAt;
+  _OutletCategoryIdCacheEntry(this.mapping, this.cachedAt);
+}
+
 class FireStoreUtils {
   static FirebaseFirestore fireStore = FirebaseFirestore.instance;
 
@@ -66,6 +72,13 @@ class FireStoreUtils {
 
   // Outlet inventory cache: keyed by outletId, TTL 3 minutes
   static final Map<int, _OutletProductsCacheEntry> _outletProductCache = {};
+
+  // categoryId -> outletCategoryId mapping per outlet, TTL 3 minutes.
+  // getOutletDetails omits outletCategoryId, so this is resolved from
+  // GET /api/fm/update-menu/{outletId} before OUTLET_CATEGORY writes.
+  static final Map<int, _OutletCategoryIdCacheEntry> _outletCategoryIdCache = {};
+  static const Duration _outletCategoryIdCacheTTL = Duration(minutes: 3);
+
   static String? _lastOutletProductsError;
 
   static String? get lastOutletProductsError => _lastOutletProductsError;
@@ -816,12 +829,101 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
   static void invalidateOutletProductCache([int? outletId]) {
     if (outletId != null) {
       _outletProductCache.remove(outletId);
+      _outletCategoryIdCache.remove(outletId);
     } else {
       _outletProductCache.clear();
+      _outletCategoryIdCache.clear();
       // Outlet session may have changed; force re-resolving the outlet id.
       _cachedResolvedOutletId = null;
       _cachedResolvedOutletTime = null;
     }
+  }
+
+  /// Resolves `outlet_categories.outlet_category_id` values for an outlet.
+  ///
+  /// Returns a `categoryId -> outletCategoryId` map sourced from
+  /// `GET /api/fm/update-menu/{outletId}`. The outlet-details endpoint used by
+  /// the inventory screen does not expose `outletCategoryId`, so callers must
+  /// use this mapping before sending an `OUTLET_CATEGORY` unavailability.
+  static Future<Map<int, int>?> getOutletCategoryIdMap(
+    int outletId, {
+    bool forceRefresh = false,
+  }) async {
+    if (outletId <= 0) return null;
+
+    if (!forceRefresh) {
+      final cached = _outletCategoryIdCache[outletId];
+      if (cached != null &&
+          DateTime.now().difference(cached.cachedAt) <
+              _outletCategoryIdCacheTTL) {
+        return cached.mapping;
+      }
+    }
+
+    try {
+      final headers = await getHeaders();
+      final url = '${Constant.baseUrl}fm/update-menu/$outletId';
+
+      debugPrint('getOutletCategoryIdMap => $url');
+
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 30));
+
+      debugPrint('getOutletCategoryIdMap status => ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          'getOutletCategoryIdMap failed: ${response.statusCode} — '
+          '${response.body}',
+        );
+        return null;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is! Map || decoded['success'] == false) {
+        debugPrint('getOutletCategoryIdMap: invalid/error response');
+        return null;
+      }
+
+      final rawData = decoded['data'];
+      if (rawData is! List) {
+        debugPrint('getOutletCategoryIdMap: response has no category list');
+        return null;
+      }
+
+      final mapping = <int, int>{};
+      for (final item in rawData) {
+        if (item is! Map) continue;
+        final categoryId = _positiveInt(item['categoryId']);
+        final outletCategoryId = _positiveInt(item['outletCategoryId']);
+        if (categoryId != null && outletCategoryId != null) {
+          mapping[categoryId] = outletCategoryId;
+        }
+      }
+
+      if (mapping.isNotEmpty) {
+        _outletCategoryIdCache[outletId] = _OutletCategoryIdCacheEntry(
+          mapping,
+          DateTime.now(),
+        );
+      }
+
+      return mapping;
+    } catch (error) {
+      debugPrint('getOutletCategoryIdMap error: $error');
+      return null;
+    }
+  }
+
+  static int? _positiveInt(dynamic value) {
+    if (value is int) return value > 0 ? value : null;
+    if (value is num) {
+      final parsed = value.toInt();
+      return parsed > 0 ? parsed : null;
+    }
+    final parsed = int.tryParse(value?.toString().trim() ?? '');
+    return parsed != null && parsed > 0 ? parsed : null;
   }
 
   static Future<List<

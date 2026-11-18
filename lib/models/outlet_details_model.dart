@@ -105,8 +105,10 @@ class OutletDetailsModel {
             id: categoryId,
             title: category.categoryName ?? 'Category',
             isActive: category.isAvailable ?? true,
-            outletCategoryId:
-                category.outletCategoryId ?? category.categoryId,
+            // Backend outlet-details does not expose outletCategoryId.
+            // Keep it null so the controller resolves it from update-menu
+            // instead of accidentally sending categoryId as the PK.
+            outletCategoryId: category.outletCategoryId,
           ),
         );
       }
@@ -181,8 +183,7 @@ class OutletDetailsModel {
   static int? _parseOutletCategoryId(Map<String, dynamic> json) {
     return _parseInt(json['outletCategoryId']) ??
         _parseInt(json['outlet_category_id']) ??
-        _parseInt(json['outletCategoryID']) ??
-        _parseInt(json['id']);
+        _parseInt(json['outletCategoryID']);
   }
 }
 

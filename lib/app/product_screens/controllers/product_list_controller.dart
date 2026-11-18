@@ -356,21 +356,14 @@ class ProductListController extends GetxController {
       InventoryUnavailabilityKind.product,
     );
     if (dates == null) return;
-    final now = DateTime.now();
-    final minimumAllowedTime = now.add(const Duration(minutes: 1));
 
-    final safeFromDate = dates.from.isBefore(minimumAllowedTime)
-        ? minimumAllowedTime
-        : dates.from;
-
-    final safeToDate = dates.to.isAfter(safeFromDate)
-        ? dates.to
-        : safeFromDate.add(const Duration(hours: 1));
     final success = await FireStoreUtils.postOutletItemUnavailability(
       type: 'PRODUCT',
       unavailabilityId: productIdInt,
       reason: 'Product made unavailable',
-      fromDate: dates.from,
+      // Generate the start at submit time instead of reusing the timestamp
+      // captured before the user picked a close duration.
+      fromDate: DateTime.now(),
       toDate: dates.to,
     );
 
@@ -391,11 +384,54 @@ class ProductListController extends GetxController {
   }
 
   // ── Category mutations ─────────────────────────────────────────────────────
-  int _resolveOutletCategoryUnavailabilityId(VendorCategoryModel cat) {
+  /// Resolves the `outlet_categories.outlet_category_id` for an
+  /// `OUTLET_CATEGORY` unavailability.
+  ///
+  /// The outlet-details response used by inventory only has `category_id`, so
+  /// when [VendorCategoryModel.outletCategoryId] is absent we look it up in
+  /// `GET /api/fm/update-menu/{outletId}`. We never fall back to `cat.id`
+  /// (that is `category_id` and is not the unavailability primary key).
+  Future<int?> _resolveOutletCategoryUnavailabilityId(
+    VendorCategoryModel cat, {
+    int? outletId,
+  }) async {
     if (cat.outletCategoryId != null && cat.outletCategoryId! > 0) {
-      return cat.outletCategoryId!;
+      return cat.outletCategoryId;
     }
-    return int.tryParse(cat.id ?? '') ?? 0;
+
+    final categoryId = int.tryParse(cat.id ?? '');
+    if (categoryId == null || categoryId <= 0) {
+      _log('No categoryId available for ${cat.title}');
+      return null;
+    }
+
+    final resolvedOutletId = (outletId != null && outletId > 0)
+        ? outletId
+        : (_loadedOutletId > 0
+            ? _loadedOutletId
+            : FireStoreUtils.resolveActiveOutletId());
+    if (resolvedOutletId <= 0) {
+      _log('No active outlet to resolve category mapping');
+      return null;
+    }
+
+    final mapping = await FireStoreUtils.getOutletCategoryIdMap(
+      resolvedOutletId,
+    );
+    final mappedId = mapping?[categoryId];
+    if (mappedId == null || mappedId <= 0) {
+      _log(
+        'No outletCategoryId mapping for categoryId=$categoryId '
+        'outletId=$resolvedOutletId',
+      );
+      return null;
+    }
+
+    _log(
+      'Resolved categoryId=$categoryId -> '
+      'outletCategoryId=$mappedId (outletId=$resolvedOutletId)',
+    );
+    return mappedId;
   }
 
   Future<void> toggleCategoryActive(int index) async {
@@ -423,8 +459,9 @@ class ProductListController extends GetxController {
     productList.refresh();
 
     if (isOutletInventoryMode) {
-      final outletCategoryId = _resolveOutletCategoryUnavailabilityId(cat);
-      if (outletCategoryId <= 0) {
+      final outletCategoryId =
+          await _resolveOutletCategoryUnavailabilityId(cat);
+      if (outletCategoryId == null) {
         _log('toggleCategoryActive — missing outletCategoryId for ${cat.id}');
         categoryList[index] = cat;
         categoryList.refresh();
@@ -435,7 +472,7 @@ class ProductListController extends GetxController {
         }
         productList.refresh();
         ShowToastDialog.showToast(
-          'Category id missing. Please refresh the menu.',
+          'Category link id missing. Please refresh the menu.',
         );
         return;
       }
@@ -496,13 +533,14 @@ class ProductListController extends GetxController {
     final currentActive = cat.isActive ?? true;
     final catId = cat.id?.toString() ?? '';
 
-    final outletCategoryId = _resolveOutletCategoryUnavailabilityId(cat);
-    if (outletCategoryId <= 0) {
+    final outletCategoryId = await _resolveOutletCategoryUnavailabilityId(cat);
+    if (outletCategoryId == null) {
       ShowToastDialog.showToast(
-        'Category id missing. Please refresh the menu.',
+        'Category link id missing. Please refresh the menu.',
       );
       return;
     }
+    if (!context.mounted) return;
 
     if (!currentActive) {
       final success = await FireStoreUtils.restoreOutletItemAvailability(
@@ -545,7 +583,9 @@ class ProductListController extends GetxController {
       type: 'OUTLET_CATEGORY',
       unavailabilityId: outletCategoryId,
       reason: 'Category made unavailable',
-      fromDate: dates.from,
+      // Generate the start at submit time. Reusing a timestamp captured
+      // before the dialogs closed can be rejected as a past date.
+      fromDate: DateTime.now(),
       toDate: dates.to,
     );
 
