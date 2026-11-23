@@ -152,6 +152,8 @@ class HomeController extends GetxController {
     o.driverID,
     o.estimatedTimeToPrepare,
     o.merchant_price?.toString(),
+    o.totalPrice?.toString(),
+    o.isCutleryRequired?.toString(),
     o.deliveryCharge,
     o.tipAmount,
     o.discount?.toString(),
@@ -471,10 +473,18 @@ class HomeController extends GetxController {
       );
     }
 
+    final totalPrice = json['totalPrice'] == null
+        ? null
+        : _toNum(json['totalPrice']);
+
     return OrderModel(
       id: json['orderId']?.toString(),
       status: _mapOutletOrderStatus(json['orderStatus']?.toString()),
-      merchant_price: _toNum(json['totalPrice']),
+      merchant_price: totalPrice,
+      totalPrice: totalPrice,
+      isCutleryRequired: json['isCutleryRequired'] is bool
+          ? json['isCutleryRequired']
+          : null,
       notes: json['cookingInstructions']?.toString(),
       createdAt: _parseOutletTimestamp(json['orderCreatedAt']?.toString()),
       products: products,

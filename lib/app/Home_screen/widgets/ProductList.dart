@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:get/get.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
 
@@ -7,6 +8,7 @@ import '../../../models/cart_product_model.dart';
 import '../../../models/order_model.dart';
 import '../../../themes/app_them_data.dart';
 import '../../../utils/dark_theme_provider.dart';
+import '../../../utils/network_image_widget.dart';
 import '../../../widget/my_separator.dart';
 
 class ProductList extends StatelessWidget {
@@ -69,60 +71,80 @@ class _ProductItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = themeChange.getThem();
+    final photoUrl = product.photo?.trim() ?? '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(
-                '${product.quantity}x ${product.name}'.tr,
-                style: TextStyle(
-                  color: isDark ? AppThemeData.grey100 : AppThemeData.grey800,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: AppThemeData.semiBold,
-                ),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _priceText,
-                  style: TextStyle(
-                    color:
-                    isDark ? AppThemeData.grey100 : AppThemeData.grey800,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: AppThemeData.semiBold,
+            if (photoUrl.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: NetworkImageWidget(
+                  imageUrl: photoUrl,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  errorWidget: Container(
+                    width: 56,
+                    height: 56,
+                    color: isDark
+                        ? AppThemeData.grey800
+                        : AppThemeData.grey200,
+                    child: Icon(
+                      Icons.fastfood_outlined,
+                      color: isDark
+                          ? AppThemeData.grey500
+                          : AppThemeData.grey400,
+                    ),
                   ),
                 ),
-                // if (showViewRatings)
-                  // GestureDetector(
-                  //   onTap: () => Get.to(
-                  //     const ProductRatingViewScreen(),
-                  //     arguments: {
-                  //       'orderModel': orderModel,
-                  //       'productId': product.id,
-                  //     },
-                  //   ),
-                  //   child: Text(
-                  //     'View Ratings'.tr,
-                  //     style:  TextStyle(
-                  //       color: AppThemeData.secondary300,
-                  //       fontWeight: FontWeight.w500,
-                  //       decoration: TextDecoration.underline,
-                  //       fontFamily: AppThemeData.semiBold,
-                  //     ),
-                  //   ),
-                  // ),
-              ],
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${product.quantity}x ${product.name}'.tr,
+                          style: TextStyle(
+                            color: isDark
+                                ? AppThemeData.grey100
+                                : AppThemeData.grey800,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: AppThemeData.semiBold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _priceText,
+                        style: TextStyle(
+                          color: isDark
+                              ? AppThemeData.grey100
+                              : AppThemeData.grey800,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: AppThemeData.semiBold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (product.variantInfo?.variantOptions?.isNotEmpty == true)
+                    _VariantChips(product: product, themeChange: themeChange),
+                ],
+              ),
             ),
           ],
         ),
-        if (product.variantInfo?.variantOptions?.isNotEmpty == true)
-          _VariantChips(product: product, themeChange: themeChange),
         if (product.extras?.isNotEmpty == true)
           _AddonChips(product: product, themeChange: themeChange),
       ],

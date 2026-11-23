@@ -336,6 +336,7 @@ const Map<String, String> enUS = {
   "Addons": "Addons",
   "Order Date": "Order Date",
   "Total Amount": "Total Amount",
+  "Cutlery Required": "Cutlery Required",
   'Select the delivery man': 'Select the delivery man',
   "Admin Commissions": "Admin Commissions",
   "Schedule Time": "Schedule Time",

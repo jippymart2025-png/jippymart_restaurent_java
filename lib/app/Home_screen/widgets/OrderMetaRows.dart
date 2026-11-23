@@ -14,6 +14,7 @@ class OrderMetaRows extends StatelessWidget {
   final OrderModel orderModel;
   final DarkThemeProvider themeChange;
   final double adminCommission;
+  final double totalAmount;
   final HomeController controller;
   final BuildContext parentContext;
 
@@ -21,6 +22,7 @@ class OrderMetaRows extends StatelessWidget {
     required this.orderModel,
     required this.themeChange,
     required this.adminCommission,
+    required this.totalAmount,
     required this.controller,
     required this.parentContext,
   });
@@ -37,6 +39,23 @@ class OrderMetaRows extends StatelessWidget {
           value: Constant.timestampToDateTime(orderModel.createdAt ?? ''),
           themeChange: themeChange,
         ),
+        if (totalAmount > 0) ...[
+          const SizedBox(height: 5),
+          _LabelValue(
+            label: 'Total Amount'.tr,
+            value: Constant.amountShow(amount: totalAmount.toString()),
+            themeChange: themeChange,
+            valueColor: AppThemeData.secondary300,
+          ),
+        ],
+        if (orderModel.isCutleryRequired != null) ...[
+          const SizedBox(height: 5),
+          _LabelValue(
+            label: 'Cutlery Required'.tr,
+            value: orderModel.isCutleryRequired == true ? 'Yes'.tr : 'No'.tr,
+            themeChange: themeChange,
+          ),
+        ],
         if (Constant.adminCommission?.isEnabled == true) ...[
           const SizedBox(height: 5),
           Row(
@@ -95,11 +114,13 @@ class _LabelValue extends StatelessWidget {
   final String label;
   final String value;
   final DarkThemeProvider themeChange;
+  final Color? valueColor;
 
   const _LabelValue(
       {required this.label,
         required this.value,
-        required this.themeChange});
+        required this.themeChange,
+        this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +140,8 @@ class _LabelValue extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            color: isDark ? AppThemeData.grey100 : AppThemeData.grey800,
+            color: valueColor ??
+                (isDark ? AppThemeData.grey100 : AppThemeData.grey800),
             fontSize: 14,
             fontFamily: AppThemeData.semiBold,
           ),

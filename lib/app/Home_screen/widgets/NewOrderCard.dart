@@ -61,6 +61,7 @@ class NewOrderCard extends StatelessWidget {
           orderModel: orderModel,
           themeChange: themeChange,
           adminCommission: totals.adminCommission,
+          totalAmount: totals.totalAmount,
           controller: controller,
           parentContext: context,
         ),
@@ -232,7 +233,13 @@ class OrderTotals {
       }
     }
 
-    final total = sub - disc - special + tax;
+    // The outlet summary API already returns the final payable amount, so
+    // prefer it over the locally recomputed value when it is available.
+    final apiTotal = order.totalPrice == null
+        ? null
+        : double.tryParse(order.totalPrice.toString());
+    final total =
+        (apiTotal != null && apiTotal > 0) ? apiTotal : sub - disc - special + tax;
 
     if (order.adminCommissionType == 'Percent' &&
         order.adminCommission != null) {

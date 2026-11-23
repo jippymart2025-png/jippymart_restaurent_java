@@ -475,6 +475,7 @@ class _ClosedOrderCard extends StatelessWidget {
           orderModel: orderModel,
           themeChange: themeChange,
           adminCommission: totals.adminCommission,
+          totalAmount: totals.totalAmount,
           controller: controller,
           parentContext: context,
         ),

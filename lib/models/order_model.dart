@@ -32,6 +32,8 @@ class OrderModel {
   UserModel? author;
   UserModel? driver;
   bool? takeAway;
+  bool? isCutleryRequired;
+  num? totalPrice;
   List<dynamic>? rejectedByDrivers;
 
   OrderModel({
@@ -62,6 +64,8 @@ class OrderModel {
     this.author,
     this.driver,
     this.takeAway,
+    this.isCutleryRequired,
+    this.totalPrice,
     this.rejectedByDrivers,
   });
 
@@ -95,6 +99,12 @@ class OrderModel {
         author: _parseUser(json['author']),
         driver: _parseUser(json['driver']),
         takeAway: json['takeAway'] is bool ? json['takeAway'] : false,
+        isCutleryRequired: json['isCutleryRequired'] is bool
+            ? json['isCutleryRequired']
+            : null,
+        totalPrice: json['totalPrice'] == null
+            ? null
+            : _parseNumber(json['totalPrice']),
         rejectedByDrivers: json['rejectedByDrivers'] is List ? json['rejectedByDrivers'] : [],
       );
     } catch (e, stackTrace) {
@@ -405,6 +415,8 @@ class OrderModel {
       data['driver'] = driver!.toJson();
     }
     data['takeAway'] = takeAway;
+    data['isCutleryRequired'] = isCutleryRequired;
+    data['totalPrice'] = totalPrice;
     data['rejectedByDrivers'] = rejectedByDrivers;
     return data;
   }
