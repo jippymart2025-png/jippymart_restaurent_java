@@ -729,6 +729,7 @@ class AddOutletController extends GetxController {
       final Map<String, dynamic> body = {
         "outletName": outletNameController.text.trim(),
         "merchantId": merchantId,
+        "outletType": "Restaurant",
         "cuisineType": selectedCuisineIds.toList(),
         "outletPhone": phoneController.text.trim(),
         "outletEmail": emailController.text.trim(),

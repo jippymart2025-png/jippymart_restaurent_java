@@ -278,6 +278,8 @@ class SignupController extends GetxController {
 
         "merchantId": merchantId,
 
+        "outletType": "Restaurant",
+
         "cuisineType":
         cuisineTypeController.value.text.trim(),
 

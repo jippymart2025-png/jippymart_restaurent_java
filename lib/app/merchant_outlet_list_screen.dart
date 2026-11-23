@@ -143,7 +143,7 @@ class MerchantOutletListScreen extends StatelessWidget {
   }
   }
 Future<void> _openAddOutlet(MerchantOutletController controller) async {
-  final verified = await Get.to(() => const OutletOtpVerificationScreen());
+  final verified = await Get.to(() =>  AddOutletScreen());
   if (verified != true) return;
 
   final created = await Get.to(() => AddOutletScreen());

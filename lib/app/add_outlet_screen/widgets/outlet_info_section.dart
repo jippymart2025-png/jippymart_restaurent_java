@@ -5,6 +5,7 @@ import '../controller/add_outlet_controller.dart';
 import '../../../utils/input_decorations.dart';
 import '../../edit_profile_screen/widgets/MerchantForm.dart';
 import 'cuisine_picker_sheet.dart';
+import 'package:flutter/services.dart';
 
 class OutletInfoSection extends StatelessWidget {
   const OutletInfoSection({super.key, required this.controller});
@@ -95,6 +96,10 @@ class OutletInfoSection extends StatelessWidget {
     return TextField(
       controller: controller.phoneController,
       keyboardType: TextInputType.phone,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(10),
+      ],
       decoration: AppInputDecoration.box(
         labelText: "Phone Number",
         hintText: "Enter Outlet Phone",
@@ -106,6 +111,11 @@ class OutletInfoSection extends StatelessWidget {
   Widget _buildAlternatePhone() {
     return TextFormField(
       controller: controller.alternatePhoneController,
+      keyboardType: TextInputType.phone,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(10),
+      ],
       decoration: AppInputDecoration.box(
         labelText: "Alternate Phone Number",
         hintText: "Enter Alternate Phone Number",
