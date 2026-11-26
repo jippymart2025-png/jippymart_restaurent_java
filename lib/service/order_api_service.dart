@@ -15,9 +15,19 @@ const int kMaxPreparationTimeInMins = 15;
 /// Actions supported by the outlet accept/reject endpoint.
 enum OutletOrderAction {
   accept,
+  CANCELLED,
   reject;
 
-  String get apiValue => this == OutletOrderAction.accept ? 'ACCEPT' : 'REJECT';
+  String get apiValue {
+    switch (this) {
+      case OutletOrderAction.accept:
+        return 'ACCEPT';
+      case OutletOrderAction.CANCELLED:
+        return 'CANCELLED';
+      case OutletOrderAction.reject:
+        return 'REJECT';
+    }
+  }
 }
 
 /// Outcome of [OrderApiService.acceptOrRejectOrderByOutlet].

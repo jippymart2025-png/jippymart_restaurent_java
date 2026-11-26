@@ -110,7 +110,7 @@ class _AcceptedOrderActions extends StatelessWidget {
     final result = await OrderApiService.acceptOrRejectOrderByOutlet(
       orderId: orderId,
       outletId: outletId,
-      action: OutletOrderAction.reject,
+      action: OutletOrderAction.CANCELLED,
       rejectionReason: 'Order cancelled by outlet',
     );
     if (!result.success) {

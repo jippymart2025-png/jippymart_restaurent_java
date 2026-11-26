@@ -29,8 +29,8 @@ import 'package:video_player/video_player.dart';
 
 class Constant {
    // static String baseUrl  = "https://web.jippymart.in/api/";
-   static String baseUrl  = "http://192.168.29.36:8084/api/";
-  // static String baseUrl = "http://187.127.156.147:8084/api/";
+   // static String baseUrl  = "http://192.168.29.36:8084/api/";
+  static String baseUrl = "http://187.127.156.147:8084/api/";
   static String userRoleDriver = 'driver';  
   static String userRoleCustomer = 'customer';
   static String userRoleMerchant = 'MERCHANT';
@@ -98,7 +98,7 @@ class Constant {
 
   static const String orderPlaced = "Order Placed";
   static const String orderAccepted = "ORDER_ACCEPTED";
-  static const String orderCancelled = "Order Cancelled";
+  static const String orderCancelled = "CANCELLED";
   static const String orderRejected = "Order Rejected";
   static const String orderPending = "pending";
   static const String driverPending = "Driver Pending";

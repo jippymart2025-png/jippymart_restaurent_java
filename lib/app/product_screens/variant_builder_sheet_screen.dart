@@ -99,11 +99,15 @@ class _VariantBuilderSheetScreenState
   void _removeGroup(int i) => setState(() => _groups.removeAt(i));
 
   void _addOption(int gi) => setState(() {
+    final priceType = _getPriceType(_groups[gi].groupName);
+
     final updated = List<StagedVariantOption>.from(_groups[gi].options)
-      ..add(_emptyOption());
+      ..add(_emptyOption().copyWith(
+        priceType: priceType,
+      ));
+
     _groups[gi] = _groups[gi].copyWith(options: updated);
   });
-
   void _removeOption(int gi, int oi) => setState(() {
     final updated = List<StagedVariantOption>.from(_groups[gi].options)
       ..removeAt(oi);
@@ -111,12 +115,24 @@ class _VariantBuilderSheetScreenState
   });
 
   Future<void> _onGroupPicked(int gi, VariantGroupModel g) async {
+    final priceType = _getPriceType(g.groupName);
+
     setState(() {
-      _groups[gi] = _groups[gi].copyWith(groupId: g.id, groupName: g.groupName);
+      final updatedOptions = _groups[gi].options
+          .map((option) => option.copyWith(
+        priceType: priceType,
+      ))
+          .toList();
+
+      _groups[gi] = _groups[gi].copyWith(
+        groupId: g.id,
+        groupName: g.groupName,
+        options: updatedOptions,
+      );
     });
+
     await _ensureValues(g.id);
   }
-
   void _onOptionValuePicked(int gi, int oi, VariantGroupValueModel v) {
     setState(() {
       final updated = List<StagedVariantOption>.from(_groups[gi].options);
@@ -395,6 +411,14 @@ class _GroupBlock extends StatelessWidget {
     );
   }
 }
+String _getPriceType(String groupName) {
+  return groupName.trim().toLowerCase() == 'add-ons'
+      ? 'ADD'
+      : 'MAIN';
+}
+
+
+
 
 class _OptionRow extends StatelessWidget {
   const _OptionRow({

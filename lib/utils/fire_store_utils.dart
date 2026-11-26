@@ -2804,13 +2804,14 @@ static Future<MerchantModel?> getMerchantProfile(String merchantId) async {
       //final token = Preferences.getString('authToken');
       final headers = await getHeaders();
       final body = {
-        'outletId': unavailabilityId,
-        'isToggle' : true,
+        "type": "OUTLET",
+        'unavailabilityId': unavailabilityId,
+        'reason' : "Restored availability",
       };
 
-      final response = await http.put(
+      final response = await http.patch(
         Uri.parse(
-          '${Constant.baseUrl}fm/outlets/toggleForOutlet',
+          '${Constant.baseUrl}fm/outlet-unavailability/restore',
         ),
         headers: headers,
         body: jsonEncode(body),
